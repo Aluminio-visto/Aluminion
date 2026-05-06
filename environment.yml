@@ -1,0 +1,23 @@
+name: aluminion_base
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  # Lenguaje y manejo de datos
+  - python>=3.8
+  - pandas
+  - biopython
+  # QC y Preprocesamiento
+  - nanoplot
+  - chopper
+  # Ensamblaje y Pulido
+  - flye
+  - circlator
+  - quast
+  - bandage
+  # Taxonomía y Anotación básica
+  - kraken2
+  - bakta
+  - abricate
+  - mlst
