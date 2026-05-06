@@ -44,6 +44,7 @@ Run the pipeline by specifying the MinKNOW run folder:
 * `-t, --threads`: Number of threads/cores to use. (Default: `30`).
 * `-l, --list`: Path to the `lista_seq.tsv` file containing sample metadata. If not provided, an empty template will be generated.
 * `-d, --dir`: Base working directory where the run folder will be processed. (Default: `/home/usuario/Seqs/Servicio`).
+* '-b, --db': Database main directoty where databases may be found. (Default: '/home/usuario/Databases/').
 * `-h, --help`: Displays the help menu.
 
 ## Input Metadata (`lista_seq.tsv`)
