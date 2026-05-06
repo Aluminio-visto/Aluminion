@@ -261,7 +261,11 @@ sed 's/\t[[:blank:]]*/\t/g' 04_taxonomies/kraken_report.csv > kraken.csv || true
 cut 03_assemblies/quast/transposed_report.tsv -f 1,14-17,26 > QC_assembly.csv
 sed -i 's/Assembly/Samples/' QC_assembly.csv
 
+log "Executing final consolidation in Python..."
 python3 /home/usuario/Seqs/Servicio/Scripts/parser.py -i .
-python3 ../Scripts/Datos_seq_unified2.py --input_path .
+python3 /home/usuario/Seqs/Servicio/Scripts/Datos_seq_unified2.py --input_path .
+
+log "Generating Interactive HTML Report..."
+python3 /home/usuario/Seqs/Servicio/Scripts/aluminion_reporter.py .
 
 log "Pipeline successfully finished. Aluminion out."
