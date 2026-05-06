@@ -1,0 +1,21 @@
+name: aluminion_base
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python>=3.8
+  - pandas
+  - biopython
+  - nanoplot
+  - chopper
+  - flye
+  - circlator
+  - quast
+  - bandage
+  - kraken2
+  - gambit
+  - bakta
+  - abricate
+  - mlst
+  - blast

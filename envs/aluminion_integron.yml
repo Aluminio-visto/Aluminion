@@ -1,0 +1,7 @@
+name: aluminion_integron
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - integron_finder

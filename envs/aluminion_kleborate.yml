@@ -1,0 +1,8 @@
+name: aluminion_kleborate
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - kleborate
+  - ectyper

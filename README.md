@@ -1,38 +1,31 @@
-# Aluminion
+# Aluminion 
 
 **Aluminion** is a comprehensive, automated bash pipeline designed for the processing, assembly, annotation, and typing of bacterial genomes sequenced with Oxford Nanopore Technologies (ONT).
 
-It transforms raw MinKNOW output into high-quality assemblies and epidemiological reports (incorporating taxonomy, MLST, antimicrobial resistance, virulence, plasmids, integrons, and prophages).
+It transforms raw MinKNOW output into high-quality assemblies and highly detailed, clinical-grade epidemiological reports.
 
-## Features
+## ⚠Important Disclaimer: Databases & External Tools
+This pipeline relies heavily on external databases and tools that **are not included in this repository** due to size constraints and licensing. 
+**Before running Aluminion**, the user must manually download and build the following databases into a central directory (e.g., `/home/usuario/Databases`):
+* `Kraken2` (Standard or custom database)
+* `Gambit`
+* `Bakta` (Full database)
+* `Megares` (Sequences)
+* `ISfinder` (nucl.fasta formatted for BLAST)
+* `Copla_RS84` (Pickle and fofn databases for Copla)
 
-- **Read QC & Filtering:** Utilizes `NanoPlot` and `chopper` to filter reads by quality, length, and headcrop.
-- **Taxonomy Profiling:** Fast assignment of read taxonomy using `Kraken2` mapped in RAM, and assembly taxonomy using `GAMBIT`.
-- **De novo Assembly:** High-quality assemblies with `Flye`, followed by multimer deconcatenation (custom script) and recircularization via `Circlator`.
-- **Assembly QC:** Assessed with `QUAST` and visualized with `Bandage`.
-- **Genome Annotation:** Deep annotation using `Bakta`.
-- **Mobile Genetic Elements (MGEs) & Typing:**
-  - Plasmids: `MOB-Suite` and `Copla`.
-  - Integrons: `Integron_finder`.
-  - Antimicrobial Resistance (AMR): `Abricate`.
-  - Phages: `Phastest` (via Docker).
-  - Specific Typing: `MLST`, `Kleborate` (for *Klebsiella*), and `ECTyper` (for *Escherichia*).
-  - Insertion Sequences (IS): Local `BLAST` against ISfinder.
+You must also configure **Docker** correctly to run `mob_suite` and `phastest`.
 
-## Prerequisites
+## 🛠️ Conda Environments Setup
+To avoid dependency conflicts, Aluminion uses 4 specific Conda environments. You can easily install them using the YAML files located in the `envs/` folder:
+```bash
+# Main environment for assembly, QC, and python parsing
+conda env create -f envs/aluminion_base.yml
 
-This pipeline relies on the following tools, which must be available in your `$PATH` or configured via Conda environments/Docker as specified in the script:
-
-* **Base:** `bash`, `python3`, `docker`, `conda` (or `mamba`)
-* **QC & Filtering:** `NanoPlot`, `chopper`
-* **Assembly:** `flye`, `circlator`, `quast`, `Bandage`
-* **Taxonomy & Annotation:** `kraken2`, `gambit`, `bakta`, `abricate`, `mlst`
-* **Typing Tools:** `mob_suite` (Docker), `integron_finder`, `copla`, `kleborate`, `ectyper`, `phastest` (Docker Compose)
-* **Python Dependencies:** Custom parsing scripts (`deconcat.py`, `parser.py`, `Datos_seq_unified2.py`, etc.) relying on `pandas` and `Biopython`.
-
-To install the core dependencies, you can create the Conda environment using the provided file:
-conda env create -f environment.yml
-conda activate aluminion_base
+# Secondary environments for specific typing
+conda env create -f envs/aluminion_integron.yml
+conda env create -f envs/aluminion_copla.yml
+conda env create -f envs/aluminion_kleborate.yml
 
 ## Usage
 

@@ -1,0 +1,7 @@
+name: aluminion_copla
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - copla
