@@ -1,7 +1,15 @@
-#!/usr/bin/env bash
+#!/bin/bash
+
 # ==============================================================================
 # Aluminion - Bacterial WGS Pipeline
 # ==============================================================================
+
+# Detectar la ruta donde se encuentra este script aluminion.sh
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+# Definir la ruta de los scripts auxiliares (por defecto la subcarpeta scripts/)
+SCRIPTS_PATH="${ALUMINION_SCRIPTS:-$SCRIPT_DIR/scripts}"
+
 
 set -euo pipefail
 
@@ -185,7 +193,7 @@ log "Integrons (Integron_finder)..."
 conda activate aluminion_integron
 for i in $(cat samples); do integron_finder 03_assemblies/${i}.fasta --cpu $THREADS_TOTAL --outdir 11_integrons/${i} --func-annot --gbk || true; done
 conda activate aluminion_base
-python3 ../Scripts/integrones/integron_parser.py .
+python3 "$SCRIPTS_PATH/integron_parser.py" .
 cp 11_integrons/integron_summary.csv . || true
 
 # 3. Copla Environment
@@ -196,7 +204,7 @@ for j in $(cat samples); do
     find 08_Anotacion/${j}/mob_recon/ -name "*.fasta" -size -600k -size +1k | while read -r i; do
         new_name=$(basename "$i" | cut -d'_' -f1)
         cp "${i}" 05_plasmids/${new_name}_${j}.fasta
-        python3 ~/Programs/copla/bin/copla.py "${i}" ${DB_DIR}/Copla_RS84/RS84f_sHSBM.pickle ${DB_DIR}/Copla_RS84/CoplaDB.fofn 08_Anotacion/${j}/copla >> copla.txt 2>&1
+        python3 "$SCRIPTS_PATH/copla.py" "${i}" ${DB_DIR}/Copla_RS84/RS84f_sHSBM.pickle ${DB_DIR}/Copla_RS84/CoplaDB.fofn 08_Anotacion/${j}/copla >> copla.txt 2>&1
     done
 done
 
@@ -217,7 +225,7 @@ for i in $(cat samples); do
     rm -rf /home/usuario/Programs/phastest-docker/phastest-app-docker/JOBS/"$i" /home/usuario/Programs/phastest-docker/phastest_inputs/"$i".fasta
 done
 conda activate aluminion_base
-python3 /home/usuario/Seqs/Servicio/Scripts/phages/phage_parser.py . 
+python3 "$SCRIPTS_PATH/phage_parser.py" . 
 cp 09_phages/phage_summary.csv . || true
 
 # 6. Final Tables and IS
@@ -229,7 +237,7 @@ for i in $(cat samples); do
         sed -i 's/>contig/>Chr/g' "08_Anotacion/${i}/mob_recon/chromosome.fasta"
         makeblastdb -in "08_Anotacion/${i}/mob_recon/chromosome.fasta" -dbtype nucl
         blastn -db "08_Anotacion/${i}/mob_recon/chromosome.fasta" -query "$ISFINDER_DB" -outfmt "6 qseqid sseqid sstart send pident mismatch evalue" | sort -k 3 > 08_Anotacion/${i}/IS_chr.tsv
-        python3 /home/usuario/Seqs/Servicio/IS_parser.py -i 08_Anotacion/${i}
+        python3 "$SCRIPTS_PATH/IS_parser.py" -i 08_Anotacion/${i}
         cat 08_Anotacion/${i}/IS_chr_out.tsv | cut -f 2 | sort | uniq -c | sort -r | awk '{print $1"\t"$2}' > 08_Anotacion/${i}/N_IS_${i}.tsv
         MAX_IS=$(head -n 1 08_Anotacion/${i}/N_IS_${i}.tsv || echo -e "0\tNone")
         TOTAL_IS=$(tail -n +2 08_Anotacion/${i}/IS_chr_out.tsv | wc -l || echo "0")
@@ -262,10 +270,10 @@ cut 03_assemblies/quast/transposed_report.tsv -f 1,14-17,26 > QC_assembly.csv
 sed -i 's/Assembly/Samples/' QC_assembly.csv
 
 log "Executing final consolidation in Python..."
-python3 /home/usuario/Seqs/Servicio/Scripts/parser.py -i .
-python3 /home/usuario/Seqs/Servicio/Scripts/Datos_seq_unified2.py --input_path .
+python3 "$SCRIPTS_PATH/parser.py" -i .
+python3 "$SCRIPTS_PATH/Datos_seq_unified2.py" --input_path .
 
 log "Generating Interactive HTML Report..."
-python3 /home/usuario/Seqs/Servicio/Scripts/aluminion_reporter.py .
+python3 "$SCRIPTS_PATH/aluminion_reporter.py" "$PWD"
 
 log "Pipeline successfully finished. Aluminion out."
