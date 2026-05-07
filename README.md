@@ -32,6 +32,8 @@ This pipeline relies heavily on external databases and tools that **are not incl
 
 You must also configure **Docker** correctly to run `mob_suite` and `phastest`.
 
+---
+
 ## 🛠️ Conda Environments Setup
 To avoid dependency conflicts, Aluminion uses 4 specific Conda environments. You can easily install them using the YAML files located in the `envs/` folder:
 ```bash
@@ -42,6 +44,9 @@ conda env create -f envs/aluminion_base.yml
 conda env create -f envs/aluminion_integron.yml
 conda env create -f envs/aluminion_copla.yml
 conda env create -f envs/aluminion_kleborate.yml
+```
+
+---
 
 ## ⚙️ Dependencies
 
@@ -84,7 +89,10 @@ aluminion/
     ├── copla_modif.csv
     ├── integron_summary.csv
     └── phage_summary.csv
-    
+
+```
+
+
 ## 🚀 Quick Start & Usage
 
 ### 1. Clone the repository
