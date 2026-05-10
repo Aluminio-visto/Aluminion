@@ -1,4 +1,6 @@
-# %%
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import pandas as pd
 import subprocess
 from Bio import SeqIO
@@ -8,7 +10,6 @@ import glob
 import sys
 import re
 
-# %%
 def abr_parse(abr_out):
     abr_raw = pd.read_table(abr_out)
     if len(abr_raw) > 0:
@@ -22,7 +23,6 @@ def abr_parse(abr_out):
         return df_abr
     return pd.DataFrame(columns=['pos_beg', 'pos_end', 'abr_ann'])
 
-# %%
 def prokka_parse(prokka_dir):
     df_prokka = pd.DataFrame(columns=['pos_beg', 'pos_end', 'prokka_ann'])
     for prokka_file in glob.glob(f'{prokka_dir}/*.gff'):
@@ -40,7 +40,6 @@ def prokka_parse(prokka_dir):
     df_prokka['pos_end'] = df_prokka['pos_end'].astype('int64')
     return df_prokka
 
-# %%
 def write_fasta(cds_output_file, d_int):
     with open(cds_output_file, "w") as cds_output_handle:
         for k, v in d_int.items():
@@ -48,7 +47,6 @@ def write_fasta(cds_output_file, d_int):
             cds_output_handle.write(v + "\n")
     return None
 
-# %%
 def annotate_cds(cds_output_file, input_path, replicon, integron):
     # anotación con prokka
     prokka_cmd = ['prokka', '--quiet', '--force', cds_output_file, '--outdir', input_path + f'/prokka_{replicon}_{integron}']
@@ -59,7 +57,6 @@ def annotate_cds(cds_output_file, input_path, replicon, integron):
     subprocess.run(abr_cmd1, stdout=abr_out)
     return input_path + f'/prokka_{replicon}_{integron}', input_path + f'/abricate_{replicon}_{integron}.out'
 
-# %%
 def extract_fastas(gbk_file, cds_output_file, fna_file, integron):
     # Abrir archivo GBK y los archivos de salida
     with open(gbk_file, "r") as input_handle:
@@ -97,7 +94,6 @@ def extract_fastas(gbk_file, cds_output_file, fna_file, integron):
             
     return d_int
 
-# %%
 def extract_info(sample, subdf, replicon, integron, input_path, original_path):
     # integrase
     try:
@@ -121,7 +117,7 @@ def extract_info(sample, subdf, replicon, integron, input_path, original_path):
         fna_file = input_path + f'/{replicon}_{integron}.fna'
         d_int = extract_fastas(gbk_file, cds_output_file, fna_file, integron)
     except:
-        print(f'Error en el parseo de GBK. Comprueba la integridad de {gbk_file}')
+        print(f'\033[93m[WARNING]\033[0m Error en el parseo de GBK. Comprueba la integridad de {gbk_file}')
         return None
 
     df_abr = pd.DataFrame(columns = ['pos_beg', 'pos_end', 'abr_ann'])
@@ -180,24 +176,34 @@ def extract_info(sample, subdf, replicon, integron, input_path, original_path):
 
     return info
 
-# %%
-if __name__ == "__main__":
-    # Integron files
-    original_path = os.path.abspath(sys.argv[1])
+def run_parsing(original_path, out_folder=None):
+    """Función principal ejecutada por el script director (parser.py)."""
+    if out_folder is None:
+        out_folder = original_path
+
+    original_path = os.path.abspath(original_path)
     summary_df = pd.DataFrame(columns=['Sample', 'Pl/Chr', 'Name', 'Size', 'Inicio', 'Final', 'Tipo', 'Integrasa', 'Cassette 1',
                                         'Cassette 2', 'Cassette 3', 'Cassette 4', 'Cassette 5', 'Cassette 6',
                                         'Cassette 7', 'Cassette 8', 'Cassette 9', 'Cassette 10', 'Cassette 11', 'Cassette 12'])
-    for integron_file in glob.glob(f'{original_path}/11_integrons/*/Results_Integron_Finder_*/*.integrons'):
+    
+    search_pattern = os.path.join(original_path, '11_integrons', '*', 'Results_Integron_Finder_*', '*.integrons')
+    integron_files = glob.glob(search_pattern)
+
+    if not integron_files:
+        print(f"\033[93m[WARNING]\033[0m No se encontraron archivos para parsear integrones en: 11_integrons/")
+        return
+
+    for integron_file in integron_files:
         input_path = os.path.dirname(os.path.abspath(integron_file))
         sample = input_path.split('/')[-2]
-        print(sample)
+        
         try:
             df_integron = pd.read_table(integron_file, comment='#')
         except:
             print(f'No integrons in {sample}')
             continue
 
-        # Divide into integrons and chromosomes (cada cromosoma resetea el número de integrón, así que puede haber varios integron_01 por muestra)
+        # Divide into integrons and chromosomes
         grouped = df_integron.groupby(['ID_replicon', 'ID_integron'])
         subdfs = {}
 
@@ -208,5 +214,15 @@ if __name__ == "__main__":
             if info:
                 summary_df.loc[len(summary_df)] = info
 
-    summary_df.to_csv(f'{original_path}/11_integrons/integron_summary.csv', index=False)
-    print(f'Integron summary in {original_path}/11_integrons/integron_summary.csv')
+    # Guardado seguro en la carpeta principal (donde el reporter lo irá a buscar)
+    output_csv = os.path.join(out_folder, 'integron_summary.csv')
+    summary_df.to_csv(output_csv, index=False)
+    print(f" -> Integrones parseados con éxito en {output_csv}")
+
+
+if __name__ == "__main__":
+    # Permite seguir ejecutando este script de forma independiente desde la terminal
+    if len(sys.argv) > 1:
+        run_parsing(sys.argv[1])
+    else:
+        print("Uso: python integron_parser.py <directorio_del_run>")

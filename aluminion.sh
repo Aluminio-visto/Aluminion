@@ -52,6 +52,14 @@ error_log() { echo -e "\n\033[1;31m[ERROR] $1\033[0m"; }
 # ==============================================================================
 # COMMAND LINE ARGUMENT PARSING
 # ==============================================================================
+
+SKIP_PHAGES=""
+SKIP_INTEGRONS=""
+SKIP_PLASMIDS=""
+SKIP_TYPING=""
+SKIP_KRAKEN=""
+SKIP_ABR=""
+
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -r|--run) RUN_NAME="$2"; shift ;;
@@ -59,6 +67,13 @@ while [[ "$#" -gt 0 ]]; do
         -t|--threads) THREADS_TOTAL="$2"; shift ;;
         -l|--list) SEQ_LIST_INPUT="$2"; shift ;;
         -d|--dir) BASE_DIR="$2"; shift ;;
+        # Flags for skipping steps
+        --skip-phages) SKIP_PHAGES="--skip-phages" ;;
+        --skip-integrons) SKIP_INTEGRONS="--skip-integrons" ;;
+        --skip-plasmids) SKIP_PLASMIDS="--skip-plasmids" ;;
+        --skip-typing) SKIP_TYPING="--skip-typing" ;;
+        --skip-kraken) SKIP_KRAKEN="--skip-kraken" ;;
+        --skip-abr) SKIP_ABR="--skip-abr" ;;
         -h|--help) show_help; exit 0 ;;
         *) error_log "Unknown parameter: $1"; show_help; exit 1 ;;
     esac
@@ -161,6 +176,15 @@ rm -f /dev/shm/*.k2d
 log "Assembly (Flye)..."
 for i in $(cat samples); do flye --nano-hq 02_filter/${i}.fastq.gz --threads $THREADS_TOTAL --out-dir 03_assemblies/${i}; done
 
+log "Polishing"
+for i in $(cat samples); do 
+ dorado   aligner 03_assemblies/${i}/assembly.fasta 02_filter/${i}.fastq.gz | samtools sort --threads $THREADS_TOTAL > 03_assemblies/${i}/${i}_aligned_reads.bam 
+ samtools index 03_assemblies/${i}/${i}_aligned_reads.bam 
+ dorado   polish 03_assemblies/${i}/${i}_aligned_reads.bam 03_assemblies/${i}/assembly.fasta --bacteria --ignore-read-groups > 03_assemblies/${i}/polished_assembly.fasta 
+ mv 03_assemblies/${i}/polished_assembly.fasta 03_assemblies/${i}/assembly.fasta 
+ rm 03_assemblies/${i}/${i}_aligned_reads.bam 03_assemblies/${i}/${i}_aligned_reads.bam.bai;
+ done
+
 log "Deconcatenation & Recircularization..."
 > 03_assemblies/deconcat.log
 for i in $(cat samples); do 
@@ -188,25 +212,35 @@ for i in $(cat samples); do mkdir -p 08_Anotacion/${i}/abricate; abricate --mini
 abricate --summary 08_Anotacion/*/abricate/*.tab > 08_Anotacion/AbR.tab
 mlst 03_assemblies/*.fasta -q > mlst.csv
 
+
 # 2. Integron Environment
-log "Integrons (Integron_finder)..."
-conda activate aluminion_integron
-for i in $(cat samples); do integron_finder 03_assemblies/${i}.fasta --cpu $THREADS_TOTAL --outdir 11_integrons/${i} --func-annot --gbk || true; done
-conda activate aluminion_base
-python3 "$SCRIPTS_PATH/integron_parser.py" .
-cp 11_integrons/integron_summary.csv . || true
+if [ -z "$SKIP_INTEGRONS" ]; then
+    log "Running Integrons module (Integron_finder)..."
+    conda activate aluminion_integron
+    for i in $(cat samples); do integron_finder 03_assemblies/${i}.fasta --cpu $THREADS_TOTAL --outdir 11_integrons/${i} --func-annot --gbk || true; done
+    conda activate aluminion_base
+    python3 "$SCRIPTS_PATH/integron_parser.py" .
+    cp 11_integrons/integron_summary.csv . || true
+else
+    log "Skipping Integrons module..."
+fi
 
 # 3. Copla Environment
-log "Plasmid Typing (Copla)..."
-conda activate aluminion_copla
-> copla.txt
-for j in $(cat samples); do
-    find 08_Anotacion/${j}/mob_recon/ -name "*.fasta" -size -600k -size +1k | while read -r i; do
-        new_name=$(basename "$i" | cut -d'_' -f1)
-        cp "${i}" 05_plasmids/${new_name}_${j}.fasta
-        python3 "$SCRIPTS_PATH/copla.py" "${i}" ${DB_DIR}/Copla_RS84/RS84f_sHSBM.pickle ${DB_DIR}/Copla_RS84/CoplaDB.fofn 08_Anotacion/${j}/copla >> copla.txt 2>&1
+if [ -z "$SKIP_PLASMIDS" ]; then
+    log "Running Plasmid Typing module (Copla)..."
+    conda activate aluminion_copla
+    > copla.txt
+    for j in $(cat samples); do
+        find 08_Anotacion/${j}/mob_recon/ -name "*.fasta" -size -600k -size +1k | while read -r i; do
+            new_name=$(basename "$i" | cut -d'_' -f1)
+            cp "${i}" 05_plasmids/${new_name}_${j}.fasta
+            echo "Sample: ${j}" && echo "Contig: ${i:(-11):5}" && docker run --rm -v $(pwd):/tmp rpalcab/copla:1.0 copla /tmp/"${i}" /data/app/databases/Copla_RS84/RS84f_sHSBM.pickle /data/app/databases/Copla_RS84/CoplaDB.fofn /tmp/08_Anotacion/${j}/copla
+        done >> copla.txt 2>&1    
     done
-done
+else
+    log "Skipping Plasmid module (Copla)..."
+fi
+
 
 # 4. Kleborate Environment
 log "Specific Typing (Kleborate & ECTyper)..."
@@ -215,18 +249,24 @@ kleborate -a 03_assemblies/*.fasta -o 04_taxonomies/kleborate -m enterobacterale
 cp klebsiellas/enterobacterales__species_output.txt kleborate.tsv || true
 ectyper -i 04_taxonomies/gtdb -o 04_taxonomies/ectyper
 
+
 # 5. Phastest (Docker)
-log "Phages (Phastest)..."
-for i in $(cat samples); do
-    mkdir -p 09_phages/phastest_deep/"$i"/
-    cp 03_assemblies/"$i".fasta /home/usuario/Programs/phastest-docker/phastest_inputs/
-    docker compose -f /home/usuario/Programs/phastest-docker/docker-compose.yml run --rm --user $(id -u):$(id -g) phastest -i fasta -m deep -s "$i".fasta --phage-only --yes
-    cp -r /home/usuario/Programs/phastest-docker/phastest-app-docker/JOBS/"$i"/* 09_phages/phastest_deep/"$i"/ || true
-    rm -rf /home/usuario/Programs/phastest-docker/phastest-app-docker/JOBS/"$i" /home/usuario/Programs/phastest-docker/phastest_inputs/"$i".fasta
-done
-conda activate aluminion_base
-python3 "$SCRIPTS_PATH/phage_parser.py" . 
-cp 09_phages/phage_summary.csv . || true
+if [ -z "$SKIP_PHAGES" ]; then
+    log "Running Phages module (Phastest)..."
+    for i in $(cat samples); do
+        mkdir -p 09_phages/phastest_deep/"$i"/
+        cp 03_assemblies/"$i".fasta /home/usuario/Programs/phastest-docker/phastest_inputs/
+        docker compose -f /home/usuario/Programs/phastest-docker/docker-compose.yml run --rm --user $(id -u):$(id -g) phastest -i fasta -m deep -s "$i".fasta --phage-only --yes
+        cp -r /home/usuario/Programs/phastest-docker/phastest-app-docker/JOBS/"$i"/* 09_phages/phastest_deep/"$i"/ || true
+        rm -rf /home/usuario/Programs/phastest-docker/phastest-app-docker/JOBS/"$i" /home/usuario/Programs/phastest-docker/phastest_inputs/"$i".fasta
+    done
+    conda activate aluminion_base
+    python3 "$SCRIPTS_PATH/phage_parser.py" . 
+    cp 09_phages/phage_summary.csv . || true
+else
+    log "Skipping Phages module..."
+fi
+
 
 # 6. Final Tables and IS
 log "IS parsing and Final Tables..."
@@ -269,9 +309,8 @@ sed 's/\t[[:blank:]]*/\t/g' 04_taxonomies/kraken_report.csv > kraken.csv || true
 cut 03_assemblies/quast/transposed_report.tsv -f 1,14-17,26 > QC_assembly.csv
 sed -i 's/Assembly/Samples/' QC_assembly.csv
 
-log "Executing final consolidation in Python..."
-python3 "$SCRIPTS_PATH/parser.py" -i .
-python3 "$SCRIPTS_PATH/Datos_seq_unified2.py" --input_path .
+log "Executing final consolidation in Python (Orchestrator)..."
+python3 "$SCRIPTS_PATH/parser.py" -i . $SKIP_PHAGES $SKIP_INTEGRONS $SKIP_PLASMIDS $SKIP_TYPING $SKIP_KRAKEN $SKIP_ABR
 
 log "Generating Interactive HTML Report..."
 python3 "$SCRIPTS_PATH/aluminion_reporter.py" "$PWD"

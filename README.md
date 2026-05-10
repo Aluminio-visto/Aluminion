@@ -1,143 +1,93 @@
-# Aluminion 
+# Aluminion 🧬
 
-**Aluminion** is a comprehensive, automated bash pipeline designed for the processing, assembly, annotation, and typing of bacterial genomes sequenced with Oxford Nanopore Technologies (ONT).
+**Aluminion** is an automated, highly-scalable, and modular Bioinformatics pipeline for the assembly, annotation, and comprehensive characterization of bacterial whole-genome sequencing (WGS) data from Oxford Nanopore Technologies (MinION).
 
-It transforms raw MinKNOW output into high-quality assemblies and highly detailed, clinical-grade epidemiological reports.
+## 🚀 Key Features
 
----
+* **End-to-End Processing**: From raw Nanopore `fastq_pass` reads to polished assemblies.
+* **Modular Architecture**: Run the full suite or skip specific heavy modules (`--skip-phages`, `--skip-plasmids`, etc.) to save time.
+* **Rich Annotation Profile**: Integrated detection of AMR genes, Plasmids, Phages, Integrons, and MLST schemes.
+* **Interactive HTML Reports**: Automatic generation of interactive DataTables with hoverable assembly graphs (Bandage).
 
-## 🌟 Features
+## 🛠️ Tools Included
 
-* **Comprehensive Data Aggregation:** Merges data from multiple sources including Quality Control (reads and assemblies), Taxonomy, Antimicrobial Resistance (AMR), Plasmids, Integrons, and Phages.
-* **Tool Integration:** Natively supports outputs from tools like *Kraken2*, *Kleborate*, *Copla + MOBsuite*, *Integron Finder*, and *Phastest*.
-* **Interactive HTML Report:** Generates a single, portable HTML file featuring:
-    * QC tables for raw reads and genome assemblies.
-    * Genotype, AMR content and Taxonomy information.
-    * Bandage plots for genome and plasmid assemblies.
-    * Mobile Genetic Elements with their AMR genes.
-* **Reproducible & Portable
+Aluminion chains together industry-standard bioinformatics software:
+* **QC & Filtering**: NanoPlot, Chopper
+* >> Assembly: Flye, Circlator, Bandage, Quast
+* **Taxonomy & Typing**: Kraken2, GAMBIT, Kleborate, ECTyper, MLST
+* **Annotation & Genomics**: Bakta, Abricate, MOB-suite, Copla, Integron_Finder, Phastest (Docker), ISfinder
 
----
+## 📥 Installation
 
-## ⚠Important Disclaimer: Databases & External Tools
-This pipeline relies heavily on external databases and tools that **are not included in this repository** due to size constraints and licensing. 
+Aluminion relies heavily on Conda environments to avoid dependency conflicts. 
 
-**Before running Aluminion**, the user must manually download and build the following databases into a central directory (e.g., `/home/usuario/Databases`):
-* `Kraken2` (Standard or custom database)
-* `Gambit`
-* `Bakta` (Full database)
-* `Megares` (Sequences)
-* `ISfinder` (nucl.fasta formatted for BLAST)
-* `Copla_RS84` (Pickle and fofn databases for Copla)
+1. **Clone the repository:**
+   ```bash
+   git clone [https://github.com/YourOrganization/aluminion.git](https://github.com/YourOrganization/aluminion.git)
+   cd aluminion
+   chmod +x aluminion.sh
 
-You must also configure **Docker** correctly to run `mob_suite` and `phastest`.
+```
 
----
-
-## 🛠️ Conda Environments Setup
-To avoid dependency conflicts, Aluminion uses 4 specific Conda environments. You can easily install them using the YAML files located in the `envs/` folder:
+2. **Set up Conda Environments:**
+Use the provided `environment.yml` to set up the base environment.
 ```bash
-# Main environment for assembly, QC, and python parsing
-conda env create -f envs/aluminion_base.yml
-
-# Secondary environments for specific typing
-conda env create -f envs/aluminion_integron.yml
-conda env create -f envs/aluminion_copla.yml
-conda env create -f envs/aluminion_kleborate.yml
-```
-
----
-
-## ⚙️ Dependencies
-
-To run the Python reporting script, you will need a standard Python 3 environment with the following libraries:
-
-* `pandas`
-* `numpy`
-* `openpyxl` (for reading `.xlsx` files)
-
-You can easily install them via pip:
-~~~bash
-pip install pandas numpy openpyxl
-~~~
-
-*(Note: The HTML report itself does not require internet to view the data, but it uses CDNs to load Bootstrap and jQuery for the interactive tables).*
-
-
----
-
-## 📂 Repository Structure
-
-The repository is organized to keep the execution straightforward:
-
-```text
-aluminion/
-├── aluminion.sh            # Main execution pipeline script
-├── README.md               # This documentation
-├── scripts/                # Python parsers and HTML reporter core
-│   ├── aluminion_reporter.py
-│   ├── integron_parser.py
-│   ├── phage_parser.py
-│   └── parser.py
-└── examples/               # Example input tables to test the pipeline
-    ├── lista_seq.tsv
-    ├── QC_reads.csv
-    ├── QC_assembly.csv
-    ├── taxonomy.xlsx
-    ├── AbR_modif.xlsx
-    ├── kleborate.tsv
-    ├── copla_modif.csv
-    ├── integron_summary.csv
-    └── phage_summary.csv
+conda env create -f envs/environment.yml
 
 ```
 
 
-## 🚀 Quick Start & Usage
+*(Note: Sub-environments for Copla, Integron_Finder, and Kleborate are handled by the pipeline).*
+3. **Database setup:**
+You will need to download and configure the required databases for Kraken2, GAMBIT, Bakta, Copla, and ISfinder in a dedicated directory.
 
-### 1. Clone the repository
-~~~bash
-git clone [https://github.com/Aluminio-visto/Aluminion.git](https://github.com/Aluminio-visto/Aluminion.git)
-cd Aluminion
-~~~
+## ⚙️ Usage
 
-### 2. Test with the provided examples
-We have provided an `examples/` directory so you can test the report generation immediately. Simply run the Python reporter directly on the examples folder:
-~~~bash
-python3 scripts/aluminion_reporter.py examples/
-~~~
-This will generate an `Aluminion_Report.html` file inside the `examples/` directory. Open it with any modern web browser to see the results!
+Run the pipeline using the orchestrator bash script. A typical execution looks like this:
 
-### 3. Running your own data
-To use the full pipeline on your own sequencing run, place your tabular input file "lista_seq.tsv" (you may find an example in the examples/ folder) in your working directory and execute the main bash script:
+```bash
+./aluminion.sh \\
+  -r RUN_FOLDER_NAME \\
+  -b /path/to/Databases \\
+  -t 30 \\
+  -l /path/to/lista_seq.tsv
 
-~~~bash
-# Run the Aluminion pipeline (assuming you cloned it to your home directory)
-~/Aluminion/aluminion.sh
-~~~
-*The `aluminion.sh` script will automatically locate its helper scripts in its installation directory and generate the final HTML report in your current working directory.*
+```
 
-### Options
-* `-r, --run`: **(Required)** Name of the run folder generated by MinKNOW (e.g., `Run_1`). It should be in /var/lib/minknow/data/Run_1/.
-* `-t, --threads`: Number of threads/cores to use. (Default: `30`).
-* `-l, --list`: Path to the `lista_seq.tsv` file containing sample metadata. If not provided, an empty template will be generated.
-* `-d, --dir`: Base working directory where the run folder will be processed. (Default: `/home/usuario/Seqs/Servicio`).
-* `-b, --database`: Database main directory where databases may be found. (Default: '/home/usuario/Databases/').
-* `-h, --help`: Displays the help menu.
+### 🚦 Skipping Modules (Time-saving Flags)
 
-## Input Metadata (`lista_seq.tsv`)
-The pipeline requires a tab-separated values file named `lista_seq.tsv` to map barcodes to sample IDs. It uses the following exact headers:
-`Cultivo    Cepario    ID    Barcode    ConcDNA    Repetir`
+You can skip computationally heavy or unneeded modules by passing flags:
 
-*(Note: Headers are kept in Spanish to ensure compatibility with downstream Python parsers).*
+* `--skip-phages`: Skips Phastest execution and parsing.
+* `--skip-integrons`: Skips Integron_Finder execution and parsing.
+* `--skip-plasmids`: Skips Copla plasmid clustering.
+* `--skip-typing`: Skips MLST, Kleborate, and ECTyper consolidation.
+* `--skip-kraken`: Skips Kraken2 taxonomy parsing.
+* `--skip-abr`: Skips Abricate AMR parsing.
 
-## Output
+Example:
 
-Aluminion aggregates all results into structured `.csv` and `.xlsx` files:
-* `taxonomy.xlsx`: The final compiled epidemiological report (MLST, AMR scores, virulence scores, typing).
-* `QC_assembly.csv` & `QC_reads.csv`: Quality control metrics for filtered reads and final assemblies.
-* `AbR.tab` / `AbR_modif.xlsx`: Antimicrobial resistance gene profiles.
-* `copla_modif.csv`, `integron_summary.csv`, `phage_summary.csv`: Summaries of detected MGEs.
-* `IS.tsv`: Breakdown of Insertion Sequences found.
+```bash
+./aluminion.sh -r BAC_2025 -b /mnt/db -t 30 --skip-phages --skip-integrons
+
+```
+
+## 📊 Outputs
+
+Upon completion, Aluminion generates a structured working directory:
+
+* `01_reads/` & `02_filter/`: Cleaned and filtered reads + NanoPlot QC.
+* `03_assemblies/`: Flye assemblies, Bandage plots, and Quast reports.
+* `04_taxonomies/`: Kraken2, GAMBIT, and Kleborate logs.
+* `08_Anotacion/`: Bakta annotations, MOB-suite extracts, and Abricate tables.
+* `09_phages/` `05_plasmids/` & `11_integrons/`: Specific mobile element outputs.
+* **`Aluminion_Report.html`**: The final interactive report summarizing QC, Taxonomy, AMR, Plasmids, Phages, and Integrons.
+
+## 🤝 Contributing
+
+Contributions, issues, and feature requests are welcome! We plan to expand the pipeline to include Virulence Factors and Anti-Phage defense systems in the near future.
+"""
 
 
+
+```
