@@ -140,7 +140,7 @@ def main():
     for col in int_columns:
         if col in df_qc.columns:
             df_qc[col] = df_qc[col].astype(str).str.replace(',', '', regex=False).str.strip()
-            df_qc[col] = pd.to_numeric(df_qc[col], errors='coerce').astype('Int64')
+            df_qc[col] = pd.to_numeric(df_qc[col], errors='coerce').round().astype('Int64')
 
     if 'Total bases_post' in df_qc.columns and 'Total length' in df_qc.columns:
         tb = df_qc['Total bases_post'].astype(float)
