@@ -15,8 +15,8 @@ def parse_arguments():
     parser.add_argument("--input_path", type=str, help="Path del run de secuenciación")
 
     # Argumento opcional para 'output_run'
-    parser.add_argument("--output_file", type=str, default="datos_seq_nuevos.csv", 
-                        help="Nombre del archivo de salida (opcional, por defecto 'output_results.csv')")
+    parser.add_argument("--output_file", type=str, default="datos_seq_nuevos.tsv", 
+                        help="Nombre del archivo de salida (opcional, por defecto 'output_results.tsv')")
 
     return parser.parse_args()
 
@@ -213,10 +213,10 @@ def main():
     qc_a = os.path.join(base_run, "QC_assembly.csv")
 
     # Histórico de datos de secuenciación
-    tabla = os.path.join(base_run, "datos_seq.csv")
+    tabla = os.path.join(base_run, "datos_seq.tsv")
 
     # Histórico de datos de análisis
-    anali = os.path.join(base_run, "datos_analisis.csv")
+    anali = os.path.join(base_run, "datos_analisis.tsv")
 
     # Información básica del run actual 
     cepas = os.path.join(base_run, "lista_seq.tsv")
@@ -226,7 +226,7 @@ def main():
     
     # EGMs
     # Plásmidos
-    plasmids = os.path.join(base_run, "copla_modif.csv")
+    plasmids = os.path.join(base_run, "copla_modif.tsv")
 
     # ICEs
     ices = os.path.join(base_run, "ICE_summary.csv")
@@ -247,7 +247,7 @@ def main():
     # %%
     # Cargamos los inputs
     # Tabla con las muestras secuenciadas y pendientes de secuenciación
-    datos_seq = pd.read_csv(tabla, sep=',')
+    datos_seq = pd.read_csv(tabla, sep='\t')
     # Borramos todas las columnas vacías (Unnamed: )
     datos_seq = datos_seq.loc[:, ~datos_seq.columns.str.contains('^Unnamed: ')]
     # Definir formato de columnas
@@ -278,7 +278,7 @@ def main():
     # Output files
     # Output datos secuenciación
     output_run = os.path.join(base_run, output_run)
-    analisis_run = os.path.join(base_run,"datos_analisis_nuevos.csv")
+    analisis_run = os.path.join(base_run,"datos_analisis_nuevos.tsv")
 
 
     # Inicializamos la tabla output con las muestras de este run y la información técnica
@@ -287,8 +287,12 @@ def main():
                 "Tipo FlowCell", "FlowCell", "Poros inicio", "Poros final", "Horas seq", "Cepas/run", 
                 "Cepas a repetir/run", "Rendim (Mbp)", "Repetir", "Tª trabajo", "Voltaje ", "Rend/h (reads)", 
                 "Rend/h (MbP)", "N50 (kbp)"]
-    df = pd.DataFrame(columns=columnas)
-    result = pd.concat([df, lista_cepas])
+    
+    # Creamos 'result' copiando 'lista_cepas' y añadimos las columnas que falten como nulas
+    result = lista_cepas.copy()
+    for col in columnas:
+        if col not in result.columns:
+            result[col] = pd.NA
 
     # %%
     # Actualizamos la tabla con la información técnica
@@ -319,7 +323,7 @@ def main():
     result2 = pd.merge(result, QC_reads, on="ID único", how='outer')
 
     # Poblar con datos de QC_assembly.csv
-    QC_assembly = QC_assembly.rename(columns={"Samples":"ID único"})
+    QC_assembly = QC_assembly.rename(columns={"Sample":"ID único"})
     QC_assembly["ratio"] = QC_assembly["Largest contig"]/QC_assembly["Total length"]
     QC_assembly = QC_assembly.drop(columns=["GC (%)",	"# predicted genes (>= 300 bp)"], errors='ignore')
 
@@ -333,10 +337,12 @@ def main():
     result3["% Bases Filtrado"] = result3["Nbases (post)"].div(result3["Nbases (pre)"])
     
     # Añadir score del assembly
-    result3['Calidad (ass,)'] = result3['ID único'].map(d_quality)
+    result3['Calidad (ass)'] = result3['ID único'].map(d_quality)
+
+
 
     orden_final = ["Nº Cultivo", "Cepario","ID único", "Barcode", "BC (rep)", "BC (rep2)", "Fecha seq", "Fecha seq (rep)", "Fecha seq (rep2)", "[DNA]",
-            "Profundidad", 'Calidad (ass,)', "Kit Extracción", "Kit Barcoding", "Posición", "Tipo FlowCell", 
+            "Profundidad", 'Calidad (ass)', "Kit Extracción", "Kit Barcoding", "Posición", "Tipo FlowCell", 
             "FlowCell", "Poros inicio", "Poros final", "Horas seq", "Cepas/run", "Cepas a repetir/run", 
             "Lmediana (pre)", "Qmediana (pre)", "Nreads (pre)", "Nbases (pre)",          
             "Lmediana (post)", "Qmediana (post)", "Nreads (post)", "Nbases (post)", "% Bases Filtrado"]
@@ -372,6 +378,11 @@ def main():
     merged_df['Fecha seq'] = merged_df['Fecha seq'].combine_first(merged_df['Fecha seq_result3'])
     merged_df['Barcode'] = merged_df['Barcode'].combine_first(merged_df['Barcode_result3'])
 
+
+
+
+
+
     # %%
     # Rellena las filas vacías de datos_seq con las de result3
     for column in datos_seq.columns:
@@ -381,10 +392,21 @@ def main():
     # Elimina las columnas extra de result3
     merged_df = merged_df[datos_seq.columns]
 
-    merged_df.to_csv(output_run, index=False)
+    # Redondeo las columnas con valores enteros para que no queden con el ".0 tan feo
+    int_columns = [
+        'Profundidad','Cepas/run','Cepas a repetir/run','Lmediana (pre)',
+        'Nreads (pre)','Nbases (pre)','Lmediana (post)','Nreads (post)','Nbases (post)'
+    ]
+    for col in int_columns:
+        if col in merged_df.columns:
+            merged_df[col] = merged_df[col].astype(str).str.replace(',', '', regex=False).str.strip()
+            merged_df[col] = pd.to_numeric(merged_df[col], errors='coerce').round().astype('Int64')
+    # Y redondeo la última columna a solo 2 decimales:
+    merged_df["% Bases Filtrado"] = (merged_df["% Bases Filtrado"]*100).round(1)
+    merged_df.to_csv(output_run, index=False, sep = "\t")
 
     # %%
-    analisis = pd.read_csv(anali, sep=',')
+    analisis = pd.read_csv(anali, sep='\t')
     analisis.rename(columns={"Muestra":"Nº Cultivo", "Serotipo": "Serotype"}, inplace=True)
 
     taxon2 = pd.read_csv(taxon, sep= ',')
@@ -397,11 +419,11 @@ def main():
 
 
     # EGMs
-    result4[["Plásmidos", "ICEs", "Profagos", "Integrones"]] = pd.DataFrame([[0, 0, 0, 0]], index=df.index)
+    result4[["Plásmidos", "ICEs", "Profagos", "Integrones"]] = 0
 
     # Plásmidos
-    plasmids = os.path.join(base_run, "copla_modif.csv")
-    df_pl = pd.read_csv(plasmids, sep=',')
+    plasmids = os.path.join(base_run, "copla_modif.tsv")
+    df_pl = pd.read_csv(plasmids, sep='\t')
     pl_count = df_pl['Sample'].value_counts()
     result4['Plásmidos'] = result4['ID único'].map(pl_count, na_action='ignore')
 
@@ -426,14 +448,14 @@ def main():
 
     result4[['Plásmidos', 'ICEs', 'Profagos', 'Integrones']] = result4[['Plásmidos', 'ICEs', 'Profagos', 'Integrones']].fillna(0)
 
-    result4 = result4.merge(merged_df[['ID único', 'Calidad (ass,)', 'Profundidad']], on='ID único', how='inner')
+    result4 = result4.merge(merged_df[['ID único', 'Calidad (ass)', 'Profundidad']], on='ID único', how='inner')
 
-    nwo = ["Nº Cultivo", "ID único", "Barcode",  "Profundidad", 'Calidad (ass,)', "Género mayoritario", "Especie mayoritaria",	
+    nwo = ["Nº Cultivo", "ID único", "Barcode",  "Profundidad", 'Calidad (ass)',	
        "Subespecie", "MLST", "Serotype", "K/O locus", "Posibles contaminantes",	"Carba adquirida",	
        "BLEE adquirida", "Otras", "Nº genes AMR", "AMRscore", "VIRscore", 
-       "Plásmidos", "ICEs", "Profagos", "Integrones", "Esquema MLST",	
+       "Plásmidos",  "Profagos", "Integrones", 	
        "alelo #1",	"alelo #2",	"alelo #3",	"alelo #4",	"alelo #5",	"alelo #6",	"alelo #7",	
-       "MLSTs posibles", "Alelos posibles"]
+       "MLSTs posibles", "Alelos posibles",  "Género mayoritario", "Especie mayoritaria","Esquema MLST"]
     result4=result4[nwo]
     analisis=analisis[nwo]
 
@@ -441,8 +463,10 @@ def main():
     analisis["Barcode"]    = analisis["Barcode"].astype(str)
     result4['ID único'] = result4['ID único'].astype(str)
     result4["Barcode"]    = result4["Barcode"].astype(str)
-
     analisis['Barcode'] = analisis['Barcode'].replace('nan', np.nan)
+
+
+
 
     # Realiza el merge para unir las tablas basado en 'ID único'
     analisis_final = pd.merge(analisis, result4, on='ID único', how='left', suffixes=('', '_result4'))
@@ -457,7 +481,16 @@ def main():
     # Sustituyo barcode13 por solo 13
     analisis_final['Barcode'] = analisis_final['Barcode'].str.replace(r'barcode', '', regex=True)
 
-    analisis_final.to_csv(analisis_run, index=False)
+    # Redondeo las columnas con valores enteros para que no queden con el ".0 tan feo
+    int_columns = [
+        "Nº Cultivo",'Profundidad',"Nº genes AMR","AMRscore", "VIRscore", "Plásmidos", "Profagos", "Integrones"
+    ]
+    for col in int_columns:
+        if col in analisis_final.columns:
+            analisis_final[col] = analisis_final[col].astype(str).str.replace(',', '', regex=False).str.strip()
+            analisis_final[col] = pd.to_numeric(analisis_final[col], errors='coerce').round().astype('Int64')
+
+    analisis_final.to_csv(analisis_run, index=False, sep='\t')
 
 # %%
 if __name__ == "__main__":
