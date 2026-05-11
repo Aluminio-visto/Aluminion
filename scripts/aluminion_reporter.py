@@ -78,10 +78,9 @@ def main():
     df_qcass    = load_and_standardize("QC_assembly.csv", sep='\t', key_col='Samples')
     df_tax      = load_and_standardize("taxonomy.xlsx", key_col='Sample')
     df_abr      = load_and_standardize("AbR_modif.xlsx", key_col='#FILE')
-    df_copla    = load_and_standardize("copla_modif.csv", sep=',', key_col='Sample')
+    df_copla    = load_and_standardize("copla_modif.tsv", sep='\t', key_col='Sample')
     df_integron = load_and_standardize("integron_summary.csv", sep=',', key_col='Sample')
     df_phage    = load_and_standardize("phage_summary.csv", sep=',', key_col='sample')
-    # Carga de Kleborate
     df_kleb     = load_and_standardize("kleborate.tsv", sep='\t', key_col='strain')
 
     # ==========================================
@@ -89,24 +88,33 @@ def main():
     # ==========================================
     if not df_integron.empty:
         cassette_cols = [col for col in df_integron.columns if str(col).startswith('Cassette')]
+        
         def fix_cassettes(row):
             flattened = []
             for col in cassette_cols:
                 val = row[col]
-                if pd.isna(val) or str(val).strip() == "": continue
-                val_str = str(val).strip()
-                if val_str.startswith('[') and val_str.endswith(']'):
-                    try:
-                        parsed = ast.literal_eval(val_str)
-                        if isinstance(parsed, list): flattened.extend(parsed)
-                        else: flattened.append(val_str)
-                    except: flattened.append(val_str)
-                else: flattened.append(val_str)
+                # Si está vacío o es nulo, lo ignoramos
+                if pd.isna(val) or str(val).strip() == "": 
+                    continue
+                
+                # 1. Limpiamos agresivamente hypothetical proteins, corchetes y comillas del string
+                clean_val = str(val).replace('[', '').replace(']', '').replace("'", "").replace('"', '').replace(';hypothetical protein', '').replace(';Multidrug transporter EmrE', '')
+                
+                # 2. Separamos por la coma (ahora que el string está limpio)
+                genes_in_cassette = [g.strip() for g in clean_val.split(',')]
+                
+                # 3. Filtramos por si ha quedado algún elemento vacío y lo añadimos
+                genes_in_cassette = [g for g in genes_in_cassette if g]
+                flattened.extend(genes_in_cassette)
+            
+            # Asignamos los genes aplanados a las columnas correspondientes
             for i, col in enumerate(cassette_cols):
                 row[col] = flattened[i] if i < len(flattened) else ""
             return row
 
         df_integron = df_integron.apply(fix_cassettes, axis=1)
+        
+        # Eliminar columnas a partir del Cassette 11 si están vacías
         cassettes_to_drop = [col for col in cassette_cols if int(col.replace('Cassette', '').strip()) > 10]
         df_integron.drop(columns=cassettes_to_drop, errors='ignore', inplace=True)
 

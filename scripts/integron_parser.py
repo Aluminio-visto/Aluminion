@@ -9,6 +9,9 @@ import os
 import glob
 import sys
 import re
+import warnings
+from Bio import BiopythonDeprecationWarning
+warnings.simplefilter('ignore', BiopythonDeprecationWarning)
 
 def abr_parse(abr_out):
     abr_raw = pd.read_table(abr_out)
@@ -16,7 +19,7 @@ def abr_parse(abr_out):
         abr_raw[['pos_beg', 'pos_end']] = pd.DataFrame(abr_raw['SEQUENCE'].str.split('_').str[-2:].tolist(), index=abr_raw.index)
         abr_raw.drop(abr_raw.loc[abr_raw['%IDENTITY'] < 90].index, inplace=True)
         abr_raw.drop(abr_raw.loc[abr_raw['%COVERAGE'] < 80].index, inplace=True)
-        df_abr = abr_raw[['pos_beg', 'pos_end', 'GENE']]
+        df_abr = abr_raw[['pos_beg', 'pos_end', 'GENE']].copy() # Añado .copy() para evitar el SettingWithCopyWarning
         df_abr.columns = ['pos_beg', 'pos_end', 'abr_ann']
         df_abr['pos_beg'] = df_abr['pos_beg'].astype('int64')
         df_abr['pos_end'] = df_abr['pos_end'].astype('int64')
@@ -147,17 +150,22 @@ def extract_info(sample, subdf, replicon, integron, input_path, original_path):
             current_cassette = []
         elif row['type_elt'] == 'protein' and row['annotation'] != 'intI':
             if pd.isnull(row['ann']):
-                ann = "NA;hypothetical protein"
+                ann = "NA" # Quitamos la descripción "hypothetical protein"
             else:
-                ann = row['ann']
+                ann = row['ann'].split(';')[0] # Nos quedamos solo con el nombre del gen
             current_cassette.append(ann)
 
     # Por si acaso no se reconoce el último attC
     cassettes.append(current_cassette)
     # y eliminamos cassettes vacíos (?)
     cassettes = [i for i in cassettes if i != []]
-    genes = '_'.join([i[0].split(';')[0] for i in cassettes])
+    
+    # Como ya hemos limpiado los nombres, ajustamos esta línea
+    genes = '_'.join([i[0] for i in cassettes])
     genes = re.sub(r'[^a-zA-Z0-9\-\_]', '', genes)
+
+    # Convertimos las listas de Python en strings limpios separados por coma
+    formatted_cassettes = [", ".join(c) for c in cassettes]
 
     # lista con datos para Output final
     contig = final_df['ID_replicon'].values[0]
@@ -167,7 +175,9 @@ def extract_info(sample, subdf, replicon, integron, input_path, original_path):
     size = end - start
     type = final_df['type'].values[0]
     info = [sample, contig, name, size, start, end, type, integrase_model]
-    for i in cassettes: info.append(i)
+    
+    # Usamos los cassettes formateados
+    for i in formatted_cassettes: info.append(i)
     info.extend([""] * (20-len(info)))
 
     # Guardamos secuencia nucleotídica
