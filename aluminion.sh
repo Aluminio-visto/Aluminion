@@ -238,13 +238,17 @@ for i in $(cat samples); do
 
 log "Deconcatenation & Recircularization..."
 > 03_assemblies/deconcat.log
-for i in $(cat samples); do 
+conda activate aluminion_assembly
+for i in $(cat samples); do
     python3 "$SCRIPTS_PATH/deconcat.py" --fasta_file 03_assemblies/${i}/assembly.fasta --fastq_file 02_filter/${i}.fastq.gz --out_path 03_assemblies/${i}/deconcat >> 03_assemblies/deconcat.log 2>&1 || true
     cp 03_assemblies/${i}/deconcat/assembly_corr.fasta 03_assemblies/${i}.fasta
+done
+conda activate aluminion_circlator
+for i in $(cat samples); do
     circlator fixstart 03_assemblies/${i}.fasta 03_assemblies/${i}.fix
     mv 03_assemblies/${i}.fix.fasta 03_assemblies/${i}.fasta
     rm -f 03_assemblies/*fix* 03_assemblies/*fasta.*
-done 
+done
 
 log "Assembly QC..."
 quast.py -o 03_assemblies/quast -t $THREADS_TOTAL 03_assemblies/*.fasta
@@ -280,10 +284,9 @@ else
     log "Skipping Integrons module..."
 fi
 
-# 3. Copla Environment
+# 3. Copla (Docker container — no conda env required)
 if [ -z "$SKIP_PLASMIDS" ]; then
     log "Running Plasmid Typing module (Copla)..."
-    conda activate aluminion_copla
     > copla.txt
     for j in $(cat samples); do
         find 08_Anotacion/${j}/mob_recon/ -name "*.fasta" -size -600k -size +1k | while read -r i; do

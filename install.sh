@@ -77,7 +77,7 @@ if [ "$SKIP_ENVS" = false ]; then
         error "Neither mamba nor conda found. Install Mambaforge first: https://github.com/conda-forge/miniforge/releases"
     fi
 
-    for env_file in aluminion_reads aluminion_assembly aluminion_circlator aluminion_annot aluminion_integron aluminion_copla aluminion_kleborate; do
+    for env_file in aluminion_reads aluminion_assembly aluminion_circlator aluminion_annot aluminion_integron aluminion_kleborate; do
         yml="${SCRIPT_DIR}/envs/${env_file}.yml"
         if [ ! -f "$yml" ]; then
             warn "Environment file not found, skipping: $yml"

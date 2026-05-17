@@ -25,13 +25,13 @@ You may find examples for all input tables in the examples folder in this repo.
   NanoPlot ──────────────── QC stats post-filter ─────────────► QC_reads.csv (post)
 
 
- STAGE 2 · ASSEMBLY & POLISHING         [conda: aluminion_assembly]
+ STAGE 2 · ASSEMBLY & POLISHING         [conda: aluminion_assembly + aluminion_circlator]
  ─────────────────────────────────────────────────────────────────────────────
   Kraken2 ────────────────── read-level classification ────────► 04_taxonomies/kraken2/
                                                                   genus.csv · species.csv
   Flye ──────────────────── de novo assembly ─────────────────► 03_assemblies/<sample>/
   Dorado polish ─────────── consensus polishing (ONT, GPU opt.)
-  Circlator ─────────────── chromosome recircularization
+  Circlator ─────────────── chromosome recircularization       [aluminion_circlator]
   Quast ──────────────────── assembly metrics ────────────────► QC_assembly.csv
   Bandage ────────────────── assembly graph (visual QC)
 
@@ -170,14 +170,14 @@ bash Mambaforge-Linux-x86_64.sh
 
 #### Create the conda environments
 
-Aluminion uses six isolated environments to keep each stage's dependencies small and conflict-free:
+Aluminion uses six isolated conda environments. Copla runs entirely via Docker and needs no conda env.
 
 ```bash
 mamba env create -f envs/aluminion_reads.yml       # NanoPlot, Chopper
-mamba env create -f envs/aluminion_assembly.yml    # Kraken2, Flye, Circlator, QUAST, Bandage, samtools
-mamba env create -f envs/aluminion_annot.yml       # Bakta, GAMBIT, Abricate, MLST, BLAST, datamash, Python stack
+mamba env create -f envs/aluminion_assembly.yml    # Kraken2, Flye, QUAST, Bandage, samtools
+mamba env create -f envs/aluminion_circlator.yml   # Circlator (isolated — complex legacy deps)
+mamba env create -f envs/aluminion_annot.yml       # Bakta, GAMBIT, Abricate, MLST, BLAST, datamash, Python
 mamba env create -f envs/aluminion_integron.yml    # Integron_Finder
-mamba env create -f envs/aluminion_copla.yml       # Copla plasmid clustering
 mamba env create -f envs/aluminion_kleborate.yml   # Kleborate + ECTyper
 ```
 
@@ -449,10 +449,10 @@ aluminion/
 │   └── IS_parser.py              # ISfinder BLAST output → IS_chr_out.tsv
 ├── envs/
 │   ├── aluminion_reads.yml       # NanoPlot, Chopper
-│   ├── aluminion_assembly.yml    # Kraken2, Flye, Circlator, QUAST, Bandage, samtools
+│   ├── aluminion_assembly.yml    # Kraken2, Flye, QUAST, Bandage, samtools
+│   ├── aluminion_circlator.yml   # Circlator (isolated — complex legacy deps)
 │   ├── aluminion_annot.yml       # Bakta, GAMBIT, Abricate, MLST, BLAST, datamash, Python
 │   ├── aluminion_integron.yml    # Integron_Finder
-│   ├── aluminion_copla.yml       # Copla plasmid clustering
 │   └── aluminion_kleborate.yml   # Kleborate + ECTyper
 ├── examples/                     # Example input/output files for testing
 │   ├── list_seq.tsv
