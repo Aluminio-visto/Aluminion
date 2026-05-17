@@ -18,15 +18,17 @@ You may find examples for all input tables in the examples folder in this repo.
 
 
 
- STAGE 1 · READ QC & FILTERING          [conda: aluminion_base]
+ STAGE 1 · READ QC & FILTERING          [conda: aluminion_reads]
  ─────────────────────────────────────────────────────────────────────────────
   NanoPlot ──────────────── QC stats pre-filter ──────────────► QC_reads.csv (pre)
   Chopper ───────────────── quality & length filtering
   NanoPlot ──────────────── QC stats post-filter ─────────────► QC_reads.csv (post)
-  
 
- STAGE 2 · ASSEMBLY & POLISHING         [conda: aluminion_base]
+
+ STAGE 2 · ASSEMBLY & POLISHING         [conda: aluminion_assembly]
  ─────────────────────────────────────────────────────────────────────────────
+  Kraken2 ────────────────── read-level classification ────────► 04_taxonomies/kraken2/
+                                                                  genus.csv · species.csv
   Flye ──────────────────── de novo assembly ─────────────────► 03_assemblies/<sample>/
   Dorado polish ─────────── consensus polishing (ONT, GPU opt.)
   Circlator ─────────────── chromosome recircularization
@@ -34,20 +36,14 @@ You may find examples for all input tables in the examples folder in this repo.
   Bandage ────────────────── assembly graph (visual QC)
 
 
- STAGE 3 · TAXONOMY                     [conda: aluminion_base + aluminion_kleborate]
+ STAGE 3 · ANNOTATION, TAXONOMY & AMR  [conda: aluminion_annot + aluminion_kleborate]
  ─────────────────────────────────────────────────────────────────────────────
-  Kraken2 ────────────────── read-level classification ────────► 04_taxonomies/kraken2/
-                                                                  genus.csv · species.csv
   GAMBIT ─────────────────── genome-level species ID ──────────► 04_taxonomies/gambit.csv
+  Bakta ──────────────────── genome annotation ────────────────► 08_Anotacion/<sample>/
+  Abricate ───────────────── AMR gene detection ───────────────► AbR_report.csv
   MLST ───────────────────── Multi-Locus sequence typing ──────► mlst.csv
   Kleborate ──────────────── Enterobacterales loci ────────────► kleborate.tsv (root copy)
   ECTyper ────────────────── E. coli serotyping ───────────────► 04_taxonomies/ectyper/output.tsv
-
-
- STAGE 4 · ANNOTATION & AMR             [conda: aluminion_base]
- ─────────────────────────────────────────────────────────────────────────────
-  Bakta ──────────────────── genome annotation ────────────────► 08_Anotacion/<sample>/
-  Abricate ───────────────── AMR gene detection ───────────────► AbR_report.csv
 
 
  STAGE 5 · MOBILE GENETIC ELEMENTS
@@ -66,7 +62,7 @@ You may find examples for all input tables in the examples folder in this repo.
     └─ IS_parser.py ─────────────────────────────────────────────► IS_chr_out.tsv
 
 
- STAGE 6 · CONSOLIDATION & REPORTING   [conda: aluminion_base]
+ STAGE 6 · CONSOLIDATION & REPORTING   [conda: aluminion_annot]
  ─────────────────────────────────────────────────────────────────────────────
   parser.py ──────────────── merge all tool outputs ───────────► taxonomy.csv / .xlsx
               (preflight check                                    AbR_modif.xlsx
@@ -174,16 +170,18 @@ bash Mambaforge-Linux-x86_64.sh
 
 #### Create the conda environments
 
-Aluminion uses four isolated environments to avoid dependency conflicts:
+Aluminion uses six isolated environments to keep each stage's dependencies small and conflict-free:
 
 ```bash
-mamba env create -f envs/aluminion_base.yml        # assembly, QC, annotation, AMR, taxonomy, parsers
+mamba env create -f envs/aluminion_reads.yml       # NanoPlot, Chopper
+mamba env create -f envs/aluminion_assembly.yml    # Kraken2, Flye, Circlator, QUAST, Bandage, samtools
+mamba env create -f envs/aluminion_annot.yml       # Bakta, GAMBIT, Abricate, MLST, BLAST, datamash, Python stack
 mamba env create -f envs/aluminion_integron.yml    # Integron_Finder
 mamba env create -f envs/aluminion_copla.yml       # Copla plasmid clustering
 mamba env create -f envs/aluminion_kleborate.yml   # Kleborate + ECTyper
 ```
 
-All four are required for a full run. Individual environments can be omitted if you skip the corresponding module with a `--skip-*` flag.
+All six are required for a full run. Individual environments can be omitted if you skip the corresponding module with a `--skip-*` flag.
 
 
 #### Install Dorado
@@ -275,7 +273,7 @@ wget https://www.is-finder.org/download/IS.fna -O /$your_database_folder/ISfinde
 ### Abricate — AMR databases (automatic on first use)
 
 ```bash
-conda activate aluminion_base
+conda activate aluminion_annot
 for db in ncbi resfinder card argannot vfdb; do abricate-get_db --db $db; done
 ```
 
@@ -373,7 +371,7 @@ Empty column-schema templates are available in `examples/` for reference.
 If assemblies and annotations are already complete (e.g., resuming a failed run), you can run the Python parsers directly:
 
 ```bash
-conda activate aluminion_base
+conda activate aluminion_annot
 
 # Generate all result tables
 python3 scripts/parser.py -i /path/to/run/
@@ -450,10 +448,12 @@ aluminion/
 │   ├── integron_parser.py        # Integron_Finder output → integron_summary.csv
 │   └── IS_parser.py              # ISfinder BLAST output → IS_chr_out.tsv
 ├── envs/
-│   ├── aluminion_base.yml        # Main conda environment
-│   ├── aluminion_integron.yml    # Integron_Finder environment
-│   ├── aluminion_copla.yml       # Copla environment
-│   └── aluminion_kleborate.yml   # Kleborate + ECTyper environment
+│   ├── aluminion_reads.yml       # NanoPlot, Chopper
+│   ├── aluminion_assembly.yml    # Kraken2, Flye, Circlator, QUAST, Bandage, samtools
+│   ├── aluminion_annot.yml       # Bakta, GAMBIT, Abricate, MLST, BLAST, datamash, Python
+│   ├── aluminion_integron.yml    # Integron_Finder
+│   ├── aluminion_copla.yml       # Copla plasmid clustering
+│   └── aluminion_kleborate.yml   # Kleborate + ECTyper
 ├── examples/                     # Example input/output files for testing
 │   ├── list_seq.tsv
 │   ├── data_seq.tsv              # Empty schema template
