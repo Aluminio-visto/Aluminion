@@ -1,0 +1,7 @@
+name: aluminion_circlator
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - circlator

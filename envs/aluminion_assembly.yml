@@ -6,7 +6,6 @@ channels:
 dependencies:
   - kraken2
   - flye
-  - circlator
   - quast
   - bandage
   - samtools
