@@ -1,4 +1,4 @@
-Sample,Pl/Chr,Name,Size,Inicio,Final,Tipo,Integrasa,Cassette 1,Cassette 2,Cassette 3,Cassette 4,Cassette 5,Cassette 6,Cassette 7,Cassette 8,Cassette 9,Cassette 10,Cassette 11,Cassette 12
+Sample,Pl/Chr,Name,Size,Start,End,Type,Integrase,Cassette 1,Cassette 2,Cassette 3,Cassette 4,Cassette 5,Cassette 6,Cassette 7,Cassette 8,Cassette 9,Cassette 10,Cassette 11,Cassette 12
 Kpne_VC_86523,contig_3,integron_01_contig_3__Kpne_VC_86523,1013,1,1014,In0,intersection_tyr_intI,,,,,,,,,,,,
 Kpne_VC_11528,contig_6,integron_01_contig_6_blaOXA-1_1_aac6Ib-cr_1_Kpne_VC_11528,3922,8608,12530,complete,intersection_tyr_intI,['blaOXA-1_1'],"[""aac(6')Ib-cr_1"", 'NA;IS6 family transposase IS26']",,,,,,,,,,
 Eclo_VC_79371,contig_2,integron_01_contig_2_dhfrI_emrE_Eclo_VC_79371,2995,60433,63428,complete,intersection_tyr_intI,"['dhfrI;Dihydrofolate reductase type 1', 'aadA2_1']",['emrE;Multidrug transporter EmrE'],,,,,,,,,,

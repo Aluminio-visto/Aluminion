@@ -9,45 +9,48 @@ import ast
 import re
 
 def get_base64_image(image_path):
-    """Lee una imagen PNG y la convierte a una cadena Base64."""
+    """Reads a PNG image and converts it to a Base64 string."""
     if os.path.exists(image_path):
         with open(image_path, "rb") as img_file:
             return base64.b64encode(img_file.read()).decode('utf-8')
     return None
 
 def load_and_standardize(file_path, sep=',', key_col=None):
-    """Carga un archivo, estandariza la llave y lo devuelve."""
+    """Loads a file, standardizes the key column, and returns a DataFrame."""
     if not os.path.exists(file_path):
-        print(f"Aviso: No se encontró el archivo {file_path}")
+        print(f"Warning: File not found: {file_path}")
         return pd.DataFrame()
-    
+
     try:
         if file_path.endswith('.xlsx'):
             df = pd.read_excel(file_path)
         else:
             df = pd.read_csv(file_path, sep=sep)
-        
-        # Renombrar columnas clave solicitadas
+
+        # Rename requested key columns (accepts a string or list of candidates)
         rename_map = {}
-        if key_col and key_col in df.columns:
-            rename_map[key_col] = 'Sample'
+        candidates = [key_col] if isinstance(key_col, str) else (key_col or [])
+        for col in candidates:
+            if col and col in df.columns:
+                rename_map[col] = 'Sample'
+                break
         if 'Cultivo' in df.columns:
             rename_map['Cultivo'] = 'ID'
         if 'Barcode' in df.columns:
             rename_map['Barcode'] = 'BC'
-            
+
         df.rename(columns=rename_map, inplace=True)
-            
+
         if 'Sample' in df.columns:
             df['Sample'] = df['Sample'].astype(str).str.strip()
-            
+
         return df
     except Exception as e:
-        print(f"Error al leer {file_path}: {e}")
+        print(f"Error reading {file_path}: {e}")
         return pd.DataFrame()
 
 # ==========================================
-# Funciones de formato de unidades (Genómica)
+# Unit formatting functions (Genomics)
 # ==========================================
 def fmt_mbp_0(x):
     try: return f"{float(x)/1e6:.0f} Mbp"
@@ -58,7 +61,7 @@ def fmt_mbp_2(x):
     except: return x
 
 def fmt_kbp_dynamic(x):
-    """Usa 1 decimal si es menor de 10 Kbp, y 0 decimales si es 10 Kbp o mayor."""
+    """Uses 1 decimal if below 10 Kbp, and 0 decimals if 10 Kbp or above."""
     try: 
         val = float(x)
         if val < 10000:
@@ -72,19 +75,19 @@ def main():
     os.chdir(work_dir)
     print(f"Generando informe en: {os.getcwd()}")
 
-    # 1. Cargar tablas
-    df_lista    = load_and_standardize("lista_seq.tsv", sep='\t', key_col='ID')
+    # 1. Load tables
+    df_lista    = load_and_standardize("list_seq.tsv", sep='\t', key_col='ID')
     df_qcreads  = load_and_standardize("QC_reads.csv", sep='\t', key_col='Sample')
     df_qcass    = load_and_standardize("QC_assembly.csv", sep='\t', key_col='Samples')
     df_tax      = load_and_standardize("taxonomy.xlsx", key_col='Sample')
     df_abr      = load_and_standardize("AbR_modif.xlsx", key_col='#FILE')
-    df_copla    = load_and_standardize("copla_modif.tsv", sep='\t', key_col='Sample')
+    df_copla    = load_and_standardize("copla_modif.csv", sep=',', key_col='Sample')
     df_integron = load_and_standardize("integron_summary.csv", sep=',', key_col='Sample')
-    df_phage    = load_and_standardize("phage_summary.csv", sep=',', key_col='sample')
+    df_phage    = load_and_standardize("phage_summary.csv", sep=',', key_col='Sample')
     df_kleb     = load_and_standardize("kleborate.tsv", sep='\t', key_col='strain')
 
     # ==========================================
-    # PROCESAMIENTO DE INTEGRONES
+    # INTEGRON PROCESSING
     # ==========================================
     if not df_integron.empty:
         cassette_cols = [col for col in df_integron.columns if str(col).startswith('Cassette')]
@@ -93,17 +96,17 @@ def main():
             flattened = []
             for col in cassette_cols:
                 val = row[col]
-                # Si está vacío o es nulo, lo ignoramos
-                if pd.isna(val) or str(val).strip() == "": 
+                # Skip empty or null values
+                if pd.isna(val) or str(val).strip() == "":
                     continue
-                
-                # 1. Limpiamos agresivamente hypothetical proteins, corchetes y comillas del string
+
+                # 1. Aggressively clean hypothetical proteins, brackets and quotes from the string
                 clean_val = str(val).replace('[', '').replace(']', '').replace("'", "").replace('"', '').replace(';hypothetical protein', '').replace(';Multidrug transporter EmrE', '')
-                
-                # 2. Separamos por la coma (ahora que el string está limpio)
+
+                # 2. Split by comma (now that the string is clean)
                 genes_in_cassette = [g.strip() for g in clean_val.split(',')]
-                
-                # 3. Filtramos por si ha quedado algún elemento vacío y lo añadimos
+
+                # 3. Filter out any remaining empty elements
                 genes_in_cassette = [g for g in genes_in_cassette if g]
                 flattened.extend(genes_in_cassette)
             
@@ -114,12 +117,12 @@ def main():
 
         df_integron = df_integron.apply(fix_cassettes, axis=1)
         
-        # Eliminar columnas a partir del Cassette 11 si están vacías
+        # Drop Cassette columns above 10 if empty
         cassettes_to_drop = [col for col in cassette_cols if int(col.replace('Cassette', '').strip()) > 10]
         df_integron.drop(columns=cassettes_to_drop, errors='ignore', inplace=True)
 
     # ==========================================
-    # CONSTRUCCIÓN DE LA TABLA QC
+    # QC TABLE CONSTRUCTION
     # ==========================================
     df_qc = df_lista.copy()
     
@@ -138,7 +141,7 @@ def main():
     if not df_qcass.empty:
         df_qc = pd.merge(df_qc, df_qcass, on='Sample', how='left')
     
-    df_qc.drop(columns=['Cepario', 'ConcDNA', 'Repetir', 'Sample.1', '# predicted genes (>= 300 bp)'], errors='ignore', inplace=True)
+    df_qc.drop(columns=['Strain', 'DNA_conc', 'is_repeated', 'Sample.1', '# predicted genes (>= 300 bp)'], errors='ignore', inplace=True)
 
     int_columns = [
         'Total reads_pre', 'Total bases_pre', 'Longest read_pre', 'Median L_pre',
@@ -199,7 +202,7 @@ def main():
     df_qc.columns = pd.MultiIndex.from_tuples(tuples)
 
     # ==========================================
-    # CONSTRUCCIÓN DE LA TABLA TAXONOMÍA
+    # TAXONOMY TABLE CONSTRUCTION
     # ==========================================
     tax_base_cols = [col for col in ['Sample', 'BC'] if not df_lista.empty and col in df_lista.columns]
     if not tax_base_cols: tax_base_cols = ['Sample']
@@ -211,45 +214,45 @@ def main():
     if not df_kleb.empty and 'klebsiella_pneumo_complex__amr__Omp_mutations' in df_kleb.columns:
         df_omp = df_kleb[['Sample', 'klebsiella_pneumo_complex__amr__Omp_mutations']].copy()
         df_omp.rename(columns={'klebsiella_pneumo_complex__amr__Omp_mutations': 'Omp muts'}, inplace=True)
-        # Limpiar el guion '-' que pone Kleborate para que quede vacío
+        # Replace the '-' that Kleborate uses so the field appears empty
         df_omp['Omp muts'] = df_omp['Omp muts'].replace('-', '')
         df_taxonomy = pd.merge(df_taxonomy, df_omp, on='Sample', how='left')
 
-    if not df_abr.empty and 'Genes resistencia' in df_abr.columns:
-        df_taxonomy = pd.merge(df_taxonomy, df_abr[['Sample', 'Genes resistencia']], on='Sample', how='left')
-        df_taxonomy['Genes resistencia'] = df_taxonomy['Genes resistencia'].astype(str).str.replace(r'\s+\([\d\.]+\)', '', regex=True).replace('nan', '')
+    if not df_abr.empty and 'Resistance_genes' in df_abr.columns:
+        df_taxonomy = pd.merge(df_taxonomy, df_abr[['Sample', 'Resistance_genes']], on='Sample', how='left')
+        df_taxonomy['Resistance_genes'] = df_taxonomy['Resistance_genes'].astype(str).str.replace(r'\s+\([\d\.]+\)', '', regex=True).replace('nan', '')
 
     if 'MLST' in df_taxonomy.columns:
         df_taxonomy['MLST'] = df_taxonomy['MLST'].astype(str).apply(lambda x: x[:-2] if x.endswith('.0') else x).replace('nan', '')
 
-    for col in ['Nº genes AMR', 'AMRscore', 'VIRscore']:
+    for col in ['N_AMR_genes', 'AMRscore', 'VIRscore']:
         if col in df_taxonomy.columns:
             df_taxonomy[col] = df_taxonomy[col].astype(str).str.replace(',', '', regex=False).str.strip()
             df_taxonomy[col] = pd.to_numeric(df_taxonomy[col], errors='coerce').astype('Int64')
     
-    df_taxonomy.drop(columns=[f'alelo #{i}' for i in range(1, 8)], errors='ignore', inplace=True)
+    df_taxonomy.drop(columns=[f'allele_{i}' for i in range(1, 8)], errors='ignore', inplace=True)
     if 'Sample' in df_taxonomy.columns: df_taxonomy['Sample'] = df_taxonomy['Sample'].apply(inject_hover)
 
-    # Renombrar columnas
-    df_taxonomy = df_taxonomy.rename(columns={'Carba adquirida': 'Carba', 'BLEE adquirida': 'BLEE'}, errors='ignore')
+    # Rename columns for display
+    df_taxonomy = df_taxonomy.rename(columns={'Carbapenemase': 'Carba', 'ESBL': 'BLEE'}, errors='ignore')
 
-    # Reordenar columnas (Incluyendo Omp muts después de BLEE)
+    # Reorder columns (including Omp muts after BLEE)
     cols = list(df_taxonomy.columns)
-    
-    # Primero movemos las de importancia secundaria al final
-    cols_to_end = ['Género mayoritario', 'Especie mayoritaria', 'Esquema MLST', 'MLSTs posibles', 'Alelos posibles']
+
+    # Move secondary-importance columns to the end
+    cols_to_end = ['Majority_genus', 'Majority_species', 'MLST_scheme', 'Possible_MLSTs', 'Possible_alleles']
     for c in cols_to_end:
         if c in cols: cols.remove(c)
-    
-    # Re-insertamos Omp muts después de BLEE
+
+    # Re-insert Omp muts after BLEE
     if 'Omp muts' in cols and 'BLEE' in cols:
         cols.remove('Omp muts')
         idx_blee = cols.index('BLEE')
         cols.insert(idx_blee + 1, 'Omp muts')
     
-    # Buscamos "Genes resistencia" para pegar las de importancia secundaria detrás
-    if 'Genes resistencia' in cols:
-        idx = cols.index('Genes resistencia')
+    # Find "Resistance_genes" to insert secondary columns after it
+    if 'Resistance_genes' in cols:
+        idx = cols.index('Resistance_genes')
         cols = cols[:idx+1] + [c for c in cols_to_end if c in df_taxonomy.columns] + cols[idx+1:]
     else:
         cols.extend([c for c in cols_to_end if c in df_taxonomy.columns])
@@ -257,7 +260,7 @@ def main():
     df_taxonomy = df_taxonomy[cols]
 
     # ==========================================
-    # RENDERIZADO HTML Y CSS
+    # HTML AND CSS RENDERING
     # ==========================================
     html_template = """
     <!DOCTYPE html>
@@ -303,9 +306,9 @@ def main():
                     "pageLength": 25, "scrollX": true,
                     "columnDefs": [{{ "orderable": false, "targets": ".separator" }}],
                     "language": {{
-                        "search": "Buscar:", "lengthMenu": "Mostrar _MENU_ registros por página",
-                        "info": "Mostrando página _PAGE_ de _PAGES_",
-                        "paginate": {{ "next": "Siguiente", "previous": "Anterior" }}
+                        "search": "Search:", "lengthMenu": "Show _MENU_ entries per page",
+                        "info": "Showing page _PAGE_ of _PAGES_",
+                        "paginate": {{ "next": "Next", "previous": "Previous" }}
                     }}
                 }});
             }});
@@ -347,7 +350,7 @@ def main():
     report_path = "Aluminion_Report.html"
     with open(report_path, "w", encoding="utf-8") as f:
         f.write(html_template.format(tables_html=sections_html))
-    print(f"✅ Informe HTML generado con éxito en: {report_path}")
+    print(f"✅ HTML report generated successfully at: {report_path}")
 
 if __name__ == "__main__":
     main()

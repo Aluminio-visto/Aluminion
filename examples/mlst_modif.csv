@@ -1,4 +1,4 @@
-Sample	Esquema MLST	MLST	alelo #1	alelo #2	alelo #3	alelo #4	alelo #5	alelo #6	alelo #7	alelo #8	MLSTs posibles	Alelos posibles
+Sample	MLST_scheme	MLST	allele_1	allele_2	allele_3	allele_4	allele_5	allele_6	allele_7	allele_8	Possible_MLSTs	Possible_alleles
 Eclo_VC_600-1	ecloacae	114	dnaA(53)	fusA(35)	gyrB(20)	leuS(44)	pyrG(45)	rplB(4)	rpoB(6)
 Eclo_VC_79371	ecloacae	106	dnaA(58)	fusA(41)	gyrB(14)	leuS(6)	pyrG(69)	rplB(4)	rpoB(6)
 Ecol_VC_312-2	ecoli_achtman_4	93	adk(6)	fumC(11)	gyrB(4)	icd(10)	mdh(7)	purA(8)	recA(6)

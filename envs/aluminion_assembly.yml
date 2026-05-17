@@ -1,0 +1,13 @@
+name: aluminion_assembly
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - kraken2
+  - flye
+  - circlator
+  - quast
+  - bandage
+  - samtools
+  - minimap2

@@ -80,7 +80,7 @@ def run_parsing(input_folder, out_folder=None):
 
         df_copla = pd.DataFrame(records)
         df_copla.fillna('-', inplace=True)
-        # Guardamos en CSV para que coincida con lo que busca aluminion_reporter.py
+        # Save to CSV so aluminion_reporter.py can find it
         df_copla.to_csv(copla_out, index=False)
         print(f" -> Parsed plasmids saved to {copla_out}")
     else:

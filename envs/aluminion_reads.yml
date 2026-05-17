@@ -1,0 +1,8 @@
+name: aluminion_reads
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - nanoplot
+  - chopper

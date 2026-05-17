@@ -1,4 +1,4 @@
-name: aluminion_base
+name: aluminion_annot
 channels:
   - conda-forge
   - bioconda
@@ -11,21 +11,9 @@ dependencies:
   - matplotlib
   - biopython
   - bcbio-gff
-  - nanoplot
-  - chopper
-  - flye
-  - circlator
-  - quast
-  - bandage
-  - kraken2
   - gambit
   - bakta
   - abricate
   - mlst
   - blast
-  - samtools
-  - minimap2
-  - mafft
-  - emboss
   - datamash
-  - prokka

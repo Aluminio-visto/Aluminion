@@ -1,0 +1,20 @@
+Name	Species	O-type	H-type	Serotype	QC	Evidence	GeneScores	AlleleKeys	GeneIdentities(%)	GeneCoverages(%)	GeneContigNames	GeneRanges	GeneLengths	Database	Warnings
+Eclo_VC_600-1	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+Eclo_VC_79371	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+Ecol_VC_312-2	-	O15	H33	O15:H33	-	Based on 3 allele(s)	wzx:1;wzy:1;fliC:1;	O15-1-wzx-origin;O15-7-wzy;H33-1-fliC-origin;	100;100;100;	100;100;100;	contig_6;contig_6;contig_6;	1792112-1793356;1794389-1795567;1940982-1942268;	1245;1179;1287;	v1.0 (11-03-2020)	-
+Ecol_VC_490-1	-	O91	H21	O91:H21	-	Based on 3 allele(s)	wzx:1;wzy:1;fliC:1;	O91-1-wzx-origin;O91-5-wzy;H21-12-fliC;	100;100;100;	100;100;100;	contig_1;contig_1;contig_1;	1793917-1795182;1797972-1799183;1887437-1888912;	1266;1212;1476;	v1.0 (11-03-2020)	-
+Kaer_VC_72242	-	O8	-	O8:-	-	Based on 2 allele(s)	wzm:0.918;wzt:0.941;	O8-19-wzm;O8-24-wzt;	91.824;94.074;	100;100;	contig_4;contig_4;	1756673-1757467;1757467-1758681;	795;1215;	v1.0 (11-03-2020)	-
+Kpne_VC_01561	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+Kpne_VC_11528	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+Kpne_VC_175-1	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+Kpne_VC_22077	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+Kpne_VC_629-2	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+Kpne_VC_62984	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+Kpne_VC_74520	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+Kpne_VC_79372	-	O9	-	O9:-	-	Based on 2 allele(s)	wzm:0.947;wzt:0.944;	O9-5-wzm-origin;O9-4-wzt-origin;	94.656;94.444;	100;100;	contig_1;contig_1;	849935-850720;850723-852018;	786;1296;	v1.0 (11-03-2020)	-
+Kpne_VC_86478	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+Kpne_VC_86523	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+Kpne_VC_86855	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+Kpne_VC_89440	-	O9	-	O9:-	-	Based on 2 allele(s)	wzm:0.969;wzt:0.931;	O9-5-wzm-origin;O9-6-wzt-origin;	96.947;93.133;	100;100;	contig_3;contig_3;	1652930-1653715;1653718-1655013;	786;1296;	v1.0 (11-03-2020)	-
+Kpne_VC_94648	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+Kpne_VC_94881	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter

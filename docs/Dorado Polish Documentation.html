@@ -1,0 +1,1864 @@
+<!DOCTYPE html>
+<!-- saved from url=(0068)https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/ -->
+<html lang="en" class="js-focus-visible js" data-js-focus-visible=""><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+      
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://software-docs.nanoporetech.com/dorado/latest/assembly/polish/">
+      
+      
+        <link rel="prev" href="https://software-docs.nanoporetech.com/dorado/1.4.0/models/list/">
+      
+      
+        <link rel="next" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/correct/">
+      
+      
+      <link rel="icon" href="./Dorado Polish Documentation_files/nanopore.logo.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.23">
+    
+    
+      
+        <title>Dorado Polish - Dorado Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="./Dorado Polish Documentation_files/main.84d31ad4.min.css">
+      
+        
+        <link rel="stylesheet" href="./Dorado Polish Documentation_files/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
+        <link rel="stylesheet" href="./Dorado Polish Documentation_files/css">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="./Dorado Polish Documentation_files/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  <meta name="theme-color" content="#00536b"><meta name="color-scheme" content="light"></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="ont" data-md-color-primary="custom" data-md-color-accent="custom" data-md-color-media="(prefers-color-scheme)">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#dorado-polish" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden="">
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/" title="Dorado Documentation" class="md-header__button md-logo" aria-label="Dorado Documentation" data-md-component="logo">
+      
+  <img src="./Dorado Polish Documentation_files/nanopore.logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Dorado Documentation
+          </span>
+        <div class="md-version"><button class="md-version__current" aria-label="Select version">1.4.0</button><ul class="md-version__list"><li class="md-version__item"><a href="https://software-docs.nanoporetech.com/dorado/1.4.0/" class="md-version__link">1.4.0</a></li><li class="md-version__item"><a href="https://software-docs.nanoporetech.com/dorado/1.3.2/" class="md-version__link">1.3.2</a></li><li class="md-version__item"><a href="https://software-docs.nanoporetech.com/dorado/1.3.1/" class="md-version__link">1.3.1</a></li><li class="md-version__item"><a href="https://software-docs.nanoporetech.com/dorado/1.3.0/" class="md-version__link">1.3.0</a></li><li class="md-version__item"><a href="https://software-docs.nanoporetech.com/dorado/1.2.0/" class="md-version__link">1.2.0</a></li><li class="md-version__item"><a href="https://software-docs.nanoporetech.com/dorado/1.1.1/" class="md-version__link">1.1.1</a></li><li class="md-version__item"><a href="https://software-docs.nanoporetech.com/dorado/1.1.0/" class="md-version__link">1.1.0</a></li><li class="md-version__item"><a href="https://software-docs.nanoporetech.com/dorado/1.0.2/" class="md-version__link">1.0.2</a></li><li class="md-version__item"><a href="https://software-docs.nanoporetech.com/dorado/1.0.1/" class="md-version__link">1.0.1</a></li><li class="md-version__item"><a href="https://software-docs.nanoporetech.com/dorado/1.0.0/" class="md-version__link">1.0.0</a></li><li class="md-version__item"><a href="https://software-docs.nanoporetech.com/dorado/0.9.6/" class="md-version__link">0.9.6</a></li><li class="md-version__item"><a href="https://software-docs.nanoporetech.com/dorado/0.9.5/" class="md-version__link">0.9.5</a></li><li class="md-version__item"><a href="https://software-docs.nanoporetech.com/dorado/0.9.1/" class="md-version__link">0.9.1</a></li><li class="md-version__item"><a href="https://software-docs.nanoporetech.com/dorado/0.9.0/" class="md-version__link">0.9.0</a></li><li class="md-version__item"><a href="https://software-docs.nanoporetech.com/dorado/0.8.3/" class="md-version__link">0.8.3</a></li><li class="md-version__item"><a href="https://software-docs.nanoporetech.com/dorado/0.8.2/" class="md-version__link">0.8.2</a></li></ul></div></div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Dorado Polish
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="ont" data-md-color-primary="custom" data-md-color-accent="custom" aria-label="Switch to light mode" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="ont" data-md-color-primary="custom" data-md-color-accent="custom" aria-label="Switch to dark mode" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="ont-dark" data-md-color-primary="custom" data-md-color-accent="custom" aria-label="Switch to system preference" type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/?q=" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard="" data-clipboard-text="javascript:void(0)" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"></path></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">Type to start searching</div>
+          <ol class="md-search-result__list" role="presentation" hidden=""></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/nanoporetech/dorado/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository md-source__repository--active">
+    Dorado
+  <ul class="md-source__facts"><li class="md-source__fact md-source__fact--version">v1.4.0</li><li class="md-source__fact md-source__fact--stars">830</li><li class="md-source__fact md-source__fact--forks">120</li></ul></div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" style="top: 62px;">
+                <div class="md-sidebar__scrollwrap" style="height: 798px;">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/" title="Dorado Documentation" class="md-nav__button md-logo" aria-label="Dorado Documentation" data-md-component="logo">
+      
+  <img src="./Dorado Polish Documentation_files/nanopore.logo.png" alt="logo">
+
+    </a>
+    Dorado Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/nanoporetech/dorado/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"></path></svg>
+  </div>
+  <div class="md-source__repository md-source__repository--active">
+    Dorado
+  <ul class="md-source__facts"><li class="md-source__fact md-source__fact--version">v1.4.0</li><li class="md-source__fact md-source__fact--stars">830</li><li class="md-source__fact md-source__fact--forks">120</li></ul></div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Getting started
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2">
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Basecaller
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Basecaller
+          </label>
+          <ul class="md-nav__list">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/basecaller/basecall_overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Introduction
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/basecaller/simplex/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Simplex
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/basecaller/duplex/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Duplex
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/basecaller/mods/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Modifications
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_5">
+        
+          
+          <label class="md-nav__link" for="__nav_2_5" id="__nav_2_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Barcoding
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_5">
+            <span class="md-nav__icon md-icon"></span>
+            Barcoding
+          </label>
+          <ul class="md-nav__list">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/barcoding/barcoding/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Barcode Classification
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/barcoding/custom_barcodes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Custom Barcodes
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/barcoding/custom_primers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Custom Primers
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/barcoding/sample_sheet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Sample Sheet
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/basecaller/alignment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Alignment
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/basecaller/read_trimming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Read Trimming
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/basecaller/polya_estimation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Poly(A) Estimation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_9">
+        
+          
+          <label class="md-nav__link" for="__nav_2_9" id="__nav_2_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Details
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_9">
+            <span class="md-nav__icon md-icon"></span>
+            Details
+          </label>
+          <ul class="md-nav__list">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/basecaller/read_splitting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Read Splitting
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/basecaller/move_table/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Moves Table
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/basecaller/qscore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Q-score
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/basecaller/sam_spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    SAM Specification
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Models
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Models
+          </label>
+          <ul class="md-nav__list">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/models/models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Introduction
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/models/selection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Model Selection
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/models/downloader/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Downloading Models
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/models/list/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Models List
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked="">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Assembly
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Assembly
+          </label>
+          <ul class="md-nav__list">
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Dorado Polish
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Dorado Polish
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc">
+      
+        <li class="md-nav__item">
+  <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quick Start
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quick Start">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#consensus" class="md-nav__link">
+    <span class="md-ellipsis">
+      Consensus
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#consensus-from-a-fastq-input-instead-of-bam" class="md-nav__link">
+    <span class="md-ellipsis">
+      Consensus from a FASTQ input instead of BAM
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#consensus-on-bacterial-genomes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Consensus on bacterial genomes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#variant-calling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Variant calling
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#output-to-a-folder" class="md-nav__link">
+    <span class="md-ellipsis">
+      Output to a folder
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      Resources
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#models" class="md-nav__link">
+    <span class="md-ellipsis">
+      Models
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Models">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#move-table-aware-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      Move Table Aware Models
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#faq" class="md-nav__link">
+    <span class="md-ellipsis">
+      FAQ
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="FAQ">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#how-is-dorado-polish-different-from-medaka" class="md-nav__link">
+    <span class="md-ellipsis">
+      How is Dorado polish different from Medaka?
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#should-i-use-correct-or-polish" class="md-nav__link">
+    <span class="md-ellipsis">
+      Should I use correct or polish?
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#how-do-i-go-from-raw-pod5-data-to-a-polished-t2t-assembly" class="md-nav__link">
+    <span class="md-ellipsis">
+      How do I go from raw POD5 data to a polished T2T assembly?
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#polishing-diploidpolyploid-assemblies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Polishing diploid/polyploid assemblies
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Troubleshooting
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#memory-consumption-torch-out-of-memory-oom-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      Memory consumption / Torch out-of-memory (OOM) issues
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#error-could-not-open-index-for-bam-file-alnbam" class="md-nav__link">
+    <span class="md-ellipsis">
+      "[error] Could not open index for BAM file: 'aln.bam'!"
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#error-input-bam-file-has-no-basecaller-models-listed-in-the-header" class="md-nav__link">
+    <span class="md-ellipsis">
+      "[error] Input BAM file has no basecaller models listed in the header."
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#error-input-bam-file-was-not-aligned-using-dorado" class="md-nav__link">
+    <span class="md-ellipsis">
+      "[error] Input BAM file was not aligned using Dorado."
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#error-the-input-bam-contains-more-than-one-read-group-please-specify-rg-to-select-which-read-group-to-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      "[error] The input BAM contains more than one read group. Please specify --RG to select which read group to process."
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#error-duplex-basecalling-models-are-not-supported" class="md-nav__link">
+    <span class="md-ellipsis">
+      "[error] Duplex basecalling models are not supported."
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#i-created-a-merged-bam-file-composed-of-multiple-different-data-types-why-cant-i-polish-it-using-ignore-read-groups-does-not-help-either" class="md-nav__link">
+    <span class="md-ellipsis">
+      I created a merged BAM file composed of multiple different data types. Why can't I polish it? Using --ignore-read-groups does not help either
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/correct/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Dorado Correct
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/variant/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Dorado Variant
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5">
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Help
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Help
+          </label>
+          <ul class="md-nav__list">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/troubleshooting/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Troubleshooting
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/troubleshooting/faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    FAQ
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="dorado-polish">Dorado Polish</h1>
+<div class="admonition tip inline end">
+<p class="admonition-title">Should I use <code>correct</code> or <code>polish</code>?</p>
+<p><a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#should-i-use-correct-or-polish">See here</a></p>
+</div>
+<div class="admonition tip inline end">
+<p class="admonition-title">Should I use <code>variant</code> or <code>polish</code>?</p>
+<p><a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/variant/#should-i-use-variant-or-polish">See here</a></p>
+</div>
+<p>Dorado <code>polish</code> is a high accuracy assembly polishing tool which outperforms
+similar tools for most ONT-based assemblies.</p>
+<p>It takes as input a draft assembly produced by a tool such as <a href="https://github.com/chhylp123/hifiasm">Hifiasm</a> or <a href="https://github.com/mikolmogorov/Flye">Flye</a> and aligned reads, and outputs an updated version of the assembly.</p>
+<p>Additionally, Dorado <code>polish</code> can output a VCF file containing records for all variants discovered during polishing, or a gVCF file containing records for all locations in the input draft sequences.</p>
+<p>Note that Dorado <code>polish</code> is a <strong>haploid</strong> polishing tool and does <em>not</em> implement any sort of phasing internally. It will take input alignment data <em>as is</em> and run it through the polishing model to produce the consensus sequences. For more information, please take a look at <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#polishing-diploidpolyploid-assemblies">this section</a>.</p>
+<h2 id="quick-start">Quick Start</h2>
+<h3 id="consensus">Consensus</h3>
+<div class="language-dorado highlight"><pre id="__code_0"><span></span><button class="md-clipboard md-icon" title="Copy to clipboard" data-clipboard-target="#__code_0 &gt; code"></button><code class="md-code__content"><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-0-1"></a><span class="c1"># Align unmapped reads to a reference using dorado aligner, sort and index</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-0-2"></a><span class="kc">dorado</span><span class="w"> </span><span class="kn">aligner</span><span class="w"> </span>&lt;draft.fasta&gt;<span class="w"> </span>&lt;unmapped_reads.bam&gt;<span class="w"> </span><span class="kt">|</span><span class="w"> </span>samtools<span class="w"> </span>sort<span class="w"> </span>--threads<span class="w"> </span>&lt;num_threads&gt;<span class="w"> </span><span class="kt">&gt;</span><span class="w"> </span>aligned_reads.bam
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-0-3"></a>samtools<span class="w"> </span>index<span class="w"> </span>aligned_reads.bam
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-0-5"></a><span class="c1"># Call consensus</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-0-6"></a><span class="kc">dorado</span><span class="w"> </span><span class="kn">polish</span><span class="w"> </span>&lt;aligned_reads.bam&gt;<span class="w"> </span>&lt;draft.fasta&gt;<span class="w"> </span><span class="kt">&gt;</span><span class="w"> </span>polished_assembly.fasta
+</span></code></pre></div>
+<p>In the above example, <code>&lt;aligned_reads&gt;</code> is a BAM of reads aligned to a draft by Dorado <code>aligner</code> and <code>&lt;draft&gt;</code> is a FASTA or FASTQ file containing the draft assembly. The draft can be uncompressed or compressed with <code>bgzip</code>.</p>
+<h3 id="consensus-from-a-fastq-input-instead-of-bam">Consensus from a FASTQ input instead of BAM</h3>
+<p>This feature supports only FASTQ files with HTS-style tags in the header and will not work for the old MinKnow style FASTQ files.</p>
+<p>Here is a full example:</p>
+<div class="language-dorado highlight"><pre id="__code_1"><span></span><button class="md-clipboard md-icon" title="Copy to clipboard" data-clipboard-target="#__code_1 &gt; code"></button><code class="md-code__content"><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-1-1"></a><span class="c1"># Align reads to a reference using dorado aligner, sort and index</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-1-2"></a><span class="kc">dorado</span><span class="w"> </span><span class="kn">aligner</span><span class="w"> </span>&lt;draft.fasta&gt;<span class="w"> </span>&lt;reads.fastq&gt;<span class="w"> </span><span class="kt">|</span><span class="w"> </span>samtools<span class="w"> </span>sort<span class="w"> </span>--threads<span class="w"> </span>&lt;num_threads&gt;<span class="w"> </span><span class="kt">&gt;</span><span class="w"> </span>aligned_reads.bam
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-1-3"></a>samtools<span class="w"> </span>index<span class="w"> </span>aligned_reads.bam
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-1-4"></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-1-5"></a><span class="c1"># Call consensus</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-1-6"></a><span class="kc">dorado</span><span class="w"> </span><span class="kn">polish</span><span class="w"> </span>&lt;aligned_reads.bam&gt;<span class="w"> </span>&lt;draft.fasta&gt;<span class="w"> </span><span class="kt">&gt;</span><span class="w"> </span>polished_assembly.fasta
+</span></code></pre></div>
+<h3 id="consensus-on-bacterial-genomes">Consensus on bacterial genomes</h3>
+<div class="language-dorado highlight"><pre id="__code_2"><span></span><button class="md-clipboard md-icon" title="Copy to clipboard" data-clipboard-target="#__code_2 &gt; code"></button><code class="md-code__content"><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-2-1"></a><span class="kc">dorado</span><span class="w"> </span><span class="kn">polish</span><span class="w"> </span>&lt;aligned_reads&gt;<span class="w"> </span>&lt;draft&gt;<span class="w"> </span>--bacteria<span class="w"> </span><span class="kt">&gt;</span><span class="w"> </span>polished_assembly.fasta
+</span></code></pre></div>
+<p>This will automatically resolve a suitable bacterial polishing model, if one exits for the input data type.</p>
+<h3 id="variant-calling">Variant calling</h3>
+<div class="language-dorado highlight"><pre id="__code_3"><span></span><button class="md-clipboard md-icon" title="Copy to clipboard" data-clipboard-target="#__code_3 &gt; code"></button><code class="md-code__content"><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-3-1"></a><span class="kc">dorado</span><span class="w"> </span><span class="kn">polish</span><span class="w"> </span>&lt;aligned_reads&gt;<span class="w"> </span>&lt;draft&gt;<span class="w"> </span>--vcf<span class="w"> </span><span class="kt">&gt;</span><span class="w"> </span>polished_assembly.vcf
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-3-2"></a><span class="kc">dorado</span><span class="w"> </span><span class="kn">polish</span><span class="w"> </span>&lt;aligned_reads&gt;<span class="w"> </span>&lt;draft&gt;<span class="w"> </span>--gvcf<span class="w"> </span><span class="kt">&gt;</span><span class="w"> </span>polished_assembly.all.vcf
+</span></code></pre></div>
+<p>Specifying <code>--vcf</code> or <code>--gvcf</code> flags will output a VCF file to stdout instead of the consensus sequences.</p>
+<h3 id="output-to-a-folder">Output to a folder</h3>
+<div class="language-dorado highlight"><pre id="__code_4"><span></span><button class="md-clipboard md-icon" title="Copy to clipboard" data-clipboard-target="#__code_4 &gt; code"></button><code class="md-code__content"><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-4-1"></a><span class="kc">dorado</span><span class="w"> </span><span class="kn">polish</span><span class="w"> </span>&lt;aligned_reads&gt;<span class="w"> </span>&lt;draft&gt;<span class="w"> </span>-o<span class="w"> </span>&lt;output_dir&gt;
+</span></code></pre></div>
+<p>Specifying <code>-o</code> will write multiple files to a given output directory (and create the directory if it doesn't exist):</p>
+<ul>
+<li>Consensus file: <code>&lt;output_dir&gt;/consensus.fasta</code> by default, or <code>&lt;output_dir&gt;/consensus.fastq</code> if <code>--qualities</code> is specified.</li>
+<li>VCF file: <code>&lt;output_dir&gt;/variants.vcf</code> which contains only variant calls by default, or records for all positions if <code>--gvcf</code> is specified.</li>
+</ul>
+<h2 id="resources">Resources</h2>
+<p>Dorado <code>polish</code> will automatically select the compute resources to perform polishing. It can use one or more GPU devices, or the CPU, to call consensus.</p>
+<p>To specify resources manually use:</p>
+<ul>
+<li><code>-x / --device</code> - to specify specific GPU resources (if available).</li>
+<li><code>--threads</code> -  to set the maximum number of threads to be used for everything but the inference.</li>
+<li><code>--infer-threads</code> -  to set the number of CPU threads for inference (when "--device cpu" is used).</li>
+<li><code>--batchsize</code> - batch size for inference, important to control memory usage on the GPUs. Automatically computed by default (<code>--batchsize 0</code>).</li>
+</ul>
+<p>Example:</p>
+<div class="language-dorado highlight"><pre id="__code_5"><span></span><button class="md-clipboard md-icon" title="Copy to clipboard" data-clipboard-target="#__code_5 &gt; code"></button><code class="md-code__content"><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-5-1"></a><span class="kc">dorado</span><span class="w"> </span><span class="kn">polish</span><span class="w"> </span>reads_to_draft.bam<span class="w"> </span>draft.fasta<span class="w"> </span>--device<span class="w"> </span>cuda:0<span class="w"> </span>--threads<span class="w"> </span><span class="m">24</span><span class="w"> </span><span class="kt">&gt;</span><span class="w"> </span>consensus.fasta
+</span></code></pre></div>
+<h2 id="models">Models</h2>
+<p>Dorado <code>polish</code> auto-resolves the polishing model based on the input BAM file. The BAM file needs to contain the <code>@RG</code> headers with the basecaller model name specified, otherwise the model will not be resolved. If the input BAM records contain move tables, an appropriate move-aware polishing model will be selected.</p>
+<p>Once the model is resolved, Dorado <code>polish</code> will either download it or look it up in the models-directory if specified.</p>
+<p>For example:</p>
+<div class="language-dorado highlight"><pre id="__code_6"><span></span><button class="md-clipboard md-icon" title="Copy to clipboard" data-clipboard-target="#__code_6 &gt; code"></button><code class="md-code__content"><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-6-1"></a><span class="kc">dorado</span><span class="w"> </span><span class="kn">polish</span><span class="w"> </span>reads_to_draft.bam<span class="w"> </span>draft.fasta<span class="w"> </span><span class="kt">&gt;</span><span class="w"> </span>consensus.fasta
+</span></code></pre></div>
+<p>will find the compatible model based on the input BAM file and download it to a temporary folder.</p>
+<p>When <code>--models-directory</code> is specified, the resolved polishing model will first be looked up in the models-directory, and only downloaded if the model does not exist. The specified models-directory must exist. Example:</p>
+<div class="language-dorado highlight"><pre id="__code_7"><span></span><button class="md-clipboard md-icon" title="Copy to clipboard" data-clipboard-target="#__code_7 &gt; code"></button><code class="md-code__content"><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-7-1"></a>mkdir<span class="w"> </span>-p<span class="w"> </span>models
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-7-2"></a><span class="kc">dorado</span><span class="w"> </span><span class="kn">polish</span><span class="w"> </span>--models-directory<span class="w"> </span>models<span class="w"> </span>reads_to_draft.bam<span class="w"> </span>draft.fasta<span class="w"> </span><span class="kt">&gt;</span><span class="w"> </span>consensus.fasta
+</span></code></pre></div>
+<p>More information about the <code>--models-directory</code> can be found in <a href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#model-search-directory-and-temporary-model-downloads">this section</a></p>
+<p>If there are multiple read groups in the input dataset which were generated using different basecaller models, Dorado <code>polish</code> will report an error and stop execution.</p>
+<h3 id="move-table-aware-models">Move Table Aware Models</h3>
+<p>Significantly more accurate assemblies can be produced by giving the polishing model access to additional information about the underlying signal for each read. For more information, see this section from the <a href="https://youtu.be/IB6DmU40NIU?t=377">NCM 2024</a> secondary analysis update.</p>
+<p>Dorado <code>polish</code> includes models which can use the move table to get temporal information about each read. These models will be selected automatically if the corresponding <code>mv</code> tag is in the input BAM. To do this, pass the <code>--emit-moves</code> tag to Dorado <code>basecaller</code> when basecalling. To check if a BAM contains the move table for reads, use samtools:</p>
+<div class="language-bash highlight"><pre id="__code_8"><span></span><button class="md-clipboard md-icon" title="Copy to clipboard" data-clipboard-target="#__code_8 &gt; code"></button><code class="md-code__content"><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-8-1"></a>samtools<span class="w"> </span>view<span class="w"> </span>--keep-tag<span class="w"> </span><span class="s2">"mv"</span><span class="w"> </span>-c<span class="w"> </span>&lt;reads_to_draft_bam&gt;
+</span></code></pre></div>
+<p>The output should be equal to the total number of reads in the bam (<code>samtools view -c &lt;reads_to_draft_bam&gt;</code>).</p>
+<p>If move tables are not available in the BAM, then the non-move table-aware model will be automatically selected.</p>
+<h2 id="faq">FAQ</h2>
+<h3 id="how-is-dorado-polish-different-from-medaka">How is Dorado <code>polish</code> different from Medaka?</h3>
+<p><a href="https://github.com/nanoporetech/medaka">Medaka</a> and Dorado <code>polish</code> are both assembly polishing tools. They accept the same input formats and produce the same output formats, and in principle they could run the same polishing model to produce equivalent results. However, Dorado <code>polish</code> is optimised for higher performance, and can support more accurate models with more computationally intensive architectures. For use cases in low-resource settings (small genomes such as bacteria with CPUs only available) Medaka remains the recommended tool. For large genomes or in other instances where speed is important, we suggest trying Dorado <code>polish</code>.</p>
+<h3 id="should-i-use-correct-or-polish">Should I use <code>correct</code> or <code>polish</code>?</h3>
+<p>Dorado <code>polish</code> is a post-assembly tool and it is intended to improve the accuracy of pre-existing
+assemblies. Dorado <code>correct</code> conversely is a pre-assembly tool and is intended to improve the
+contiguity of an assembly by improving the fidelity of reads used to create it.</p>
+<h3 id="how-do-i-go-from-raw-pod5-data-to-a-polished-t2t-assembly">How do I go from raw POD5 data to a polished T2T assembly?</h3>
+<p>Here is a high-level example workflow:</p>
+<div class="language-dorado highlight"><pre id="__code_9"><span></span><button class="md-clipboard md-icon" title="Copy to clipboard" data-clipboard-target="#__code_9 &gt; code"></button><code class="md-code__content"><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-9-1"></a><span class="c1"># Generate basecalled data with dorado basecaller</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-9-2"></a><span class="kc">dorado</span><span class="w"> </span><span class="kn">basecaller</span><span class="w"> </span>&lt;model&gt;<span class="w"> </span>pod5s/<span class="w"> </span>--emit-moves<span class="w"> </span><span class="kt">&gt;</span><span class="w"> </span>calls.bam
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-9-3"></a>samtools<span class="w"> </span>fastq<span class="w"> </span>calls.bam<span class="w"> </span><span class="kt">&gt;</span><span class="w"> </span>calls.fastq
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-9-4"></a>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-9-5"></a><span class="c1"># Apply dorado correct to a set of reads that can be used as input in an assembly program.</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-9-6"></a><span class="kc">dorado</span><span class="w"> </span><span class="kn kn-Double">correct</span><span class="w"> </span>calls.fastq<span class="w"> </span><span class="kt">&gt;</span><span class="w"> </span>corrected.fasta
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-9-7"></a>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-9-8"></a><span class="c1"># Assemble the genome using those corrected reads</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-9-9"></a>&lt;some_assembler&gt;<span class="w"> </span>--input<span class="w"> </span>corrected.fasta<span class="w"> </span><span class="kt">&gt;</span><span class="w"> </span>draft_assembly.fasta
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-9-10"></a>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-9-11"></a><span class="c1"># Align original calls to the draft assembly</span>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-9-12"></a><span class="kc">dorado</span><span class="w"> </span><span class="kn">aligner</span><span class="w"> </span>draft_assembly.fasta<span class="w"> </span>calls.bam<span class="w"> </span><span class="kt">&gt;</span><span class="w"> </span>aligned_calls.bam
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-9-13"></a>
+</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-9-14"></a><span class="c1"># Run dorado polish using the raw reads aligned to the draft assembly</span>
+</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-9-15"></a><span class="kc">dorado</span><span class="w"> </span><span class="kn">polish</span><span class="w"> </span>aligned_calls.bam<span class="w"> </span>draft_assembly.fasta<span class="w"> </span><span class="kt">&gt;</span><span class="w"> </span>polished_assembly.fasta
+</span></code></pre></div>
+<h3 id="polishing-diploidpolyploid-assemblies">Polishing diploid/polyploid assemblies</h3>
+<p>Dorado <code>polish</code> is a <strong>haploid</strong> polishing tool and does <em>not</em> implement any sort of phasing internally. It will take input alignment data <em>as is</em> and run it through the polishing model to produce the consensus sequences.</p>
+<p>In order to polish diploid/polyploid assemblies, it is up to the user to properly separate haplotypes before giving the data to Dorado <code>polish</code>.</p>
+<p>We are currently working on a set of best practices. In the meantime, an unofficially suggested approach to polish diploid genomes would be to align the reads using the  <code>lr:hqae</code> <a href="https://github.com/lh3/minimap2/releases/tag/v2.28">Minimap2 setting</a> as this was specifically designed for alignment back to a diploid genome. This setting is available through Dorado <code>aligner</code> using the following option:</p>
+<div class="language-dorado highlight"><pre id="__code_10"><span></span><button class="md-clipboard md-icon" title="Copy to clipboard" data-clipboard-target="#__code_10 &gt; code"></button><code class="md-code__content"><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-10-1"></a><span class="kc">dorado</span><span class="w"> </span><span class="kn">aligner</span><span class="w"> </span>--mm2-opts<span class="w"> </span><span class="s2">"-x lr:hqae"</span><span class="w"> </span>&lt;ref&gt;<span class="w"> </span>&lt;reads&gt;
+</span></code></pre></div>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="memory-consumption-torch-out-of-memory-oom-issues">Memory consumption / Torch out-of-memory (OOM) issues</h3>
+<p>The inference batch size is computed to fit the largest possible batches into the available GPU memory (default <code>--batchsize 0</code>).</p>
+<p>There are two cases when an OOM issue can happen:</p>
+<ol>
+<li>
+<p>The auto batch size feature is underestimating the memory consumption. If an Out-Of-Memory (OOM) warning/error is raised with the default auto batch size, try setting the batch size manually to a fixed value instead. For example:</p>
+<div class="language-dorado highlight"><pre id="__code_11"><span></span><button class="md-clipboard md-icon" title="Copy to clipboard" data-clipboard-target="#__code_11 &gt; code"></button><code class="md-code__content"><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-11-1"></a><span class="kc">dorado</span><span class="w"> </span><span class="kn">polish</span><span class="w"> </span>reads_to_draft.bam<span class="w"> </span>draft.fasta<span class="w"> </span>--batchsize<span class="w"> </span>&lt;number&gt;<span class="w"> </span><span class="kt">&gt;</span><span class="w"> </span>consensus.fasta
+</span></code></pre></div>
+<p>A good rule of thumb would be <code>--batchsize 16</code> for a large GPU, or try using a smaller value if this is still too high.</p>
+<p>Additionally, the number of inference workers can be reduced to lower the memory usage (the default is <code>2</code> workers per device):</p>
+<div class="language-dorado highlight"><pre id="__code_12"><span></span><button class="md-clipboard md-icon" title="Copy to clipboard" data-clipboard-target="#__code_12 &gt; code"></button><code class="md-code__content"><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-12-1"></a><span class="kc">dorado</span><span class="w"> </span><span class="kn">polish</span><span class="w"> </span>reads_to_draft.bam<span class="w"> </span>draft.fasta<span class="w"> </span>--infer-threads<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="kt">&gt;</span><span class="w"> </span>consensus.fasta
+</span></code></pre></div>
+<p>Alternatively, consider running inference on the CPU, although this can take longer:</p>
+<div class="language-dorado highlight"><pre id="__code_13"><span></span><button class="md-clipboard md-icon" title="Copy to clipboard" data-clipboard-target="#__code_13 &gt; code"></button><code class="md-code__content"><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-13-1"></a><span class="kc">dorado</span><span class="w"> </span><span class="kn">polish</span><span class="w"> </span>reads_to_draft.bam<span class="w"> </span>draft.fasta<span class="w"> </span>--device<span class="w"> </span><span class="s2">"cpu"</span><span class="w"> </span><span class="kt">&gt;</span><span class="w"> </span>consensus.fasta
+</span></code></pre></div>
+<p>Note that using multiple CPU inference threads can cause much higher memory usage.</p>
+</li>
+<li>
+<p>GPU memory fragmentation during the run. This can happen when there were many small allocations followed by a large memory allocation which then cannot be fitted into a single contiguous block of memory. Such errors will have a specific Torch error message which looks like this:
+    &gt; Exception caught: CUDA out of memory. Tried to allocate 15.12 GiB. GPU 1 has a total capacity of 31.73 GiB of which 14.77 GiB is free. Including non-PyTorch memory, this process has 16.95 GiB memory in use. Of the allocated memory 2.10 GiB is allocated by PyTorch, and 14.46 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)</p>
+<p>The key portion here is: <code>2.10 GiB is allocated by PyTorch, and 14.46 GiB is reserved by PyTorch but unallocated.</code>, which means that almost all non-free memory is actually unused.</p>
+<p>In this case, follow the suggestion from the error message, and it should resolve the issue.</p>
+<p>Example:</p>
+<div class="language-dorado highlight"><pre id="__code_14"><span></span><button class="md-clipboard md-icon" title="Copy to clipboard" data-clipboard-target="#__code_14 &gt; code"></button><code class="md-code__content" tabindex="0"><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-14-1"></a><span class="nv">PYTORCH_CUDA_ALLOC_CONF</span><span class="o">=</span>expandable_segments:True<span class="w"> </span><span class="kc">dorado</span><span class="w"> </span><span class="kn">polish</span><span class="w"> </span>reads_to_draft.bam<span class="w"> </span>draft.fasta<span class="w"> </span><span class="kt">&gt;</span><span class="w"> </span>consensus.fasta
+</span></code></pre></div>
+</li>
+</ol>
+<h3 id="error-could-not-open-index-for-bam-file-alnbam">"[error] Could not open index for BAM file: 'aln.bam'!"</h3>
+<p>Example message:</p>
+<div class="language-dorado highlight"><pre id="__code_15"><span></span><button class="md-clipboard md-icon" title="Copy to clipboard" data-clipboard-target="#__code_15 &gt; code"></button><code class="md-code__content"><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-15-1"></a>$<span class="w"> </span><span class="kc">dorado</span><span class="w"> </span><span class="kn">polish</span><span class="w"> </span>aln.bam<span class="w"> </span>assembly.fasta<span class="w"> </span><span class="kt">&gt;</span><span class="w"> </span>polished.fasta
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-15-2"></a><span class="o">[</span><span class="m">2024</span>-12-23<span class="w"> </span><span class="m">07</span>:18:23.978<span class="o">]</span><span class="w"> </span><span class="o">[</span>info<span class="o">]</span><span class="w"> </span>Running:<span class="w"> </span><span class="s2">"polish"</span><span class="w"> </span><span class="s2">"aln.bam"</span><span class="w"> </span><span class="s2">"assembly.fasta"</span>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-15-3"></a><span class="o">[</span>E::idx_find_and_load<span class="o">]</span><span class="w"> </span>Could<span class="w"> </span>not<span class="w"> </span>retrieve<span class="w"> </span>index<span class="w"> </span>file<span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="s1">'aln.bam'</span>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-15-4"></a><span class="o">[</span><span class="m">2024</span>-12-23<span class="w"> </span><span class="m">07</span>:18:23.987<span class="o">]</span><span class="w"> </span><span class="o">[</span>error<span class="o">]</span><span class="w"> </span>Could<span class="w"> </span>not<span class="w"> </span>open<span class="w"> </span>index<span class="w"> </span><span class="k">for</span><span class="w"> </span>BAM<span class="w"> </span>file:<span class="w"> </span><span class="s1">'aln.bam'</span>!
+</span></code></pre></div>
+<p>This message means that there the input BAM file does not have an accompanying index file <code>.bai</code>. This may also mean that the input BAM file is not sorted, which is a prerequisite for producing the <code>.bai</code> index using <code>samtools</code>.</p>
+<p>Dorado <code>polish</code> requires input alignments to be produced using Dorado <code>aligner</code>. When Dorado <code>aligner</code> outputs alignments to <code>stdout</code>, they are not sorted automatically. Instead, <code>samtools</code> needs to be used to sort and index the BAM file. For example:</p>
+<div class="language-dorado highlight"><pre id="__code_16"><span></span><button class="md-clipboard md-icon" title="Copy to clipboard" data-clipboard-target="#__code_16 &gt; code"></button><code class="md-code__content"><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-16-1"></a><span class="kc">dorado</span><span class="w"> </span><span class="kn">aligner</span><span class="w"> </span>&lt;draft.fasta&gt;<span class="w"> </span>&lt;reads.bam&gt;<span class="w"> </span><span class="kt">|</span><span class="w"> </span>samtools<span class="w"> </span>sort<span class="w"> </span>--threads<span class="w"> </span>&lt;num_threads&gt;<span class="w"> </span><span class="kt">&gt;</span><span class="w"> </span>aln.bam
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-16-2"></a>samtools<span class="w"> </span>index<span class="w"> </span>aln.bam
+</span></code></pre></div>
+<p>Note that the sorting step is added after the pipe symbol.</p>
+<p>The output from dorado aligner is already sorted when the output is to a folder, specified using the <code>--output-dir</code> option.</p>
+<div class="language-dorado highlight"><pre id="__code_17"><span></span><button class="md-clipboard md-icon" title="Copy to clipboard" data-clipboard-target="#__code_17 &gt; code"></button><code class="md-code__content"><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-17-1"></a><span class="kc">dorado</span><span class="w"> </span><span class="kn">aligner</span><span class="w"> </span>--output-dir<span class="w"> </span>&lt;out_dir&gt;<span class="w"> </span>&lt;draft.fasta&gt;<span class="w"> </span>&lt;reads.bam&gt;
+</span></code></pre></div>
+<h3 id="error-input-bam-file-has-no-basecaller-models-listed-in-the-header">"[error] Input BAM file has no basecaller models listed in the header."</h3>
+<p>Dorado <code>polish</code> requires that the aligned BAM has one or more <code>@RG</code> lines in the header. Each <code>@RG</code> line needs to contain a basecaller model used for generating the reads in this group. This information is required to determine the compatibility of the selected polishing model, as well as for auto-resolving the model from data.</p>
+<p>When using Dorado <code>aligner</code> please provide the input basecalled reads in the BAM format. The basecalled reads BAM file (<code>e.g. calls.bam</code>) contains the <code>@RG</code> header lines, and this will be propagated into the aligned BAM file. Example:</p>
+<div class="language-dorado highlight"><pre id="__code_18"><span></span><button class="md-clipboard md-icon" title="Copy to clipboard" data-clipboard-target="#__code_18 &gt; code"></button><code class="md-code__content"><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-18-1"></a><span class="kc">dorado</span><span class="w"> </span><span class="kn">aligner</span><span class="w"> </span>draft.fasta<span class="w"> </span>calls.bam<span class="w"> </span><span class="kt">|</span><span class="w"> </span>samtools<span class="w"> </span>sort<span class="w"> </span>--threads<span class="w"> </span>&lt;num_threads&gt;<span class="w"> </span><span class="kt">&gt;</span><span class="w"> </span>aligned_reads.bam
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-18-2"></a>samtools<span class="w"> </span>index<span class="w"> </span>aligned_reads.bam
+</span></code></pre></div>
+<p>Alternatively, Dorado <code>aligner</code> will automatically sort and index the alignments when an output directory is specified instead of <code>stdout</code>.</p>
+<div class="language-dorado highlight"><pre id="__code_19"><span></span><button class="md-clipboard md-icon" title="Copy to clipboard" data-clipboard-target="#__code_19 &gt; code"></button><code class="md-code__content"><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-19-1"></a><span class="kc">dorado</span><span class="w"> </span><span class="kn">aligner</span><span class="w"> </span>--output-dir<span class="w"> </span>out<span class="w"> </span>draft.fasta<span class="w"> </span>calls.bam
+</span></code></pre></div>
+<p>Note that this feature will only work for the HTS-style FASTQ headers, such as:</p>
+<div class="language-text highlight"><pre id="__code_20"><span></span><button class="md-clipboard md-icon" title="Copy to clipboard" data-clipboard-target="#__code_20 &gt; code"></button><code class="md-code__content" tabindex="0"><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-20-1"></a>@74960cfd-0b82-43ed-ae04-05162e3c0a5a qs:f:27.7534 du:f:75.1604 ns:i:375802 ts:i:1858 mx:i:1 ch:i:295 st:Z:2024-08-29T22:06:03.400+00:00 rn:i:585 fn:Z:FBA17175_7da7e070_f8e851a5_5.pod5 sm:f:414.101 sd:f:107.157 sv:Z:pa dx:i:0 RG:Z:f8e851a5d56475e9ecaa43496da18fad316883d8_dna_r10.4.1_e8.2_400bps_sup@v5.0.0
+</span></code></pre></div>
+<p>Dorado <code>polish</code> currently supports data generated using only the simplex basecallers.</p>
+<h3 id="error-input-bam-file-was-not-aligned-using-dorado">"[error] Input BAM file was not aligned using Dorado."</h3>
+<p>Dorado <code>polish</code> accepts only BAMs aligned with Dorado <code>aligner</code>. Aligners other than Dorado <code>aligner</code> are not supported.</p>
+<p>Example usage:</p>
+<div class="language-dorado highlight"><pre id="__code_21"><span></span><button class="md-clipboard md-icon" title="Copy to clipboard" data-clipboard-target="#__code_21 &gt; code"></button><code class="md-code__content"><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-21-1"></a><span class="kc">dorado</span><span class="w"> </span><span class="kn">aligner</span><span class="w"> </span>&lt;draft.fasta&gt;<span class="w"> </span>&lt;reads.bam&gt;<span class="w"> </span><span class="kt">|</span><span class="w"> </span>samtools<span class="w"> </span>sort<span class="w"> </span>--threads<span class="w"> </span>&lt;num_threads&gt;<span class="w"> </span><span class="kt">&gt;</span><span class="w"> </span>aln.bam
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="https://software-docs.nanoporetech.com/dorado/1.4.0/assembly/polish/#__codelineno-21-2"></a>samtools<span class="w"> </span>index<span class="w"> </span>aln.bam
+</span></code></pre></div>
+<h3 id="error-the-input-bam-contains-more-than-one-read-group-please-specify-rg-to-select-which-read-group-to-process">"[error] The input BAM contains more than one read group. Please specify --RG to select which read group to process."</h3>
+<p>It is possible that the input BAM file contains more than 1 read group. In this case, Dorado <code>polish</code> requires that a single read group is selected for processing using the <code>--RG &lt;id&gt;</code> command line argument. The <code>&lt;id&gt;</code> should exactly match the <code>ID:</code> field in one of the <code>@RG</code> lines in the input BAM/SAM file.</p>
+<p>Specifying the <code>--RG</code> option will filter out any read which does not belong to that read group and will apply the appropriate polishing model for that read group based on the basecaller model specified in the corresponding <code>@RG</code> line in the input BAM file.</p>
+<p>Specifying a read group which corresponds to duplex data will not work because Dorado <code>polish</code> currently does not have duplex polishing models available.</p>
+<p>In case of a duplex BAM - note that by default the simplex parents of the duplex reads will also be present in the output BAM file from Dorado. Consider filtering these out first if this could bias your results.</p>
+<h3 id="error-duplex-basecalling-models-are-not-supported">"[error] Duplex basecalling models are not supported."</h3>
+<p>Dorado <code>polish</code> currently supports data generated using only the simplex basecallers.</p>
+<h3 id="i-created-a-merged-bam-file-composed-of-multiple-different-data-types-why-cant-i-polish-it-using-ignore-read-groups-does-not-help-either">I created a merged BAM file composed of multiple different data types. Why can't I polish it? Using <code>--ignore-read-groups</code> does not help either</h3>
+<p>In case you created a merged BAM file, one of the following scenarios is possible:</p>
+<ol>
+<li><strong>There are zero read groups in the merged BAM file.</strong> Something went wrong in the process of data preparation. There needs to be at least one read group in the BAM file which links the data to a basecaller model.</li>
+<li><strong>The merged BAM file has only one read group.</strong> This is the best option, and merging was performed in a way that all colliding <code>@RG</code> headers were merged too. Since there is only one read group, there is also one basecaller model for the entire merged BAM dataset.</li>
+<li><strong>The merged BAM file has more than one read group, but only a single basecaller model.</strong> This can occur when data originally belonged to the same read group but the colliding read groups were not merged in the process (check the <code>-c</code> option of <code>samtools merge</code>). For example, <code>samtools merge</code> will add a unique hash to the end of each read group, because the prefix of the read groups is the same (e.g. <code>bc8993f4557dd53bf0cbda5fd68453fea5e94485_dna_r10.4.1_e8.2_400bps_hac@v5.0.0-1C79A650</code> and <code>bc8993f4557dd53bf0cbda5fd68453fea5e94485_dna_r10.4.1_e8.2_400bps_hac@v5.0.0-6E00935B</code>). Alternatively, data from multiple sequencing runs were combined, but the same basecaller model was used in all cases.<ul>
+<li>Using <code>--ignore-read-groups</code> will run the process using all data in this case, since it was generated using a single basecaller model.</li>
+<li>Alternatively, using <code>--RG &lt;read_group_id&gt;</code> will select only reads which belong to this specific read group, and ignore all other reads.</li>
+<li>Auto model detection is possible from the BAM file in this case, since only one basecaller model was used to produce the data.</li>
+</ul>
+</li>
+<li><strong>The merged BAM file has more than one read group and <em>more than one basecaller model</em>.</strong> One or more read groups were generated using one particular basecaller model, while some other read groups were generated using another particular basecaller model. (For example, combining old and new data.) Sometimes, users may attempt to combine simplex and duplex reads into the same BAM file.<ul>
+<li>Dorado <code>polish</code>/<code>variant</code> can use only one selected model for inference. All currently available models were trained on individual data types (data generated by a single basecaller version) and not on a mixture of data (with the exception of the bacterial methylation polishing model). Running any model on a mixture of data may produce inferior results. This is why Dorado <code>polish</code> and Dorado <code>variant</code> enforce that only a single basecaller model is present in the input.</li>
+<li>In this case, not even <code>--ignore-read-groups</code> will work because there was more than one basecaller model used to produce the data in this BAM file.</li>
+<li>Using <code>--RG &lt;read_group_id&gt;</code> will select only reads which belong to one specific read group, and ignore all other reads.</li>
+<li>Using the auto model selection cannot resolve a model from a BAM file if the input BAM file contains multiple models.</li>
+<li>Auto model selection in this case is only possible if <code>--RG</code> is used.</li>
+<li>Duplex basecaller models are not supported by Dorado <code>polish</code> or Dorado <code>variant</code>.</li>
+</ul>
+</li>
+</ol>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" style="top: 78px;" hidden="" tabindex="-1">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      © 2020 - 2025 Oxford Nanopore Technologies plc. All rights reserved. Registered Office: Gosling Building, Edmund Halley Road, Oxford Science Park, OX4 4DQ, UK | Registered No. 05386273 | VAT No 336942382. Oxford Nanopore Technologies, the Wheel icon, EPI2ME, Flongle, GridION, Metrichor, MinION, MinIT, MinKNOW, Plongle, PromethION, SmidgION, Ubik and VolTRAX are registered trademarks of Oxford Nanopore Technologies plc in various countries. Oxford Nanopore Technologies products are not intended for use for health assessment or to diagnose, treat, mitigate, cure, or prevent any disease or condition.
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/nanoporetech/dorado" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M202.1 328.7c0 20.9-10.9 55.1-36.7 55.1s-36.7-34.2-36.7-55.1 10.9-55.1 36.7-55.1 36.7 34.2 36.7 55.1M496 278.2c0 31.9-3.2 65.7-17.5 95-37.9 76.6-142.1 74.8-216.7 74.8-75.8 0-186.2 2.7-225.6-74.8-14.6-29-20.2-63.1-20.2-95 0-41.9 13.9-81.5 41.5-113.6-5.2-15.8-7.7-32.4-7.7-48.8 0-21.5 4.9-32.3 14.6-51.8 45.3 0 74.3 9 108.8 36 29-6.9 58.8-10 88.7-10 27 0 54.2 2.9 80.4 9.2 34-26.7 63-35.2 107.8-35.2 9.8 19.5 14.6 30.3 14.6 51.8 0 16.4-2.6 32.7-7.7 48.2 27.5 32.4 39 72.3 39 114.2m-64.3 50.5c0-43.9-26.7-82.6-73.5-82.6-18.9 0-37 3.4-56 6-14.9 2.3-29.8 3.2-45.1 3.2-15.2 0-30.1-.9-45.1-3.2-18.7-2.6-37-6-56-6-46.8 0-73.5 38.7-73.5 82.6 0 87.8 80.4 101.3 150.4 101.3h48.2c70.3 0 150.6-13.4 150.6-101.3m-82.6-55.1c-25.8 0-36.7 34.2-36.7 55.1s10.9 55.1 36.7 55.1 36.7-34.2 36.7-55.1-10.9-55.1-36.7-55.1"></path></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://x.com/nanopore" target="_blank" rel="noopener" title="x.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M357.2 48h70.6L273.6 224.2 455 464H313L201.7 318.6 74.5 464H3.8l164.9-188.5L-5.2 48h145.6l100.5 132.9zm-24.8 373.8h39.1L119.1 88h-42z"></path></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://www.linkedin.com/company/oxford-nanopore-technologies" target="_blank" rel="noopener" title="www.linkedin.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3M135.4 416H69V202.2h66.5V416zM102.2 96a38.5 38.5 0 1 1 0 77 38.5 38.5 0 1 1 0-77m282.1 320h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9z"></path></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+      <div class="md-consent" data-md-component="consent" id="__consent" hidden="">
+        <div class="md-consent__overlay"></div>
+        <aside class="md-consent__inner">
+          <form class="md-consent__form md-grid md-typeset" name="consent">
+            
+
+
+  
+
+
+<h4>Cookie consent</h4>
+<p>We use cookies to recognize your repeated visits and preferences, as well as to measure the effectiveness of our documentation and whether users find what they're searching for. With your consent, you're helping us to make our documentation better.</p>
+<input class="md-toggle" type="checkbox" id="__settings">
+<div class="md-consent__settings">
+  <ul class="task-list">
+    
+    
+      
+    
+    
+      
+        
+  
+  
+    
+    
+  
+  <li class="task-list-item">
+    <label class="task-list-control">
+      <input type="checkbox" name="github" checked="">
+      <span class="task-list-indicator"></span>
+      GitHub
+    </label>
+  </li>
+
+      
+    
+    
+  </ul>
+</div>
+<div class="md-consent__controls">
+  
+    
+      <button class="md-button md-button--primary">Accept</button>
+    
+    
+    
+  
+    
+    
+    
+      <label class="md-button" for="__settings">Manage settings</label>
+    
+  
+</div>
+          </form>
+        </aside>
+      </div>
+      <script>var consent=__md_get("__consent");if(consent)for(var input of document.forms.consent.elements)input.name&&(input.checked=consent[input.name]||!1);else"file:"!==location.protocol&&setTimeout((function(){document.querySelector("[data-md-component=consent]").hidden=!1}),250);var form=document.forms.consent;for(var action of["submit","reset"])form.addEventListener(action,(function(e){if(e.preventDefault(),"reset"===e.type)for(var n of document.forms.consent.elements)n.name&&(n.checked=!1);__md_set("__consent",Object.fromEntries(Array.from(new FormData(form).keys()).map((function(e){return[e,!0]})))),location.hash="",location.reload()}))</script>
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.sections", "navigation.top", "navigation.indexes", "toc.integrate", "search.suggest", "search.highlight", "search.share", "content.tabs.link", "content.code.annotate", "content.code.copy"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="./Dorado Polish Documentation_files/bundle.f55a23d4.min.js.descarga"></script>
+      
+    
+  
+</body></html>

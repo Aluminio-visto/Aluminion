@@ -1,0 +1,20 @@
+query,predicted.name,predicted.rank,predicted.ncbi_id,predicted.threshold,closest.distance,closest.description,next.name,next.rank,next.ncbi_id,next.threshold
+Eclo_VC_600-1,Enterobacter hormaechei,species,158836,0.0,0.040548425,[GCF_001473055.1] Enterobacter hormaechei subsp. xiangfangensis (enterobacteria),,,,
+Eclo_VC_79371,Enterobacter,genus,547,0.8785912364721298,0.3283647,[GCF_000802685.1] Enterobacter hormaechei subsp. steigerwaltii (enterobacteria),Enterobacter cloacae,species,550,0.0
+Ecol_VC_312-2,Escherichia coli,species,562,0.0,0.20240355,[GCF_000017985.1] Escherichia coli B str. REL606 (E. coli),,,,
+Ecol_VC_490-1,Escherichia coli,species,562,0.0,0.13618955,[GCF_000225025.1] Escherichia coli STEC_B2F1 (E. coli),,,,
+Kaer_VC_72242,Klebsiella aerogenes,species,548,0.6783050298690796,0.30358237,[GCF_001030185.1] Klebsiella aerogenes (enterobacteria),,,,
+Kpne_VC_01561,Klebsiella pneumoniae,species,573,0.4691092073917389,0.26431322,[GCF_000492875.1] Klebsiella pneumoniae MGH 36 (enterobacteria),,,,
+Kpne_VC_11528,Klebsiella pneumoniae,species,573,0.4691092073917389,0.104110576,[GCF_000788005.1] Klebsiella pneumoniae (enterobacteria),,,,
+Kpne_VC_175-1,Klebsiella pneumoniae,species,573,0.4691092073917389,0.2369766,[GCF_000821905.1] Klebsiella pneumoniae (enterobacteria),,,,
+Kpne_VC_22077,Klebsiella pneumoniae,species,573,0.4691092073917389,0.26375338,[GCF_000492875.1] Klebsiella pneumoniae MGH 36 (enterobacteria),,,,
+Kpne_VC_629-2,Klebsiella pneumoniae,species,573,0.4691092073917389,0.20006831,[GCF_000821605.1] Klebsiella pneumoniae (enterobacteria),,,,
+Kpne_VC_62984,Klebsiella pneumoniae,species,573,0.4691092073917389,0.18673496,[GCF_000821605.1] Klebsiella pneumoniae (enterobacteria),,,,
+Kpne_VC_74520,Klebsiella pneumoniae,species,573,0.4691092073917389,0.03997732,[GCF_001463605.1] Klebsiella pneumoniae (enterobacteria),,,,
+Kpne_VC_79372,Klebsiella,genus,570,0.8818059176206589,0.7323016,[GCF_000492635.1] Klebsiella pneumoniae UCICRE 2 (enterobacteria),Klebsiella pneumoniae,species,573,0.4691092073917389
+Kpne_VC_86478,Klebsiella pneumoniae,species,573,0.4691092073917389,0.08977514,[GCF_000822005.1] Klebsiella pneumoniae (enterobacteria),,,,
+Kpne_VC_86523,Klebsiella pneumoniae,species,573,0.4691092073917389,0.040220387,[GCF_000821465.1] Klebsiella pneumoniae (enterobacteria),,,,
+Kpne_VC_86855,Klebsiella pneumoniae,species,573,0.4691092073917389,0.10548449,[GCF_000821645.1] Klebsiella pneumoniae (enterobacteria),,,,
+Kpne_VC_89440,Klebsiella pneumoniae,species,573,0.4691092073917389,0.26410815,[GCF_000492355.1] Klebsiella pneumoniae BIDMC 23 (enterobacteria),,,,
+Kpne_VC_94648,Klebsiella pneumoniae,species,573,0.4691092073917389,0.28031635,[GCF_000492875.1] Klebsiella pneumoniae MGH 36 (enterobacteria),,,,
+Kpne_VC_94881,Klebsiella pneumoniae,species,573,0.4691092073917389,0.2523135,[GCF_001463215.1] Klebsiella pneumoniae (enterobacteria),,,,

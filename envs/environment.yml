@@ -1,7 +1,13 @@
+# DEPRECATED — this environment is superseded by envs/aluminion_base.yml,
+# which includes all packages listed here plus the full bioinformatics toolchain.
+# This file is kept only for reference and will be removed in a future release.
+#
+# To set up the pipeline, use:
+#   mamba env create -f envs/aluminion_base.yml
 name: aluminion_env
 channels:
-  - bioconda
   - conda-forge
+  - bioconda
   - defaults
 dependencies:
   - python>=3.8

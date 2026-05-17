@@ -19,7 +19,7 @@ def abr_parse(abr_out):
         abr_raw[['pos_beg', 'pos_end']] = pd.DataFrame(abr_raw['SEQUENCE'].str.split('_').str[-2:].tolist(), index=abr_raw.index)
         abr_raw.drop(abr_raw.loc[abr_raw['%IDENTITY'] < 90].index, inplace=True)
         abr_raw.drop(abr_raw.loc[abr_raw['%COVERAGE'] < 80].index, inplace=True)
-        df_abr = abr_raw[['pos_beg', 'pos_end', 'GENE']].copy() # Añado .copy() para evitar el SettingWithCopyWarning
+        df_abr = abr_raw[['pos_beg', 'pos_end', 'GENE']].copy()  # .copy() to avoid SettingWithCopyWarning
         df_abr.columns = ['pos_beg', 'pos_end', 'abr_ann']
         df_abr['pos_beg'] = df_abr['pos_beg'].astype('int64')
         df_abr['pos_end'] = df_abr['pos_end'].astype('int64')
@@ -51,54 +51,54 @@ def write_fasta(cds_output_file, d_int):
     return None
 
 def annotate_cds(cds_output_file, input_path, replicon, integron):
-    # anotación con prokka
+    # Annotation with Prokka
     prokka_cmd = ['prokka', '--quiet', '--force', cds_output_file, '--outdir', input_path + f'/prokka_{replicon}_{integron}']
     subprocess.run(prokka_cmd)
-    # anotación con abricate
+    # Annotation with Abricate
     abr_cmd1 = ['abricate', cds_output_file]
     abr_out = open(input_path + f'/abricate_{replicon}_{integron}.out', 'w')
     subprocess.run(abr_cmd1, stdout=abr_out)
     return input_path + f'/prokka_{replicon}_{integron}', input_path + f'/abricate_{replicon}_{integron}.out'
 
 def extract_fastas(gbk_file, cds_output_file, fna_file, integron):
-    # Abrir archivo GBK y los archivos de salida
+    # Open GBK file and output files
     with open(gbk_file, "r") as input_handle:
         for record in SeqIO.parse(input_handle, "genbank"):
             flag = 0
             d_int = {}
             d_nucl = {}
             for feature in record.features:
-                # Obtener las coordenadas de inicio y final
-                start = feature.location.start + 1  # +1 para coordenadas 1-based
+                # Get start and end coordinates
+                start = feature.location.start + 1  # +1 for 1-based coordinates
                 end = feature.location.end
-                # Extraer la secuencia del integrón
+                # Extract the integron sequence
                 if "integron" in feature.type and feature.qualifiers.get('integron_id')[0] == integron:
                     flag = 1
                     integron_seq = feature.extract(record.seq)
                     integron_header = f'>{integron}_{start}_{end}'
                     d_nucl[integron_header] = str(integron_seq)
-                # Extraer y guardar las secuencias de CDS
+                # Extract and save CDS sequences
                 elif feature.type == "CDS" and flag == 1:
-                    # Extraer la secuencia de CDS
+                    # Extract CDS sequence
                     cds_seq = feature.extract(record.seq)
-                    # Obtener ID o locus_tag
+                    # Get protein_id or locus_tag
                     protein_id = feature.qualifiers.get('protein_id', ['Unknown'])[0]
-                    # Escribir en el archivo FASTA
+                    # Write to FASTA file
                     header = f">{protein_id}_{start}_{end}"
                     d_int[header] = str(cds_seq)
-                
+
                 elif "integron" in feature.type:
                     flag = 0
 
-        # Secuencia nucl. del integrón (fna)
+        # Integron nucleotide sequence (fna)
         write_fasta(fna_file, d_nucl)
-        # Secuencias CDS del integrón (faa)
+        # Integron CDS sequences (faa)
         write_fasta(cds_output_file, d_int)
             
     return d_int
 
 def extract_info(sample, subdf, replicon, integron, input_path, original_path):
-    # integrase
+    # Integrase
     try:
         integrase_row = subdf[subdf['annotation'] == 'intI'].iloc[0]
         integrase_model = integrase_row['model']
@@ -114,23 +114,23 @@ def extract_info(sample, subdf, replicon, integron, input_path, original_path):
         attc_models = ''
 
     try:
-        # extraer faa y fna de los integrones
+        # Extract faa and fna for integrons
         gbk_file = input_path + f'/{replicon}.gbk'
         cds_output_file = input_path + f'/{replicon}_{integron}.faa'
         fna_file = input_path + f'/{replicon}_{integron}.fna'
         d_int = extract_fastas(gbk_file, cds_output_file, fna_file, integron)
     except:
-        print(f'\033[93m[WARNING]\033[0m Error en el parseo de GBK. Comprueba la integridad de {gbk_file}')
+        print(f'\033[93m[WARNING]\033[0m GBK parsing error. Check the integrity of {gbk_file}')
         return None
 
     df_abr = pd.DataFrame(columns = ['pos_beg', 'pos_end', 'abr_ann'])
     df_prokka = pd.DataFrame(columns = ['pos_beg', 'pos_end', 'prokka_ann'])
-    # Si hay CDS en el integrón, anotarlos con prokka y abricate
+    # If the integron has CDS, annotate them with Prokka and Abricate
     if len(d_int.keys()) > 0:
         prokka_dir, abr_out = annotate_cds(cds_output_file, input_path, replicon, integron)
         df_prokka = prokka_parse(prokka_dir)
         df_abr = abr_parse(abr_out)
-    # mergear con las anotaciones, priorizar abricate y reorientar df si necesario
+    # Merge with annotations, prioritise Abricate and reorient df if needed
     subdf['pos_beg'] = subdf['pos_beg'].astype('int64')
     subdf['pos_end'] = subdf['pos_end'].astype('int64')
     mid_df = pd.merge(subdf, df_prokka, on=['pos_beg', 'pos_end'], how='outer')
@@ -140,7 +140,7 @@ def extract_info(sample, subdf, replicon, integron, input_path, original_path):
     if integrase_strand > 0:
         final_df = final_df[::-1]
     
-    # group cassettes
+    # Group cassettes
     cassettes = []
     current_cassette = []
 
@@ -150,24 +150,24 @@ def extract_info(sample, subdf, replicon, integron, input_path, original_path):
             current_cassette = []
         elif row['type_elt'] == 'protein' and row['annotation'] != 'intI':
             if pd.isnull(row['ann']):
-                ann = "NA" # Quitamos la descripción "hypothetical protein"
+                ann = "NA"  # Drop the "hypothetical protein" description
             else:
-                ann = row['ann'].split(';')[0] # Nos quedamos solo con el nombre del gen
+                ann = row['ann'].split(';')[0]  # Keep only the gene name
             current_cassette.append(ann)
 
-    # Por si acaso no se reconoce el último attC
+    # In case the last attC is not recognised
     cassettes.append(current_cassette)
-    # y eliminamos cassettes vacíos (?)
+    # Remove empty cassettes
     cassettes = [i for i in cassettes if i != []]
-    
-    # Como ya hemos limpiado los nombres, ajustamos esta línea
+
+    # Names already cleaned, build the gene string
     genes = '_'.join([i[0] for i in cassettes])
     genes = re.sub(r'[^a-zA-Z0-9\-\_]', '', genes)
 
-    # Convertimos las listas de Python en strings limpios separados por coma
+    # Convert Python lists to clean comma-separated strings
     formatted_cassettes = [", ".join(c) for c in cassettes]
 
-    # lista con datos para Output final
+    # Data list for final output row
     contig = final_df['ID_replicon'].values[0]
     name = f'{integron}_{replicon}_{genes}_{sample}'
     start = min(final_df['pos_beg'])
@@ -175,24 +175,24 @@ def extract_info(sample, subdf, replicon, integron, input_path, original_path):
     size = end - start
     type = final_df['type'].values[0]
     info = [sample, contig, name, size, start, end, type, integrase_model]
-    
-    # Usamos los cassettes formateados
+
+    # Append formatted cassettes
     for i in formatted_cassettes: info.append(i)
     info.extend([""] * (20-len(info)))
 
-    # Guardamos secuencia nucleotídica
+    # Save nucleotide sequence
     cp_cmd = ['cp', fna_file, f'{original_path}/11_integrons/{name}.fasta']
     subprocess.run(cp_cmd)
 
     return info
 
 def run_parsing(original_path, out_folder=None):
-    """Función principal ejecutada por el script director (parser.py)."""
+    """Main function called by the orchestrator script (parser.py)."""
     if out_folder is None:
         out_folder = original_path
 
     original_path = os.path.abspath(original_path)
-    summary_df = pd.DataFrame(columns=['Sample', 'Pl/Chr', 'Name', 'Size', 'Inicio', 'Final', 'Tipo', 'Integrasa', 'Cassette 1',
+    summary_df = pd.DataFrame(columns=['Sample', 'Pl/Chr', 'Name', 'Size', 'Start', 'End', 'Type', 'Integrase', 'Cassette 1',
                                         'Cassette 2', 'Cassette 3', 'Cassette 4', 'Cassette 5', 'Cassette 6',
                                         'Cassette 7', 'Cassette 8', 'Cassette 9', 'Cassette 10', 'Cassette 11', 'Cassette 12'])
     
@@ -200,7 +200,7 @@ def run_parsing(original_path, out_folder=None):
     integron_files = glob.glob(search_pattern)
 
     if not integron_files:
-        print(f"\033[93m[WARNING]\033[0m No se encontraron archivos para parsear integrones en: 11_integrons/")
+        print(f"\033[93m[WARNING]\033[0m No integron files found to parse in: 11_integrons/")
         return
 
     for integron_file in integron_files:
@@ -224,15 +224,15 @@ def run_parsing(original_path, out_folder=None):
             if info:
                 summary_df.loc[len(summary_df)] = info
 
-    # Guardado seguro en la carpeta principal (donde el reporter lo irá a buscar)
+    # Save to the main folder (where the reporter will look for it)
     output_csv = os.path.join(out_folder, 'integron_summary.csv')
     summary_df.to_csv(output_csv, index=False)
-    print(f" -> Integrones parseados con éxito en {output_csv}")
+    print(f" -> Integrons parsed successfully to {output_csv}")
 
 
 if __name__ == "__main__":
-    # Permite seguir ejecutando este script de forma independiente desde la terminal
+    # Allows running this script independently from the command line
     if len(sys.argv) > 1:
         run_parsing(sys.argv[1])
     else:
-        print("Uso: python integron_parser.py <directorio_del_run>")
+        print("Usage: python integron_parser.py <run_directory>")

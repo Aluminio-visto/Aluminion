@@ -14,7 +14,7 @@ def read_summary(infile):
     df = pd.read_table(infile, skipinitialspace=True, skiprows=32, sep=' ')
     df.drop(index=0, inplace=True)
     if len(df) > 0:
-        df['MOST_COMMON_PHAGE_NAME(hit_genes_count)'] = df['MOST_COMMON_PHAGE_NAME(hit_genes_count)'].str.split(',').str[0].replace('\(.*\)', '', regex=True)
+        df['MOST_COMMON_PHAGE_NAME(hit_genes_count)'] = df['MOST_COMMON_PHAGE_NAME(hit_genes_count)'].str.split(',').str[0].replace(r'\(.*\)', '', regex=True)
         df = df[['REGION', 'REGION_POSITION', 'REGION_LENGTH', 'COMPLETENESS(score)', 'SPECIFIC_KEYWORD',
                 'TOTAL_PROTEIN_NUM','PHAGE+HYPO_PROTEIN_PERCENTAGE',
                 'ATT_SITE_SHOWUP', 'MOST_COMMON_PHAGE_NAME(hit_genes_count)']]
@@ -77,7 +77,7 @@ def run_parsing(original_path, out_folder=None):
         out_folder = original_path
 
     original_path = os.path.abspath(original_path)
-    summary_df = pd.DataFrame(columns=['sample', 'Fago', 'contig', 'Start', 'End', 'length', 'Cluster', 'COMPLETENESS(score)',
+    summary_df = pd.DataFrame(columns=['Sample', 'Fago', 'contig', 'Start', 'End', 'length', 'Cluster', 'COMPLETENESS(score)',
                                         'SPECIFIC_KEYWORD', 'TOTAL_PROTEIN_NUM',
                                         'PHAGE+HYPO_PROTEIN_PERCENTAGE', 'ATT_SITE_SHOWUP'])
     
@@ -100,8 +100,8 @@ def run_parsing(original_path, out_folder=None):
                 
                 if not df_blast2.empty:
                     combo_df = df_phastest.merge(df_blast2, left_on='REGION', right_on='qseqid', how='outer')
-                    combo_df['sample'] = sample
-                    combo_df = combo_df[['sample', 'REGION', 'sseqid', 'sstart', 'send', 'length', 'MOST_COMMON_PHAGE_NAME(hit_genes_count)',
+                    combo_df['Sample'] = sample
+                    combo_df = combo_df[['Sample', 'REGION', 'sseqid', 'sstart', 'send', 'length', 'MOST_COMMON_PHAGE_NAME(hit_genes_count)',
                                         'COMPLETENESS(score)', 'SPECIFIC_KEYWORD', 'TOTAL_PROTEIN_NUM', 'PHAGE+HYPO_PROTEIN_PERCENTAGE', 'ATT_SITE_SHOWUP']]
                     combo_df.rename(columns={'REGION': 'Fago', 'sseqid': 'contig', 'sstart': 'Start', 'send': 'End', 'MOST_COMMON_PHAGE_NAME(hit_genes_count)': 'Cluster'}, inplace=True)
                     
