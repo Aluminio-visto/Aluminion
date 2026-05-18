@@ -256,7 +256,7 @@ if [ -z "$SKIP_PREPROCESSING" ]; then
     for i in $(cat samples); do
         resume_done "01_reads/QC/${i}/NanoStats.txt" && continue
         MPLBACKEND=Agg NanoPlot --fastq 01_reads/${i}.fastq.gz -o 01_reads/QC/${i} --downsample 20000 --threads 4 --loglength &
-    done; wait
+    done; 
     set -e
 
     log "Filtering (Chopper)..."
@@ -270,7 +270,7 @@ if [ -z "$SKIP_PREPROCESSING" ]; then
     for i in $(cat samples); do
         resume_done "02_filter/QC/${i}/NanoStats.txt" && continue
         MPLBACKEND=Agg NanoPlot --fastq 02_filter/${i}.fastq.gz -o 02_filter/QC/${i} --downsample 20000 --threads 4 --loglength &
-    done; wait
+    done; 
     set -e
 else
     log "Skipping preprocessing — using existing reads and QC from previous run."
