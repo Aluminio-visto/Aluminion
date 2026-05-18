@@ -104,6 +104,7 @@ if [ "$SKIP_DOCKER" = false ]; then
     if ! command -v docker >/dev/null 2>&1; then
         warn "Docker not found. Skipping Docker image pulls. Install Docker to use MOB-suite, Copla, and Phastest."
     else
+        # Versions are defined in aluminion.sh — keep them in sync manually when updating
         docker pull kbessonov/mob_suite:3.0.3
         docker pull rpalcab/copla:1.0
 
@@ -225,6 +226,23 @@ if [ "$SKIP_DBS" = false ]; then
 fi
 
 # ==============================================================================
+# COMMAND-LINE SHORTCUT
+# ==============================================================================
+log "Installing 'aluminion' command..."
+chmod +x "${SCRIPT_DIR}/aluminion.sh"
+mkdir -p "$HOME/.local/bin"
+ln -sf "${SCRIPT_DIR}/aluminion.sh" "$HOME/.local/bin/aluminion"
+
+# Ensure ~/.local/bin is in PATH (add to shell rc if missing)
+if ! echo "$PATH" | grep -q "$HOME/.local/bin"; then
+    SHELL_RC="$HOME/.bashrc"
+    [ -n "$ZSH_VERSION" ] && SHELL_RC="$HOME/.zshrc"
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_RC"
+    warn "Added ~/.local/bin to PATH in ${SHELL_RC}. Run: source ${SHELL_RC}"
+fi
+log "'aluminion' command available. You can now run: aluminion -r RUN_NAME ..."
+
+# ==============================================================================
 # SUMMARY
 # ==============================================================================
 log "Installation complete."
@@ -239,6 +257,6 @@ echo ""
 echo "  3. Set the MinKNOW data path if different from the default:"
 echo "     export ALUMINION_MINKNOW_DIR=/var/lib/minknow/data"
 echo ""
-echo "  4. Run the pipeline:"
-echo "     ./aluminion.sh -r RUN_NAME -b ${DB_DIR} -t 30 -l /path/to/list_seq.tsv"
+echo "  4. Run the pipeline from anywhere:"
+echo "     aluminion -r RUN_NAME -b ${DB_DIR} -t 30 -l /path/to/list_seq.tsv"
 echo ""

@@ -143,7 +143,7 @@ chmod +x aluminion.sh install.sh
 ./install.sh -b /$your_database_folder
 ```
 
-`install.sh` creates all conda environments, pulls Docker images, and optionally downloads databases. Flags:
+`install.sh` creates all conda environments, pulls Docker images, optionally downloads databases, and installs the `aluminion` command in `~/.local/bin` so the pipeline can be called from anywhere. Flags:
 
 | Flag | Effect |
 |---|---|
@@ -289,7 +289,7 @@ The `mlst` tool downloads schemas automatically from PubMLST the first time it r
 
 #### `list_seq.tsv` — per-run sample list
 
-Maps each sample to its barcode for the current sequencing run. Pass its path with `-l` or place it in the working directory.
+Maps each sample to its barcode for the current sequencing run. Keep this file in your **parent working directory** (the `-d` path) and pass it with `-l list_seq.tsv` when you run from that folder, or with `-l /absolute/path/to/list_seq.tsv` from anywhere. Aluminion copies it into the run subfolder at startup, so editing the parent-folder copy between runs is safe.
 
 | Column | Description |
 |---|---|
@@ -329,20 +329,44 @@ Empty column-schema templates are available in `examples/` for reference.
 
 ## Usage
 
+### Directory layout
+
+Aluminion organises output around a **parent working directory** (set with `-d`) and a **per-run subfolder** (named after `-r`). The parent is where you keep `list_seq.tsv` and the cumulative databases; every run creates its own child folder beneath it:
+
+```
+/home/user/Seqs/Servicio/          ← parent working directory (-d)
+├── list_seq.tsv                   ← fill this before each run
+├── data_seq.tsv                   ← cumulative sequencing database (all runs)
+├── data_analysis.tsv              ← cumulative analysis database (all runs)
+├── BAC_2025_NOV_25/               ← run folder, created automatically by Aluminion
+│   ├── fastq_pass/
+│   ├── 03_assemblies/
+│   ├── 08_Anotacion/
+│   ├── Aluminion_Report.html
+│   └── aluminion_YYYYMMDD_HHMMSS.log
+└── BAC_2026_FEB_10/
+    └── …
+```
+
+**How to run**: navigate to (or stay in) the parent directory, prepare `list_seq.tsv` there, then call `aluminion` passing the file with `-l`. You can also pass an absolute path from anywhere.
+
+```bash
+cd /home/user/Seqs/Servicio
+aluminion -r BAC_2025_NOV_25 -b /$your_database_folder -t 30 -l list_seq.tsv
+```
+
+A log file (`aluminion_YYYYMMDD_HHMMSS.log`) is written inside each run folder, capturing all pipeline output for debugging.
+
 ### Standard run
 
 ```bash
-./aluminion.sh \
-  -r BAC_2025_NOV_25 \
-  -b /$your_database_folder \
-  -t 30 \
-  -l /path/to/list_seq.tsv
+aluminion -r BAC_2025_NOV_25 -b /$your_database_folder -t 30 -l /path/to/list_seq.tsv
 ```
 
 ### First run (no historical databases yet)
 
 ```bash
-./aluminion.sh -r BAC_2025_NOV_25 -b /$your_database_folder -t 30 -l /path/to/list_seq.tsv --init-db
+aluminion -r BAC_2025_NOV_25 -b /$your_database_folder -t 30 -l /path/to/list_seq.tsv --init-db
 ```
 
 `--init-db` is optional if `data_seq.tsv` and `data_analysis.tsv` do not exist — Aluminion detects this automatically. Use `--init-db` to make the intent explicit or to force a rebuild.
@@ -492,6 +516,8 @@ The test suite covers: clean exit, row counts, duplicate detection, key column c
 **Phastest produces no output** — Verify that `$PHASTEST_DIR` contains `docker-compose.yml` and the `phastest_inputs/` and `phastest-app-docker/` subdirectories as described in the Phastest setup guide.
 
 **`parser.py` reports missing files** — The preflight check lists each missing file and the `--skip-*` flag to bypass it. Use the flags during partial runs (e.g., when phage/integron analysis was not performed).
+
+**`[ERROR] Empty 'list_seq.tsv' created`** — Aluminion could not find the file at the path you passed with `-l`. If you used a relative path (e.g., `-l list_seq.tsv`), make sure you are in the parent working directory when you call `aluminion`, not inside a run subfolder. Alternatively, pass an absolute path: `-l /home/user/Seqs/Servicio/list_seq.tsv`.
 
 **`data_seq.tsv` not found on first run** — This is expected. Either add `--init-db` to your first run or let Aluminion auto-detect and create the databases from scratch.
 
