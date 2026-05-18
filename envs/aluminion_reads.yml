@@ -6,3 +6,7 @@ channels:
 dependencies:
   - nanoplot
   - chopper
+  - pillow       # DPI metadata in NanoPlot PNG output
+  - pip
+  - pip:
+    - kaleido    # Plotly static image export (avoids headless-browser dependency)
