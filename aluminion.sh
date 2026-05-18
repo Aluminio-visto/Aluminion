@@ -245,7 +245,7 @@ if [ -z "$SKIP_PREPROCESSING" ]; then
     set +e
     for i in $(cat samples); do
         resume_done "01_reads/QC/${i}/NanoStats.txt" && continue
-        MPLBACKEND=Agg NanoPlot --fastq 01_reads/${i}.fastq.gz -o 01_reads/QC/${i} --downsample 20000 --threads 4 --loglength &
+        MPLBACKEND=Agg PLOTLY_RENDERER=kaleido NanoPlot --fastq 01_reads/${i}.fastq.gz -o 01_reads/QC/${i} --downsample 20000 --threads 4 --loglength &
     done; wait
     set -e
 
@@ -259,7 +259,7 @@ if [ -z "$SKIP_PREPROCESSING" ]; then
     set +e
     for i in $(cat samples); do
         resume_done "02_filter/QC/${i}/NanoStats.txt" && continue
-        MPLBACKEND=Agg NanoPlot --fastq 02_filter/${i}.fastq.gz -o 02_filter/QC/${i} --downsample 20000 --threads 4 --loglength &
+        MPLBACKEND=Agg PLOTLY_RENDERER=kaleido NanoPlot --fastq 02_filter/${i}.fastq.gz -o 02_filter/QC/${i} --downsample 20000 --threads 4 --loglength &
     done; wait
     set -e
 else
