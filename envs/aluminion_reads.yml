@@ -6,8 +6,6 @@ channels:
 dependencies:
   - nanoplot
   - chopper
-  - pillow       # DPI metadata embedding in NanoPlot PNG output
-  - pip
-  - pip:
-    - kaleido==0.2.1  # Plotly static image export via PLOTLY_RENDERER=kaleido
-                      # (bypasses choreographer browser dependency on headless servers)
+  - pillow   # DPI metadata embedding in NanoPlot PNG output
+  - kaleido  # Plotly static image export via PLOTLY_RENDERER=kaleido
+             # NanoPlot 1.46.2 requires kaleido>=1.0.0; conda-forge resolves the right version
