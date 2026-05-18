@@ -220,13 +220,13 @@ fi
 conda activate aluminion_reads
 
 log "Pre-filtering QC..."
-for i in $(cat samples); do NanoPlot --fastq 01_reads/${i}.fastq.gz -o 01_reads/QC/${i} --downsample 20000 --threads 3 || true & done; wait
+for i in $(cat samples); do NanoPlot --fastq 01_reads/${i}.fastq.gz -o 01_reads/QC/${i} --downsample 20000 --threads $THREADS_TOTAL || true; done
 
 log "Filtering (Chopper)..."
 for i in $(cat samples); do gunzip -c 01_reads/${i}.fastq.gz | chopper -q 12 -l 300 --headcrop 20 --threads $THREADS_TOTAL | gzip > 02_filter/${i}.fastq.gz; done
 
 log "Post-filtering QC..."
-for i in $(cat samples); do NanoPlot --fastq 02_filter/${i}.fastq.gz -o 02_filter/QC/${i} --downsample 20000 --threads 3 || true & done; wait
+for i in $(cat samples); do NanoPlot --fastq 02_filter/${i}.fastq.gz -o 02_filter/QC/${i} --downsample 20000 --threads $THREADS_TOTAL || true; done
 
 # 2. Taxonomy, assembly, polishing, and assembly QC
 conda activate aluminion_assembly
