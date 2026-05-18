@@ -173,13 +173,15 @@ bash Mambaforge-Linux-x86_64.sh
 Aluminion uses six isolated conda environments. Copla runs entirely via Docker and needs no conda env.
 
 ```bash
-mamba env create -f envs/aluminion_reads.yml       # NanoPlot, Chopper
+mamba env create -f envs/aluminion_reads.yml       # NanoPlot, Chopper, pillow, kaleido (pip)
 mamba env create -f envs/aluminion_assembly.yml    # Kraken2, Flye, QUAST, Bandage, samtools
 mamba env create -f envs/aluminion_circlator.yml   # Circlator (isolated — complex legacy deps)
 mamba env create -f envs/aluminion_annot.yml       # Bakta, GAMBIT, Abricate, MLST, BLAST, datamash, Python
 mamba env create -f envs/aluminion_integron.yml    # Integron_Finder
 mamba env create -f envs/aluminion_kleborate.yml   # Kleborate + ECTyper
 ```
+
+> **Note on `aluminion_reads`**: this environment includes `kaleido` (installed via pip, not conda-forge — it is not available there) and `pillow`. Both are required for NanoPlot to generate static PNG outputs on headless servers without spawning a browser. See the Troubleshooting section if the environment creation hangs or fails.
 
 All six are required for a full run. Individual environments can be omitted if you skip the corresponding module with a `--skip-*` flag.
 
@@ -568,7 +570,7 @@ aluminion/
 │   ├── integron_parser.py        # Integron_Finder output → integron_summary.csv
 │   └── IS_parser.py              # ISfinder BLAST output → IS_chr_out.tsv
 ├── envs/
-│   ├── aluminion_reads.yml       # NanoPlot, Chopper
+│   ├── aluminion_reads.yml       # NanoPlot, Chopper, pillow, kaleido (via pip)
 │   ├── aluminion_assembly.yml    # Kraken2, Flye, QUAST, Bandage, samtools
 │   ├── aluminion_circlator.yml   # Circlator (isolated — complex legacy deps)
 │   ├── aluminion_annot.yml       # Bakta, GAMBIT, Abricate, MLST, BLAST, datamash, Python
@@ -616,6 +618,8 @@ The test suite covers: clean exit, row counts, duplicate detection, key column c
 **`[ERROR] Empty 'list_seq.tsv' created`** — Aluminion could not find the file at the path you passed with `-l`. If you used a relative path (e.g., `-l list_seq.tsv`), make sure you are in the parent working directory when you call `aluminion`, not inside a run subfolder. Alternatively, pass an absolute path: `-l /home/user/Seqs/Servicio/list_seq.tsv`.
 
 **`ERROR: No disjointigs were assembled` (Flye)** — Flye failed to assemble the sample. This typically happens with samples containing very high-copy-number elements (plasmids, expression vectors) that create extreme coverage imbalance. When this occurs, Aluminion pauses and offers three options: skip the sample, retry with `--meta` (recommended for high-copy cases), or stop the pipeline. See [Assembly failure handling](#assembly-failure-handling) for details.
+
+**NanoPlot hangs or produces Chrome/choreographer warnings on headless servers** — NanoPlot uses Plotly for interactive plots and tries to render static PNGs via `choreographer`, which spawns a browser. On servers without a display this can stall. The `aluminion_reads` environment ships `kaleido` (pip) and `pillow`, and all NanoPlot calls in `aluminion.sh` set `PLOTLY_RENDERER=kaleido MPLBACKEND=Agg` to route rendering through kaleido instead of the browser. If you see this issue, make sure the `aluminion_reads` environment was created with the current `envs/aluminion_reads.yml` (delete and recreate if it predates this fix: `conda env remove -n aluminion_reads && mamba env create -f envs/aluminion_reads.yml`).
 
 **`data_seq.tsv` not found on first run** — This is expected. Either add `--init-db` to your first run or let Aluminion auto-detect and create the databases from scratch.
 

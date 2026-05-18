@@ -54,7 +54,7 @@ Technology (ONT) long reads**, with occasional Illumina short reads for hybrid a
 
 ### Technology stack
 
-- **Primary language**: Bash (shell scripts)
+- **Primary language**: Bash (shell scripts) with output parsing via Python
 - **Future direction**: Nextflow (actively migrating — add Nextflow versions when possible)
 - **Containerization**: Docker preferred over Conda for new tools; Conda still in use for legacy tools
 - **Avoid**: hardcoded absolute paths — use variables or arguments for all paths
@@ -273,44 +273,7 @@ save_publication_plot <- function(plot, filename, width = 7, height = 5) {
 
 ---
 
-## Directory structure (both project types)
 
-```
-project/
-├── CLAUDE.md               ← this file
-├── README.md               ← project overview, sample info, how to run
-├── config/
-│   ├── config.yaml         ← pipeline parameters and tool versions
-│   └── samples.tsv         ← sample sheet: sample_id, condition, file paths
-├── data/
-│   ├── raw/                ← READ-ONLY — never modify original sequencing data
-│   ├── processed/          ← intermediate outputs (trimmed, aligned, denoised)
-│   └── metadata/           ← clinical variables and sample metadata tables
-├── results/
-│   ├── qc/                 ← quality control reports
-│   ├── assembly/           ← (genomics) assembled genomes
-│   ├── annotation/         ← (genomics) Prokka/Bakta output
-│   ├── typing/             ← (genomics) MLST, Kleborate, ECTyper
-│   ├── amr/                ← (genomics) AMR and virulence genes
-│   ├── mge/                ← (genomics) plasmids, integrons, prophages
-│   ├── phylogeny/          ← (genomics) trees and pan-genome
-│   ├── diversity/          ← (metataxonomy) alpha and beta diversity
-│   ├── taxonomy/           ← (metataxonomy) ASV tables, taxonomy assignments
-│   └── differential/       ← (metataxonomy) differential abundance results
-├── figures/                ← publication-ready plots (PDF + PNG)
-├── scripts/
-│   ├── bash/               ← shell scripts for genomics pipelines
-│   ├── nextflow/           ← .nf modules and workflows
-│   │   ├── modules/
-│   │   └── workflows/
-│   ├── r/                  ← R analysis scripts (metataxonomy and genomics stats)
-│   └── python/             ← utility and helper Python scripts
-├── notebooks/              ← exploratory R Markdown or Jupyter notebooks
-├── docker/                 ← Dockerfiles for custom container images
-├── envs/                   ← conda environment .yaml files (legacy tools)
-├── tests/                  ← validation scripts for pipeline outputs
-└── logs/                   ← timestamped log files (gitignored for large runs)
-```
 
 **Critical rules:**
 - `data/raw/` is strictly read-only — never write there under any circumstance
@@ -368,20 +331,180 @@ training parameters, rarefaction decisions, and choice of diversity metrics.
 
 ## Project-specific notes
 
-<!-- Add project-specific context here as the analysis develops. -->
-<!-- Examples:
+### Aluminion — ONT bacterial WGS pipeline
 
-### Genomics project — K. pneumoniae outbreak 2024
-- Organism: Klebsiella pneumoniae, clinical isolates, ICU outbreak
-- Sequencing: MinION R10.4.1 flowcells, basecalled with Dorado v0.7.2
-- Special: three samples are suspected co-infections — flag but do not exclude
-- Reference: K. pneumoniae NTUH-K2044 (GenBank AP006725.1)
-- Clinical metadata columns: sample_id, ward, date_collection, sequence_type, outcome
+Target organisms: Enterobacteriaceae (K. pneumoniae, E. coli, etc.).
+Sequencing: Oxford Nanopore MinION / Mk1D, R10.4.1 flowcells, basecalled with Dorado (sup model).
+Pipeline language: Bash orchestrator (`aluminion.sh`) + Python parsers (`scripts/`).
 
-### Metataxonomy project — neonatal gut microbiome
-- Sample type: stool, neonatal ICU patients
-- Technology: Illumina MiSeq, V3-V4 region, paired-end 2×300 bp
-- Clinical variables: gestational_age, delivery_mode, antibiotic_exposure, feeding_type
-- Exclusion criteria: samples with < 5000 reads after DADA2 denoising
-- Rarefaction depth: TBD after reviewing read count distribution
--->
+---
+
+### Repository layout
+
+```
+Aluminion/                        ← git root
+├── CLAUDE.md                     ← AI coding context and lab conventions (this file)
+├── README.md                     ← Full user-facing documentation
+├── aluminion.sh                  ← Main pipeline orchestrator
+├── install.sh                    ← Installation (conda envs, Docker images, databases)
+│
+├── envs/                         ← One conda environment per tool group
+│   ├── aluminion_reads.yml       ← NanoPlot, Chopper, pillow, kaleido (>=1.0.0)
+│   ├── aluminion_assembly.yml    ← Flye, QUAST, dorado (binary in PATH)
+│   ├── aluminion_circlator.yml   ← circlator
+│   ├── aluminion_annot.yml       ← Bakta, ABRicate, BLAST, MOB-suite, GAMBIT, mlst, ECTyper
+│   ├── aluminion_integron.yml    ← IntegronFinder
+│   └── aluminion_kleborate.yml   ← Kleborate
+│
+├── scripts/                      ← Python output parsers
+│   ├── parser.py                 ← Main aggregator — called at the end of aluminion.sh
+│   │                               Accepts --skip-kraken / --skip-abr / --skip-typing /
+│   │                               --skip-phages flags; internally calls copla_parser.py
+│   ├── copla_parser.py           ← Copla plasmid classification parser (called by parser.py)
+│   ├── IS_parser.py              ← BLAST vs ISfinder output → IS_chr_out.tsv per sample
+│   ├── integron_parser.py        ← IntegronFinder output → integron_summary.csv
+│   ├── phage_parser.py           ← Phastest output → phage_summary.csv
+│   ├── Datos_seq_unified2.py     ← Builds data_seq.tsv (sequencing metadata table)
+│   ├── aluminion_reporter.py     ← Generates Aluminion_Report.html from final tables
+│   └── deconcat.py               ← Deconcatenates reads for dorado polish step
+│
+├── docs/
+│   └── Dorado Polish Documentation.html   ← Reference docs for dorado polish
+│
+├── examples/                     ← Real output files from a completed run (reference)
+│   ├── list_seq.tsv              ← Sample metadata input format
+│   ├── data_seq.tsv / data_analysis.tsv
+│   ├── QC_reads.csv / QC_assembly.csv
+│   ├── taxonomy.csv / taxonomy.xlsx / kraken.csv / kraken_report.csv
+│   ├── mlst.csv / mlst_modif.csv / kleborate.tsv
+│   ├── AbR_report.csv / AbR_modif.xlsx
+│   ├── IS.tsv / integron_summary.csv / phage_summary.csv
+│   ├── copla.txt / copla_modif.csv
+│   ├── gambit.csv / genus.csv / species.csv / enterobacterales__species_output.txt
+│   └── output.tsv / kraken_mlst.xlsx
+│
+├── test/                         ← Partial test run (mirrors run-time folder layout)
+│   ├── list_seq.tsv
+│   ├── 01_reads/QC/              ← NanoPlot pre-filter outputs
+│   ├── 02_filter/QC/             ← NanoPlot post-filter outputs
+│   ├── 03_assemblies/quast/      ← QUAST assembly QC
+│   ├── 04_taxonomies/
+│   │   ├── kraken2/              ← Kraken2 reports
+│   │   ├── gambit.csv
+│   │   ├── kleborate/
+│   │   └── ectyper/
+│   ├── 08_Anotacion/AbR.tab      ← ABRicate AMR output
+│   └── [final output CSVs/XLSXs]
+│
+└── tests/
+    └── test_parser.py            ← Unit tests for parser.py
+```
+
+---
+
+### Run-time folder layout (created by aluminion.sh)
+
+The pipeline is called from a **parent directory** containing `list_seq.tsv`.
+Each run creates a subdirectory `RUN_NAME/`:
+
+```
+parent_dir/
+├── list_seq.tsv                         ← Sample sheet (tab-separated; must be here)
+└── RUN_NAME/                            ← WORKDIR; created by aluminion.sh
+    ├── samples                          ← Plain text list of sample IDs (generated)
+    ├── aluminion_YYYYMMDD_HHMMSS.log    ← Full run log (stdout + stderr via tee)
+    │
+    ├── 01_reads/
+    │   ├── {sample}.fastq.gz            ← Concatenated raw reads per sample
+    │   └── QC/{sample}/
+    │       ├── NanoStats.txt            ← Resume sentinel for pre-filter NanoPlot
+    │       ├── LengthvsQualityScatterPlot_loglength_kde.png
+    │       └── *.html *.png             ← Other NanoPlot outputs
+    │
+    ├── 02_filter/
+    │   ├── {sample}.fastq.gz            ← Chopper-filtered reads (resume sentinel)
+    │   └── QC/{sample}/
+    │       ├── NanoStats.txt            ← Resume sentinel for post-filter NanoPlot
+    │       └── *.html *.png
+    │
+    ├── 03_assemblies/{sample}/
+    │   ├── assembly.fasta               ← Final polished + circularized assembly
+    │   ├── assembly_graph.gfa           ← Flye assembly graph
+    │   ├── .polished                    ← Sentinel: dorado polish complete
+    │   └── .circlator_done             ← Sentinel: circlator fixstart complete
+    │
+    ├── 04_taxonomies/
+    │   ├── kraken2/{sample}.report      ← Resume sentinel for Kraken2
+    │   ├── gambit.csv                   ← GAMBIT species typing (all samples)
+    │   ├── mlst/{sample}.tsv
+    │   ├── kleborate/{sample}.tsv
+    │   └── ectyper/{sample}/
+    │
+    ├── 05_IS/{sample}/
+    │   └── IS_chr_out.tsv               ← BLAST vs ISfinder (resume sentinel)
+    │
+    ├── 06_integrons/{sample}/           ← IntegronFinder output directory
+    │
+    ├── 07_phages/{sample}/              ← Phastest output directory
+    │
+    ├── 08_Anotacion/{sample}/
+    │   ├── {sample}.gbff                ← Bakta annotation (resume sentinel)
+    │   ├── {sample}.faa / .gff3 / .tsv ← Bakta accessory outputs
+    │   ├── mob_recon/                   ← MOB-suite plasmid reconstruction
+    │   ├── AbR.tab                      ← ABRicate AMR per-sample results
+    │   └── copla/                       ← Copla plasmid classification
+    │
+    └── [final output tables — generated by parser.py + aluminion_reporter.py]
+        ├── data_seq.tsv                 ← Sequencing run metadata
+        ├── QC_reads.csv                 ← Per-sample read QC summary
+        ├── QC_assembly.csv             ← Per-sample assembly QC (QUAST)
+        ├── taxonomy.csv / .xlsx         ← Species typing (GAMBIT + Kraken2)
+        ├── kraken.csv / kraken_report.csv
+        ├── mlst.csv / mlst_modif.csv
+        ├── kleborate.tsv
+        ├── AbR_report.csv / AbR_modif.xlsx
+        ├── IS.tsv
+        ├── integron_summary.csv
+        ├── phage_summary.csv
+        ├── copla.txt / copla_modif.csv
+        ├── data_analysis.tsv            ← Master table (all results merged)
+        └── Aluminion_Report.html        ← Interactive HTML summary report
+```
+
+---
+
+### Pipeline stages
+
+| Stage | Folder | Tools | Conda env | Skip flag |
+|-------|--------|-------|-----------|-----------|
+| 1 — Read QC & filtering | `01_reads/`, `02_filter/` | NanoPlot, Chopper | `aluminion_reads` | `--skip-preprocessing` |
+| 2 — Assembly & polishing | `03_assemblies/` | Flye, dorado polish, circlator | `aluminion_assembly`, `aluminion_circlator` | — |
+| 3 — Annotation & AMR | `08_Anotacion/` | Bakta, ABRicate, MOB-suite, Copla | `aluminion_annot` | `--skip-abr` (ABRicate only) |
+| 4 — Taxonomy & typing | `04_taxonomies/` | Kraken2, GAMBIT, mlst, Kleborate, ECTyper | various | `--skip-kraken`, `--skip-typing` |
+| 4 — MGEs | `05_IS/`, `06_integrons/`, `07_phages/` | BLAST/ISfinder, IntegronFinder, Phastest | `aluminion_annot`, `aluminion_integron` | `--skip-phages` |
+| 5 — Consolidation | RUN_NAME root | parser.py, aluminion_reporter.py | `aluminion_annot` | — |
+
+Docker images required: `kbessonov/mob_suite:3.0.3`, `rpalcab/copla:1.0`, phastest (local compose).
+
+---
+
+### Key implementation decisions (non-obvious — read before editing)
+
+- `set +e` / `set -e` brackets around NanoPlot loops: choreographer (NanoPlot's Plotly
+  dependency) spawns child browser processes that become direct bash children; `wait`
+  catches their non-zero exit under `set -e`, hanging the pipeline. The brackets + `& done; wait`
+  pattern parallelises NanoPlot across samples while ignoring choreographer exit codes.
+- `MPLBACKEND=Agg PLOTLY_RENDERER=kaleido` on all NanoPlot calls: forces non-interactive
+  matplotlib backend and routes Plotly static exports through kaleido, bypassing
+  choreographer/Chrome entirely on headless servers.
+- `kaleido` is NOT available on conda-forge or bioconda — must be installed via pip with no
+  version pin. NanoPlot 1.46.2 requires kaleido>=1.0.0; pip installs the 1.x Go-based binary
+  (~small, fast). The old 0.2.1 bundled a full Chromium (~200 MB) and hung during install.
+- `readlink -f` is applied to `SEQ_LIST_INPUT` and `BASE_DIR` immediately after argument
+  parsing, before any `cd "$WORKDIR"`, to prevent relative path breakage.
+- Resume sentinels: `.polished` and `.circlator_done` are `touch`-created files because
+  both steps overwrite `assembly.fasta` (can't use the assembly as its own sentinel).
+- Flye failure: interactive 3-choice menu (skip sample / retry with `--meta` / stop pipeline).
+  Skipped samples are removed from the `samples` file so downstream loops ignore them.
+- `copla.txt` is only truncated (`> copla.txt`) on a fresh run, not on `--resume`, to
+  allow appending results for samples that weren't done yet.
