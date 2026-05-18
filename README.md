@@ -383,6 +383,7 @@ aluminion -r BAC_2025_NOV_25 -b /$your_database_folder -t 30 -l /path/to/list_se
 | `-p / --phastest-dir` | Path to local Phastest docker-compose folder | `~/Programs/phastest-docker` |
 | `-m / --minknow-dir` | Path to MinKNOW data root | `/var/lib/minknow/data` |
 | `--init-db` | Create `data_seq.tsv` / `data_analysis.tsv` from scratch | — |
+| `--resume` | Resume interrupted run: skip any step whose output already exists | — |
 | `--skip-preprocessing` | Skip NanoPlot + Chopper (reuse existing 01_reads/, 02_filter/) | — |
 | `--skip-kraken` | Skip Kraken2 read-level classification | — |
 | `--skip-abr` | Skip Abricate AMR resistance gene screen | — |
@@ -390,6 +391,70 @@ aluminion -r BAC_2025_NOV_25 -b /$your_database_folder -t 30 -l /path/to/list_se
 | `--skip-integrons` | Skip Integron_Finder and integron parsing | — |
 | `--skip-plasmids` | Skip Copla plasmid typing (MOB-suite always runs) | — |
 | `--skip-phages` | Skip Phastest prophage detection | — |
+
+### Resuming a partial run
+
+#### `--resume` — automatic resume (recommended)
+
+The simplest way to continue after an interruption. Aluminion checks whether each step's expected output already exists before running it, and silently skips it if so. This works even if the pipeline failed in the middle of a sample loop — samples already processed are skipped, and processing continues from the first incomplete sample.
+
+```bash
+aluminion -r BAC_2025_NOV_25 -b /$your_database_folder -t 30 -l /path/to/list_seq.tsv --resume
+```
+
+`--resume` can be combined with any `--skip-*` flag. For example, to resume and also skip Kraken2 (already ran on a previous attempt):
+
+```bash
+aluminion -r BAC_2025_NOV_25 -b /$your_database_folder -t 30 -l /path/to/list_seq.tsv \
+  --resume --skip-kraken
+```
+
+**Sentinel files used by `--resume`:**
+
+| Step | Skipped if this exists |
+|---|---|
+| Read concatenation | `01_reads/<sample>.fastq.gz` |
+| Pre-filter NanoPlot | `01_reads/QC/<sample>/NanoStats.txt` |
+| Chopper | `02_filter/<sample>.fastq.gz` |
+| Post-filter NanoPlot | `02_filter/QC/<sample>/NanoStats.txt` |
+| Kraken2 | `04_taxonomies/kraken2/<sample>.report` |
+| Flye | `03_assemblies/<sample>/assembly.fasta` |
+| Polishing | `03_assemblies/<sample>/.polished` |
+| Deconcat | `03_assemblies/<sample>/deconcat/assembly_corr.fasta` |
+| Circlator | `03_assemblies/<sample>/.circlator_done` |
+| QUAST | `03_assemblies/quast/transposed_report.tsv` |
+| Bakta | `08_Anotacion/<sample>/<sample>.gbff` |
+| MOB-suite | `08_Anotacion/<sample>/mob_recon/` |
+| Abricate | `08_Anotacion/<sample>/abricate/<sample>.tab` |
+| Integron_Finder | `11_integrons/<sample>/` |
+| Copla | `08_Anotacion/<sample>/copla/` |
+| GAMBIT | `04_taxonomies/gambit.csv` |
+| MLST | `mlst.csv` |
+| Kleborate | `04_taxonomies/kleborate/enterobacterales__species_output.txt` |
+| ECTyper | `04_taxonomies/ectyper/output.tsv` |
+| Phastest | `09_phages/phastest_deep/<sample>/` |
+| IS search (BLASTn) | `08_Anotacion/<sample>/IS_chr_out.tsv` |
+
+> IS.tsv is always rebuilt from existing output files, so IS results for completed samples are always included even when the BLASTn step is skipped.
+
+#### `--skip-*` — manual module skip
+
+For coarser control, use `--skip-*` flags to bypass entire modules regardless of whether their output exists. All flags can be combined freely — execution continues with the next module after any skipped one.
+
+```bash
+# Skip only Kraken2 (already done) and re-run everything else
+aluminion -r BAC_2025_NOV_25 -b /$your_database_folder -t 30 -l /path/to/list_seq.tsv \
+  --skip-preprocessing --skip-kraken
+
+# Only re-run the final parsing and report (all assemblies and annotations done)
+aluminion -r BAC_2025_NOV_25 -b /$your_database_folder -t 30 -l /path/to/list_seq.tsv \
+  --skip-preprocessing --skip-kraken --skip-abr --skip-typing \
+  --skip-integrons --skip-plasmids --skip-phages
+```
+
+> **`--skip-preprocessing`** requires that `01_reads/`, `02_filter/`, and the `samples` file already exist in the run folder from a previous run. If the `samples` file is missing, the pipeline will stop with an error.
+
+> All other `--skip-*` flags bypass both the tool execution **and** the corresponding parsing step in `parser.py`. The downstream consolidation scripts (`parser.py`, `aluminion_reporter.py`, `Datos_seq_unified2.py`) always run regardless of which modules were skipped.
 
 ### Running only the parsing stage (no reads)
 
@@ -411,6 +476,35 @@ python3 scripts/Datos_seq_unified2.py --input_path /path/to/run/ --init
 ```
 
 `parser.py` performs a **preflight check** at startup and lists any missing input files with the corresponding `--skip-*` flag suggestion.
+
+---
+
+## Assembly failure handling
+
+Flye assembly failures are handled interactively. If Flye cannot assemble a sample (e.g., no disjointigs produced), the pipeline pauses and presents three options:
+
+```
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │  ASSEMBLY FAILED: <sample>
+  │  Flye could not assemble this sample (no disjointigs produced).
+  │                                                                      │
+  │  Options:                                                            │
+  │    1) Skip sample and continue with the rest                        │
+  │    2) Retry with --meta (for high-copy or fragmented assemblies)    │
+  │    3) Stop pipeline for manual inspection                           │
+  └──────────────────────────────────────────────────────────────────────┘
+  Choose [1/2/3]:
+```
+
+| Choice | Behaviour |
+|---|---|
+| `1` | Sample is excluded from all downstream steps (removed from the internal `samples` list). The rest of the run continues normally. |
+| `2` | Flye is retried with `--meta` mode, which tolerates uneven coverage and high-copy elements (plasmids, expression vectors). If `--meta` also fails, the sample is automatically skipped. |
+| `3` | Pipeline stops immediately. Re-run with `--skip-preprocessing` once the issue is resolved to avoid repeating the read QC step. |
+
+> **When to use `--meta`**: standard Flye (`--nano-hq`) requires uniform coverage and a minimum overlap depth. Samples containing high-copy-number plasmids or expression vectors may fail because the extreme coverage imbalance confuses the overlap graph. `--meta` is designed for uneven coverage and often succeeds in these cases, though the assembly may be more fragmented.
+
+> Samples skipped due to assembly failure are removed from the `samples` tracking file. All subsequent steps (polishing, Bakta, Kleborate, etc.) iterate over this file, so skipped samples are automatically excluded from every downstream module without any manual intervention.
 
 ---
 
@@ -520,6 +614,8 @@ The test suite covers: clean exit, row counts, duplicate detection, key column c
 **`parser.py` reports missing files** — The preflight check lists each missing file and the `--skip-*` flag to bypass it. Use the flags during partial runs (e.g., when phage/integron analysis was not performed).
 
 **`[ERROR] Empty 'list_seq.tsv' created`** — Aluminion could not find the file at the path you passed with `-l`. If you used a relative path (e.g., `-l list_seq.tsv`), make sure you are in the parent working directory when you call `aluminion`, not inside a run subfolder. Alternatively, pass an absolute path: `-l /home/user/Seqs/Servicio/list_seq.tsv`.
+
+**`ERROR: No disjointigs were assembled` (Flye)** — Flye failed to assemble the sample. This typically happens with samples containing very high-copy-number elements (plasmids, expression vectors) that create extreme coverage imbalance. When this occurs, Aluminion pauses and offers three options: skip the sample, retry with `--meta` (recommended for high-copy cases), or stop the pipeline. See [Assembly failure handling](#assembly-failure-handling) for details.
 
 **`data_seq.tsv` not found on first run** — This is expected. Either add `--init-db` to your first run or let Aluminion auto-detect and create the databases from scratch.
 

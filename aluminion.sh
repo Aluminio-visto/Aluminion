@@ -50,6 +50,9 @@ Additional options:
                   (Default: \$ALUMINION_MINKNOW_DIR or /var/lib/minknow/data)
   --init-db       First run: create data_seq.tsv and data_analysis.tsv from scratch.
                   Also triggered automatically if those files do not exist.
+  --resume        Resume a previously interrupted run. Each step checks whether
+                  its output already exists and skips it if so. Use after any
+                  mid-run failure to avoid repeating completed work.
   --skip-preprocessing  Skip read QC and filtering (NanoPlot + Chopper). Requires a
                   previous run to have completed this step (01_reads/, 02_filter/,
                   and samples file must exist).
@@ -69,11 +72,14 @@ EOF
 
 log() { echo -e "\n\033[1;32m[$(date +'%Y-%m-%d %H:%M:%S')] $1\033[0m"; }
 error_log() { echo -e "\n\033[1;31m[ERROR] $1\033[0m"; }
+# Returns true if --resume is active and the sentinel file or directory already exists
+resume_done() { [ -n "$RESUME" ] && { [ -f "$1" ] || [ -d "$1" ]; }; }
 
 # ==============================================================================
 # COMMAND LINE ARGUMENT PARSING
 # ==============================================================================
 
+RESUME=""
 SKIP_PREPROCESSING=""
 SKIP_PHAGES=""
 SKIP_INTEGRONS=""
@@ -92,6 +98,7 @@ while [[ "$#" -gt 0 ]]; do
         -d|--dir) BASE_DIR="$2"; shift ;;
         -p|--phastest-dir) PHASTEST_DIR="$2"; shift ;;
         -m|--minknow-dir) MINKNOW_DIR="$2"; shift ;;
+        --resume) RESUME=true ;;
         # Flags for skipping steps
         --skip-preprocessing) SKIP_PREPROCESSING=true ;;
         --skip-phages) SKIP_PHAGES="--skip-phages" ;;
@@ -212,12 +219,15 @@ if [ -z "$SKIP_PREPROCESSING" ]; then
 
     tail -n +2 list_seq.tsv | while IFS=$'\t' read -r cult cep id bc c rep; do
         [ -z "$id" ] && continue
-        if [ -z "$rep" ]; then
+        if resume_done "01_reads/${id}.fastq.gz"; then
+            log "  [resume] Read concat: ${id} already done, skipping."
+        elif [ -z "$rep" ]; then
             cat fastq_pass/barcode${bc}/*.fastq.gz > 01_reads/${id}.fastq.gz
+            cp 01_reads/${id}.fastq.gz ../repositorio/01_reads/${id}.fastq.gz
         else
             cat ../repositorio/01_reads/${id}.fastq.gz fastq_pass/barcode${bc}/*.fastq.gz > 01_reads/${id}.fastq.gz
+            cp 01_reads/${id}.fastq.gz ../repositorio/01_reads/${id}.fastq.gz
         fi
-        cp 01_reads/${id}.fastq.gz ../repositorio/01_reads/${id}.fastq.gz
         echo -e "${id}\t\t\t$PWD/01_reads/${id}.fastq.gz\t\t" >> samplesheet.tsv
     done
 
@@ -232,13 +242,26 @@ if [ -z "$SKIP_PREPROCESSING" ]; then
     conda activate aluminion_reads
 
     log "Pre-filtering QC..."
-    for i in $(cat samples); do MPLBACKEND=Agg NanoPlot --fastq 01_reads/${i}.fastq.gz -o 01_reads/QC/${i} --downsample 20000 --threads 4 --loglength & done; wait
+    set +e
+    for i in $(cat samples); do
+        resume_done "01_reads/QC/${i}/NanoStats.txt" && continue
+        MPLBACKEND=Agg NanoPlot --fastq 01_reads/${i}.fastq.gz -o 01_reads/QC/${i} --downsample 20000 --threads 4 --loglength &
+    done; wait
+    set -e
 
     log "Filtering (Chopper)..."
-    for i in $(cat samples); do gunzip -c 01_reads/${i}.fastq.gz | chopper -q 12 -l 300 --headcrop 20 --threads $THREADS_TOTAL | gzip > 02_filter/${i}.fastq.gz; done
+    for i in $(cat samples); do
+        resume_done "02_filter/${i}.fastq.gz" && { log "  [resume] Chopper: ${i} done, skipping."; continue; }
+        gunzip -c 01_reads/${i}.fastq.gz | chopper -q 12 -l 300 --headcrop 20 --threads $THREADS_TOTAL | gzip > 02_filter/${i}.fastq.gz
+    done
 
     log "Post-filtering QC..."
-    for i in $(cat samples); do MPLBACKEND=Agg NanoPlot --fastq 02_filter/${i}.fastq.gz -o 02_filter/QC/${i} --downsample 20000 --threads 4 --loglength & done; wait
+    set +e
+    for i in $(cat samples); do
+        resume_done "02_filter/QC/${i}/NanoStats.txt" && continue
+        MPLBACKEND=Agg NanoPlot --fastq 02_filter/${i}.fastq.gz -o 02_filter/QC/${i} --downsample 20000 --threads 4 --loglength &
+    done; wait
+    set -e
 else
     log "Skipping preprocessing — using existing reads and QC from previous run."
     if [ ! -s "samples" ]; then
@@ -253,54 +276,132 @@ conda activate aluminion_assembly
 if [ -z "$SKIP_KRAKEN" ]; then
     log "Taxonomy (Kraken2)..."
     cp ${KRAKEN_DB}/*.k2d /dev/shm/
-    for i in $(cat samples); do kraken2 --memory-mapping --db /dev/shm --minimum-base-quality 10 --minimum-hit-groups 100 --output 04_taxonomies/kraken2/${i}.out --use-names --report 04_taxonomies/kraken2/${i}.report --gzip-compressed 02_filter/${i}.fastq.gz --threads $THREADS_TOTAL; done
+    for i in $(cat samples); do
+        resume_done "04_taxonomies/kraken2/${i}.report" && { log "  [resume] Kraken2: ${i} done, skipping."; continue; }
+        kraken2 --memory-mapping --db /dev/shm --minimum-base-quality 10 --minimum-hit-groups 100 --output 04_taxonomies/kraken2/${i}.out --use-names --report 04_taxonomies/kraken2/${i}.report --gzip-compressed 02_filter/${i}.fastq.gz --threads $THREADS_TOTAL
+    done
     rm -f /dev/shm/*.k2d
 else
     log "Skipping Kraken2..."
 fi
 
 log "Assembly (Flye)..."
-for i in $(cat samples); do flye --nano-hq 02_filter/${i}.fastq.gz --threads $THREADS_TOTAL --out-dir 03_assemblies/${i}; done
+failed_assembly=()
+for i in $(cat samples); do
+    if resume_done "03_assemblies/${i}/assembly.fasta"; then
+        log "  [resume] Flye: ${i} already assembled, skipping."
+        continue
+    fi
+    if ! flye --nano-hq 02_filter/${i}.fastq.gz --threads $THREADS_TOTAL --out-dir 03_assemblies/${i}; then
+        echo ""
+        echo "  ┌──────────────────────────────────────────────────────────────────────┐"
+        echo "  │  ASSEMBLY FAILED: ${i}"
+        echo "  │  Flye could not assemble this sample (no disjointigs produced)."
+        echo "  │                                                                      │"
+        echo "  │  Options:                                                            │"
+        echo "  │    1) Skip sample and continue with the rest                        │"
+        echo "  │    2) Retry with --meta (for high-copy or fragmented assemblies)    │"
+        echo "  │    3) Stop pipeline for manual inspection                           │"
+        echo "  └──────────────────────────────────────────────────────────────────────┘"
+        read -rp "  Choose [1/2/3]: " flye_choice
+        case "$flye_choice" in
+            1)
+                error_log "Skipping sample ${i} — it will be excluded from all downstream steps."
+                failed_assembly+=("$i")
+                ;;
+            2)
+                log "Retrying Flye with --meta for sample ${i}..."
+                rm -rf 03_assemblies/${i}
+                if ! flye --nano-hq 02_filter/${i}.fastq.gz --threads $THREADS_TOTAL --out-dir 03_assemblies/${i} --meta; then
+                    error_log "Flye --meta also failed for ${i}. Skipping sample."
+                    failed_assembly+=("$i")
+                else
+                    log "Flye --meta succeeded for sample ${i}."
+                fi
+                ;;
+            3)
+                error_log "Pipeline stopped by user after assembly failure on sample ${i}."
+                exit 1
+                ;;
+            *)
+                error_log "Invalid choice. Stopping pipeline."
+                exit 1
+                ;;
+        esac
+    fi
+done
+
+if [ ${#failed_assembly[@]} -gt 0 ]; then
+    log "Removing ${#failed_assembly[@]} failed sample(s) from pipeline: ${failed_assembly[*]}"
+    for s in "${failed_assembly[@]}"; do
+        sed -i "/^${s}$/d" samples
+    done
+fi
 
 log "Polishing"
-for i in $(cat samples); do 
- dorado   aligner 03_assemblies/${i}/assembly.fasta 02_filter/${i}.fastq.gz | samtools sort --threads $THREADS_TOTAL > 03_assemblies/${i}/${i}_aligned_reads.bam 
- samtools index 03_assemblies/${i}/${i}_aligned_reads.bam 
- dorado   polish 03_assemblies/${i}/${i}_aligned_reads.bam 03_assemblies/${i}/assembly.fasta --bacteria --ignore-read-groups > 03_assemblies/${i}/polished_assembly.fasta 
- mv 03_assemblies/${i}/polished_assembly.fasta 03_assemblies/${i}/assembly.fasta 
- rm 03_assemblies/${i}/${i}_aligned_reads.bam 03_assemblies/${i}/${i}_aligned_reads.bam.bai;
- done
+for i in $(cat samples); do
+    if resume_done "03_assemblies/${i}/.polished"; then
+        log "  [resume] Polishing: ${i} done, skipping."
+        continue
+    fi
+    dorado aligner 03_assemblies/${i}/assembly.fasta 02_filter/${i}.fastq.gz | samtools sort --threads $THREADS_TOTAL > 03_assemblies/${i}/${i}_aligned_reads.bam
+    samtools index 03_assemblies/${i}/${i}_aligned_reads.bam
+    dorado polish 03_assemblies/${i}/${i}_aligned_reads.bam 03_assemblies/${i}/assembly.fasta --bacteria --ignore-read-groups > 03_assemblies/${i}/polished_assembly.fasta
+    mv 03_assemblies/${i}/polished_assembly.fasta 03_assemblies/${i}/assembly.fasta
+    rm 03_assemblies/${i}/${i}_aligned_reads.bam 03_assemblies/${i}/${i}_aligned_reads.bam.bai
+    touch "03_assemblies/${i}/.polished"
+done
 
 log "Deconcatenation & Recircularization..."
 > 03_assemblies/deconcat.log
 conda activate aluminion_assembly
 for i in $(cat samples); do
+    resume_done "03_assemblies/${i}/deconcat/assembly_corr.fasta" && { log "  [resume] Deconcat: ${i} done, skipping."; continue; }
     python3 "$SCRIPTS_PATH/deconcat.py" --fasta_file 03_assemblies/${i}/assembly.fasta --fastq_file 02_filter/${i}.fastq.gz --out_path 03_assemblies/${i}/deconcat >> 03_assemblies/deconcat.log 2>&1 || true
     cp 03_assemblies/${i}/deconcat/assembly_corr.fasta 03_assemblies/${i}.fasta
 done
 conda activate aluminion_circlator
 for i in $(cat samples); do
+    resume_done "03_assemblies/${i}/.circlator_done" && { log "  [resume] Circlator: ${i} done, skipping."; continue; }
     circlator fixstart 03_assemblies/${i}.fasta 03_assemblies/${i}.fix
     mv 03_assemblies/${i}.fix.fasta 03_assemblies/${i}.fasta
     rm -f 03_assemblies/*fix* 03_assemblies/*fasta.*
+    touch "03_assemblies/${i}/.circlator_done"
 done
 
 log "Assembly QC..."
-quast.py -o 03_assemblies/quast -t $THREADS_TOTAL 03_assemblies/*.fasta
-for i in $(cat samples); do Bandage image 03_assemblies/${i}/assembly_graph.gfa 03_assemblies/${i}.png --lengths --depth --toutline 1.0; done
+if resume_done "03_assemblies/quast/transposed_report.tsv"; then
+    log "  [resume] QUAST: already done, skipping."
+else
+    quast.py -o 03_assemblies/quast -t $THREADS_TOTAL 03_assemblies/*.fasta
+fi
+for i in $(cat samples); do
+    resume_done "03_assemblies/${i}.png" && continue
+    Bandage image 03_assemblies/${i}/assembly_graph.gfa 03_assemblies/${i}.png --lengths --depth --toutline 1.0
+done
 
 # 3. Annotation
 conda activate aluminion_annot
 
 log "Annotation (Bakta)..."
-for i in $(cat samples); do bakta --db $BAKTA_DB --output 08_Anotacion/${i} --threads $THREADS_TOTAL 03_assemblies/${i}.fasta --force; done
+for i in $(cat samples); do
+    resume_done "08_Anotacion/${i}/${i}.gbff" && { log "  [resume] Bakta: ${i} done, skipping."; continue; }
+    bakta --db $BAKTA_DB --output 08_Anotacion/${i} --threads $THREADS_TOTAL 03_assemblies/${i}.fasta --force
+done
 
 log "Plasmid Extraction (MOB-Suite Docker)..."
-for i in $(cat samples); do docker run --rm -v $(pwd):/mnt/ --user $(id -u):$(id -g) "$MOBSUITE_IMAGE" mob_recon -i /mnt/03_assemblies/${i}.fasta -o /mnt/08_Anotacion/${i}/mob_recon -c --force -n $THREADS_TOTAL; done
+for i in $(cat samples); do
+    resume_done "08_Anotacion/${i}/mob_recon" && { log "  [resume] MOB-suite: ${i} done, skipping."; continue; }
+    docker run --rm -v $(pwd):/mnt/ --user $(id -u):$(id -g) "$MOBSUITE_IMAGE" mob_recon -i /mnt/03_assemblies/${i}.fasta -o /mnt/08_Anotacion/${i}/mob_recon -c --force -n $THREADS_TOTAL
+done
 
 if [ -z "$SKIP_ABR" ]; then
     log "AMR Screen (Abricate)..."
-    for i in $(cat samples); do mkdir -p 08_Anotacion/${i}/abricate; abricate --minid 75 --mincov 75 03_assemblies/${i}.fasta > 08_Anotacion/${i}/abricate/${i}.tab; done
+    for i in $(cat samples); do
+        resume_done "08_Anotacion/${i}/abricate/${i}.tab" && { log "  [resume] Abricate: ${i} done, skipping."; continue; }
+        mkdir -p 08_Anotacion/${i}/abricate
+        abricate --minid 75 --mincov 75 03_assemblies/${i}.fasta > 08_Anotacion/${i}/abricate/${i}.tab
+    done
     abricate --summary 08_Anotacion/*/abricate/*.tab > 08_Anotacion/AbR.tab
     cp 08_Anotacion/AbR.tab AbR_report.csv
 else
@@ -311,7 +412,10 @@ fi
 if [ -z "$SKIP_INTEGRONS" ]; then
     log "Running Integrons module (Integron_finder)..."
     conda activate aluminion_integron
-    for i in $(cat samples); do integron_finder 03_assemblies/${i}.fasta --cpu $THREADS_TOTAL --outdir 11_integrons/${i} --func-annot --gbk || true; done
+    for i in $(cat samples); do
+        resume_done "11_integrons/${i}" && { log "  [resume] Integron_Finder: ${i} done, skipping."; continue; }
+        integron_finder 03_assemblies/${i}.fasta --cpu $THREADS_TOTAL --outdir 11_integrons/${i} --func-annot --gbk || true
+    done
     conda activate aluminion_annot
     python3 "$SCRIPTS_PATH/integron_parser.py" .
     cp 11_integrons/integron_summary.csv . || true
@@ -322,8 +426,12 @@ fi
 # Plasmid typing (Copla — Docker only)
 if [ -z "$SKIP_PLASMIDS" ]; then
     log "Running Plasmid Typing module (Copla)..."
-    > copla.txt
+    [ -z "$RESUME" ] && > copla.txt
     for j in $(cat samples); do
+        if resume_done "08_Anotacion/${j}/copla"; then
+            log "  [resume] Copla: ${j} done, skipping."
+            continue
+        fi
         find 08_Anotacion/${j}/mob_recon/ -name "*.fasta" -size -600k -size +1k | while read -r i; do
             new_name=$(basename "$i" | cut -d'_' -f1)
             cp "${i}" 05_plasmids/${new_name}_${j}.fasta
@@ -338,13 +446,29 @@ fi
 if [ -z "$SKIP_TYPING" ]; then
     log "Typing (GAMBIT, MLST, Kleborate, ECTyper)..."
     conda activate aluminion_annot
-    gambit -d $GAMBIT_DB query -o 04_taxonomies/gambit.csv 03_assemblies/*.fasta
-    mlst 03_assemblies/*.fasta -q > mlst.csv
+    if resume_done "04_taxonomies/gambit.csv"; then
+        log "  [resume] GAMBIT: already done, skipping."
+    else
+        gambit -d $GAMBIT_DB query -o 04_taxonomies/gambit.csv 03_assemblies/*.fasta
+    fi
+    if resume_done "mlst.csv"; then
+        log "  [resume] MLST: already done, skipping."
+    else
+        mlst 03_assemblies/*.fasta -q > mlst.csv
+    fi
     conda activate aluminion_kleborate
     cp 03_assemblies/*.fasta 04_taxonomies/gtdb/
-    kleborate -a 03_assemblies/*.fasta -o 04_taxonomies/kleborate -m enterobacterales__species,klebsiella_pneumo_complex__amr,klebsiella_pneumo_complex__kaptive,klebsiella_pneumo_complex__mlst,escherichia__mlst_achtman,klebsiella_pneumo_complex__resistance_score,klebsiella_pneumo_complex__resistance_gene_count,klebsiella__ybst,klebsiella__cbst,klebsiella__abst,klebsiella__smst,klebsiella__rmst,klebsiella__rmpa2,klebsiella_pneumo_complex__virulence_score
-    cp 04_taxonomies/kleborate/enterobacterales__species_output.txt kleborate.tsv || true
-    ectyper -i 04_taxonomies/gtdb -o 04_taxonomies/ectyper
+    if resume_done "04_taxonomies/kleborate/enterobacterales__species_output.txt"; then
+        log "  [resume] Kleborate: already done, skipping."
+    else
+        kleborate -a 03_assemblies/*.fasta -o 04_taxonomies/kleborate -m enterobacterales__species,klebsiella_pneumo_complex__amr,klebsiella_pneumo_complex__kaptive,klebsiella_pneumo_complex__mlst,escherichia__mlst_achtman,klebsiella_pneumo_complex__resistance_score,klebsiella_pneumo_complex__resistance_gene_count,klebsiella__ybst,klebsiella__cbst,klebsiella__abst,klebsiella__smst,klebsiella__rmst,klebsiella__rmpa2,klebsiella_pneumo_complex__virulence_score
+        cp 04_taxonomies/kleborate/enterobacterales__species_output.txt kleborate.tsv || true
+    fi
+    if resume_done "04_taxonomies/ectyper/output.tsv"; then
+        log "  [resume] ECTyper: already done, skipping."
+    else
+        ectyper -i 04_taxonomies/gtdb -o 04_taxonomies/ectyper
+    fi
     conda activate aluminion_annot
 else
     log "Skipping Typing (GAMBIT, MLST, Kleborate, ECTyper)..."
@@ -355,6 +479,10 @@ fi
 if [ -z "$SKIP_PHAGES" ]; then
     log "Running Phages module (Phastest)..."
     for i in $(cat samples); do
+        if resume_done "09_phages/phastest_deep/${i}"; then
+            log "  [resume] Phastest: ${i} done, skipping."
+            continue
+        fi
         mkdir -p 09_phages/phastest_deep/"$i"/
         cp 03_assemblies/"$i".fasta "${PHASTEST_DIR}/phastest_inputs/"
         docker compose -f "${PHASTEST_DIR}/docker-compose.yml" run --rm --user $(id -u):$(id -g) phastest -i fasta -m deep -s "$i".fasta --phage-only --yes
@@ -374,12 +502,16 @@ conda activate aluminion_annot
 log "IS parsing and Final Tables..."
 > IS.tsv
 echo -e "sample\tmax\tIS_name\tTotal_IS" > IS.tsv
-for i in $(cat samples); do 
+for i in $(cat samples); do
     if [ -f "08_Anotacion/${i}/mob_recon/chromosome.fasta" ]; then
-        sed -i 's/>contig/>Chr/g' "08_Anotacion/${i}/mob_recon/chromosome.fasta"
-        makeblastdb -in "08_Anotacion/${i}/mob_recon/chromosome.fasta" -dbtype nucl
-        blastn -db "08_Anotacion/${i}/mob_recon/chromosome.fasta" -query "$ISFINDER_DB" -outfmt "6 qseqid sseqid sstart send pident mismatch evalue" | sort -k 3 > 08_Anotacion/${i}/IS_chr.tsv
-        python3 "$SCRIPTS_PATH/IS_parser.py" -i 08_Anotacion/${i}
+        if ! resume_done "08_Anotacion/${i}/IS_chr_out.tsv"; then
+            sed -i 's/>contig/>Chr/g' "08_Anotacion/${i}/mob_recon/chromosome.fasta"
+            makeblastdb -in "08_Anotacion/${i}/mob_recon/chromosome.fasta" -dbtype nucl
+            blastn -db "08_Anotacion/${i}/mob_recon/chromosome.fasta" -query "$ISFINDER_DB" -outfmt "6 qseqid sseqid sstart send pident mismatch evalue" | sort -k 3 > 08_Anotacion/${i}/IS_chr.tsv
+            python3 "$SCRIPTS_PATH/IS_parser.py" -i 08_Anotacion/${i}
+        else
+            log "  [resume] IS search: ${i} done, skipping."
+        fi
         cat 08_Anotacion/${i}/IS_chr_out.tsv | cut -f 2 | sort | uniq -c | sort -r | awk '{print $1"\t"$2}' > 08_Anotacion/${i}/N_IS_${i}.tsv
         MAX_IS=$(head -n 1 08_Anotacion/${i}/N_IS_${i}.tsv || echo -e "0\tNone")
         TOTAL_IS=$(tail -n +2 08_Anotacion/${i}/IS_chr_out.tsv | wc -l || echo "0")
