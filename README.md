@@ -46,11 +46,10 @@ You may find examples for all input tables in the examples folder in this repo.
   ECTyper ────────────────── E. coli serotyping ───────────────► 04_taxonomies/ectyper/output.tsv
 
 
- STAGE 5 · MOBILE GENETIC ELEMENTS
+ STAGE 4 · MOBILE GENETIC ELEMENTS
  ─────────────────────────────────────────────────────────────────────────────
   MOB-suite  (Docker) ─────── plasmid reconstruction ──────────► 08_Anotacion/<sample>/mob_recon/
   Copla      (Docker) ─────── plasmid typing ──────────────────► copla.txt
-    └─ copla_parser.py ──────────────────────────────────────────► copla_modif.csv
 
   Phastest   (Docker Compose) prophage detection ──────────────► 09_phages/<sample>/
     └─ phage_parser.py ──────────────────────────────────────────► phage_summary.csv
@@ -62,13 +61,14 @@ You may find examples for all input tables in the examples folder in this repo.
     └─ IS_parser.py ─────────────────────────────────────────────► IS_chr_out.tsv
 
 
- STAGE 6 · CONSOLIDATION & REPORTING   [conda: aluminion_annot]
+ STAGE 5 · CONSOLIDATION & REPORTING   [conda: aluminion_annot]
  ─────────────────────────────────────────────────────────────────────────────
   parser.py ──────────────── merge all tool outputs ───────────► taxonomy.csv / .xlsx
               (preflight check                                    AbR_modif.xlsx
                lists any missing                                  mlst_modif.csv
                input files with                                   kraken_mlst.xlsx
-               --skip-* hints)                                    copla_modif.csv
+               --skip-* hints)
+                └─ copla_parser.py ─── copla.txt → ─────────────► copla_modif.csv
 
   aluminion_reporter.py ───── interactive HTML report ─────────► Aluminion_Report.html
 
@@ -383,12 +383,13 @@ aluminion -r BAC_2025_NOV_25 -b /$your_database_folder -t 30 -l /path/to/list_se
 | `-p / --phastest-dir` | Path to local Phastest docker-compose folder | `~/Programs/phastest-docker` |
 | `-m / --minknow-dir` | Path to MinKNOW data root | `/var/lib/minknow/data` |
 | `--init-db` | Create `data_seq.tsv` / `data_analysis.tsv` from scratch | — |
-| `--skip-phages` | Skip Phastest and phage parsing | — |
+| `--skip-preprocessing` | Skip NanoPlot + Chopper (reuse existing 01_reads/, 02_filter/) | — |
+| `--skip-kraken` | Skip Kraken2 read-level classification | — |
+| `--skip-abr` | Skip Abricate AMR resistance gene screen | — |
+| `--skip-typing` | Skip all typing tools: GAMBIT, MLST, Kleborate, ECTyper | — |
 | `--skip-integrons` | Skip Integron_Finder and integron parsing | — |
-| `--skip-plasmids` | Skip Copla plasmid clustering | — |
-| `--skip-typing` | Skip MLST, Kleborate, ECTyper, GAMBIT consolidation | — |
-| `--skip-kraken` | Skip Kraken2 taxonomy parsing | — |
-| `--skip-abr` | Skip Abricate AMR parsing | — |
+| `--skip-plasmids` | Skip Copla plasmid typing (MOB-suite always runs) | — |
+| `--skip-phages` | Skip Phastest prophage detection | — |
 
 ### Running only the parsing stage (no reads)
 
@@ -467,7 +468,8 @@ aluminion/
 │   ├── parser.py                 # Table consolidation (runs after all tools finish)
 │   ├── aluminion_reporter.py     # Interactive HTML report generator
 │   ├── Datos_seq_unified2.py     # Historical database updater
-│   ├── copla_parser.py           # Copla text output → copla_modif.csv
+│   ├── deconcat.py               # Assembly deconcatenation before Circlator
+│   ├── copla_parser.py           # Copla text output → copla_modif.csv (called by parser.py)
 │   ├── phage_parser.py           # Phastest output → phage_summary.csv
 │   ├── integron_parser.py        # Integron_Finder output → integron_summary.csv
 │   └── IS_parser.py              # ISfinder BLAST output → IS_chr_out.tsv

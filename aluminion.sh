@@ -50,6 +50,15 @@ Additional options:
                   (Default: \$ALUMINION_MINKNOW_DIR or /var/lib/minknow/data)
   --init-db       First run: create data_seq.tsv and data_analysis.tsv from scratch.
                   Also triggered automatically if those files do not exist.
+  --skip-preprocessing  Skip read QC and filtering (NanoPlot + Chopper). Requires a
+                  previous run to have completed this step (01_reads/, 02_filter/,
+                  and samples file must exist).
+  --skip-kraken   Skip Kraken2 read-level classification.
+  --skip-abr      Skip Abricate AMR resistance gene screen.
+  --skip-typing   Skip all typing tools: GAMBIT, MLST, Kleborate, ECTyper.
+  --skip-integrons  Skip Integron_Finder and integron parsing.
+  --skip-plasmids   Skip Copla plasmid typing (MOB-suite always runs).
+  --skip-phages     Skip Phastest prophage detection.
   -h, --help      Show this help message and exit.
 
 Example:
@@ -65,6 +74,7 @@ error_log() { echo -e "\n\033[1;31m[ERROR] $1\033[0m"; }
 # COMMAND LINE ARGUMENT PARSING
 # ==============================================================================
 
+SKIP_PREPROCESSING=""
 SKIP_PHAGES=""
 SKIP_INTEGRONS=""
 SKIP_PLASMIDS=""
@@ -83,6 +93,7 @@ while [[ "$#" -gt 0 ]]; do
         -p|--phastest-dir) PHASTEST_DIR="$2"; shift ;;
         -m|--minknow-dir) MINKNOW_DIR="$2"; shift ;;
         # Flags for skipping steps
+        --skip-preprocessing) SKIP_PREPROCESSING=true ;;
         --skip-phages) SKIP_PHAGES="--skip-phages" ;;
         --skip-integrons) SKIP_INTEGRONS="--skip-integrons" ;;
         --skip-plasmids) SKIP_PLASMIDS="--skip-plasmids" ;;
@@ -191,50 +202,62 @@ fi
 
 mkdir -p 01_reads/QC 02_filter/QC 03_assemblies/quast 04_taxonomies/{kraken2,gtdb} 05_plasmids 08_Anotacion 09_phages 10_ices 11_integrons ../repositorio/{01_reads,03_assemblies,05_plasmids,08_Anotacion,09_phages,10_ices,11_integrons}
 
-echo -e "ID\tR1\tR2\tLongFastQ\tFast5\tGenomeSize\tFasta" > samplesheet.tsv 
-
-tail -n +2 list_seq.tsv | while IFS=$'\t' read -r cult cep id bc c rep; do
-    [ -z "$id" ] && continue 
-    if [ -z "$rep" ]; then
-        cat fastq_pass/barcode${bc}/*.fastq.gz > 01_reads/${id}.fastq.gz
-    else
-        cat ../repositorio/01_reads/${id}.fastq.gz fastq_pass/barcode${bc}/*.fastq.gz > 01_reads/${id}.fastq.gz
-    fi
-    cp 01_reads/${id}.fastq.gz ../repositorio/01_reads/${id}.fastq.gz
-    echo -e "${id}\t\t\t$PWD/01_reads/${id}.fastq.gz\t\t" >> samplesheet.tsv
-done
-
-cut -f3 list_seq.tsv | tail -n+2 > ../repositorio/samples
-find 01_reads -type f -name "*.fastq.gz" -size +135M -exec basename {} .fastq.gz \; | sort | uniq > samples
-
-if [ ! -s samples ]; then
-    error_log "No samples passed the 135MB filter."
-    exit 1
-fi
-
 # ==============================================================================
 # PIPELINE EXECUTION
 # ==============================================================================
 
-# 1. Reads QC and filtering
-conda activate aluminion_reads
+# 1. Read preparation and QC/filtering
+if [ -z "$SKIP_PREPROCESSING" ]; then
+    echo -e "ID\tR1\tR2\tLongFastQ\tFast5\tGenomeSize\tFasta" > samplesheet.tsv
 
-log "Pre-filtering QC..."
-for i in $(cat samples); do NanoPlot --fastq 01_reads/${i}.fastq.gz -o 01_reads/QC/${i} --downsample 20000 --threads $THREADS_TOTAL || true; done
+    tail -n +2 list_seq.tsv | while IFS=$'\t' read -r cult cep id bc c rep; do
+        [ -z "$id" ] && continue
+        if [ -z "$rep" ]; then
+            cat fastq_pass/barcode${bc}/*.fastq.gz > 01_reads/${id}.fastq.gz
+        else
+            cat ../repositorio/01_reads/${id}.fastq.gz fastq_pass/barcode${bc}/*.fastq.gz > 01_reads/${id}.fastq.gz
+        fi
+        cp 01_reads/${id}.fastq.gz ../repositorio/01_reads/${id}.fastq.gz
+        echo -e "${id}\t\t\t$PWD/01_reads/${id}.fastq.gz\t\t" >> samplesheet.tsv
+    done
 
-log "Filtering (Chopper)..."
-for i in $(cat samples); do gunzip -c 01_reads/${i}.fastq.gz | chopper -q 12 -l 300 --headcrop 20 --threads $THREADS_TOTAL | gzip > 02_filter/${i}.fastq.gz; done
+    cut -f3 list_seq.tsv | tail -n+2 > ../repositorio/samples
+    find 01_reads -type f -name "*.fastq.gz" -size +135M -exec basename {} .fastq.gz \; | sort | uniq > samples
 
-log "Post-filtering QC..."
-for i in $(cat samples); do NanoPlot --fastq 02_filter/${i}.fastq.gz -o 02_filter/QC/${i} --downsample 20000 --threads $THREADS_TOTAL || true; done
+    if [ ! -s samples ]; then
+        error_log "No samples passed the 135MB filter."
+        exit 1
+    fi
+
+    conda activate aluminion_reads
+
+    log "Pre-filtering QC..."
+    for i in $(cat samples); do MPLBACKEND=Agg NanoPlot --fastq 01_reads/${i}.fastq.gz -o 01_reads/QC/${i} --downsample 20000 --threads 4 --loglength & done; wait
+
+    log "Filtering (Chopper)..."
+    for i in $(cat samples); do gunzip -c 01_reads/${i}.fastq.gz | chopper -q 12 -l 300 --headcrop 20 --threads $THREADS_TOTAL | gzip > 02_filter/${i}.fastq.gz; done
+
+    log "Post-filtering QC..."
+    for i in $(cat samples); do MPLBACKEND=Agg NanoPlot --fastq 02_filter/${i}.fastq.gz -o 02_filter/QC/${i} --downsample 20000 --threads 4 --loglength & done; wait
+else
+    log "Skipping preprocessing — using existing reads and QC from previous run."
+    if [ ! -s "samples" ]; then
+        error_log "'samples' file not found. Re-run without --skip-preprocessing first."
+        exit 1
+    fi
+fi
 
 # 2. Taxonomy, assembly, polishing, and assembly QC
 conda activate aluminion_assembly
 
-log "Taxonomy (Kraken2)..."
-cp ${KRAKEN_DB}/*.k2d /dev/shm/
-for i in $(cat samples); do kraken2 --memory-mapping --db /dev/shm --minimum-base-quality 10 --minimum-hit-groups 100 --output 04_taxonomies/kraken2/${i}.out --use-names --report 04_taxonomies/kraken2/${i}.report --gzip-compressed 02_filter/${i}.fastq.gz --threads $THREADS_TOTAL; done 
-rm -f /dev/shm/*.k2d
+if [ -z "$SKIP_KRAKEN" ]; then
+    log "Taxonomy (Kraken2)..."
+    cp ${KRAKEN_DB}/*.k2d /dev/shm/
+    for i in $(cat samples); do kraken2 --memory-mapping --db /dev/shm --minimum-base-quality 10 --minimum-hit-groups 100 --output 04_taxonomies/kraken2/${i}.out --use-names --report 04_taxonomies/kraken2/${i}.report --gzip-compressed 02_filter/${i}.fastq.gz --threads $THREADS_TOTAL; done
+    rm -f /dev/shm/*.k2d
+else
+    log "Skipping Kraken2..."
+fi
 
 log "Assembly (Flye)..."
 for i in $(cat samples); do flye --nano-hq 02_filter/${i}.fastq.gz --threads $THREADS_TOTAL --out-dir 03_assemblies/${i}; done
@@ -266,25 +289,25 @@ log "Assembly QC..."
 quast.py -o 03_assemblies/quast -t $THREADS_TOTAL 03_assemblies/*.fasta
 for i in $(cat samples); do Bandage image 03_assemblies/${i}/assembly_graph.gfa 03_assemblies/${i}.png --lengths --depth --toutline 1.0; done
 
-# 3. Annotation, AMR, IS, text parsing, and final Python tables
+# 3. Annotation
 conda activate aluminion_annot
 
-log "Assembly Taxonomy (GAMBIT) & Annotation (Bakta)..."
-gambit -d $GAMBIT_DB query -o 04_taxonomies/gambit.csv 03_assemblies/*.fasta 
-cp 03_assemblies/*.fasta 04_taxonomies/gtdb/
+log "Annotation (Bakta)..."
 for i in $(cat samples); do bakta --db $BAKTA_DB --output 08_Anotacion/${i} --threads $THREADS_TOTAL 03_assemblies/${i}.fasta --force; done
 
 log "Plasmid Extraction (MOB-Suite Docker)..."
 for i in $(cat samples); do docker run --rm -v $(pwd):/mnt/ --user $(id -u):$(id -g) "$MOBSUITE_IMAGE" mob_recon -i /mnt/03_assemblies/${i}.fasta -o /mnt/08_Anotacion/${i}/mob_recon -c --force -n $THREADS_TOTAL; done
 
-log "AMR (Abricate) & MLST..."
-for i in $(cat samples); do mkdir -p 08_Anotacion/${i}/abricate; abricate --minid 75 --mincov 75 03_assemblies/${i}.fasta > 08_Anotacion/${i}/abricate/${i}.tab; done
-abricate --summary 08_Anotacion/*/abricate/*.tab > 08_Anotacion/AbR.tab
-cp 08_Anotacion/AbR.tab AbR_report.csv
-mlst 03_assemblies/*.fasta -q > mlst.csv
+if [ -z "$SKIP_ABR" ]; then
+    log "AMR Screen (Abricate)..."
+    for i in $(cat samples); do mkdir -p 08_Anotacion/${i}/abricate; abricate --minid 75 --mincov 75 03_assemblies/${i}.fasta > 08_Anotacion/${i}/abricate/${i}.tab; done
+    abricate --summary 08_Anotacion/*/abricate/*.tab > 08_Anotacion/AbR.tab
+    cp 08_Anotacion/AbR.tab AbR_report.csv
+else
+    log "Skipping AMR Screen (Abricate)..."
+fi
 
-
-# 2. Integron Environment
+# Integrons
 if [ -z "$SKIP_INTEGRONS" ]; then
     log "Running Integrons module (Integron_finder)..."
     conda activate aluminion_integron
@@ -296,7 +319,7 @@ else
     log "Skipping Integrons module..."
 fi
 
-# 3. Copla (Docker container — no conda env required)
+# Plasmid typing (Copla — Docker only)
 if [ -z "$SKIP_PLASMIDS" ]; then
     log "Running Plasmid Typing module (Copla)..."
     > copla.txt
@@ -305,19 +328,27 @@ if [ -z "$SKIP_PLASMIDS" ]; then
             new_name=$(basename "$i" | cut -d'_' -f1)
             cp "${i}" 05_plasmids/${new_name}_${j}.fasta
             echo "Sample: ${j}" && echo "Contig: ${i:(-11):5}" && docker run --rm -v $(pwd):/tmp "$COPLA_IMAGE" copla /tmp/"${i}" /data/app/databases/Copla_RS84/RS84f_sHSBM.pickle /data/app/databases/Copla_RS84/CoplaDB.fofn /tmp/08_Anotacion/${j}/copla
-        done >> copla.txt 2>&1    
+        done >> copla.txt 2>&1
     done
 else
     log "Skipping Plasmid module (Copla)..."
 fi
 
-
-# 4. Kleborate Environment
-log "Specific Typing (Kleborate & ECTyper)..."
-conda activate aluminion_kleborate
-kleborate -a 03_assemblies/*.fasta -o 04_taxonomies/kleborate -m enterobacterales__species,klebsiella_pneumo_complex__amr,klebsiella_pneumo_complex__kaptive,klebsiella_pneumo_complex__mlst,escherichia__mlst_achtman,klebsiella_pneumo_complex__resistance_score,klebsiella_pneumo_complex__resistance_gene_count,klebsiella__ybst,klebsiella__cbst,klebsiella__abst,klebsiella__smst,klebsiella__rmst,klebsiella__rmpa2,klebsiella_pneumo_complex__virulence_score
-cp 04_taxonomies/kleborate/enterobacterales__species_output.txt kleborate.tsv || true
-ectyper -i 04_taxonomies/gtdb -o 04_taxonomies/ectyper
+# Typing tools: GAMBIT + MLST + Kleborate + ECTyper
+if [ -z "$SKIP_TYPING" ]; then
+    log "Typing (GAMBIT, MLST, Kleborate, ECTyper)..."
+    conda activate aluminion_annot
+    gambit -d $GAMBIT_DB query -o 04_taxonomies/gambit.csv 03_assemblies/*.fasta
+    mlst 03_assemblies/*.fasta -q > mlst.csv
+    conda activate aluminion_kleborate
+    cp 03_assemblies/*.fasta 04_taxonomies/gtdb/
+    kleborate -a 03_assemblies/*.fasta -o 04_taxonomies/kleborate -m enterobacterales__species,klebsiella_pneumo_complex__amr,klebsiella_pneumo_complex__kaptive,klebsiella_pneumo_complex__mlst,escherichia__mlst_achtman,klebsiella_pneumo_complex__resistance_score,klebsiella_pneumo_complex__resistance_gene_count,klebsiella__ybst,klebsiella__cbst,klebsiella__abst,klebsiella__smst,klebsiella__rmst,klebsiella__rmpa2,klebsiella_pneumo_complex__virulence_score
+    cp 04_taxonomies/kleborate/enterobacterales__species_output.txt kleborate.tsv || true
+    ectyper -i 04_taxonomies/gtdb -o 04_taxonomies/ectyper
+    conda activate aluminion_annot
+else
+    log "Skipping Typing (GAMBIT, MLST, Kleborate, ECTyper)..."
+fi
 
 
 # 5. Phastest (Docker)
@@ -338,7 +369,8 @@ else
 fi
 
 
-# 6. Final Tables and IS
+# 6. Final Tables, IS, and consolidation (always aluminion_annot)
+conda activate aluminion_annot
 log "IS parsing and Final Tables..."
 > IS.tsv
 echo -e "sample\tmax\tIS_name\tTotal_IS" > IS.tsv
