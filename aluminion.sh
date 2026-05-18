@@ -241,11 +241,21 @@ if [ -z "$SKIP_PREPROCESSING" ]; then
 
     conda activate aluminion_reads
 
+    # Chrome (used by NanoPlot's plot renderer) requires --no-sandbox on headless servers.
+    # We locate the bundled Chrome binary and wrap it with the necessary flags.
+    CHROME_REAL=$(python -c "import os, choreographer; print(os.path.join(os.path.dirname(choreographer.__file__), 'cli/browser_exe/chrome-linux64/chrome'))" 2>/dev/null)
+    if [ -n "$CHROME_REAL" ] && [ -x "$CHROME_REAL" ]; then
+        CHROME_WRAPPER="${WORKDIR}/.chrome_wrapper"
+        printf '#!/bin/bash\nexec "%s" --no-sandbox --disable-gpu --disable-dev-shm-usage "$@"\n' "$CHROME_REAL" > "$CHROME_WRAPPER"
+        chmod +x "$CHROME_WRAPPER"
+        export BROWSER_PATH="$CHROME_WRAPPER"
+    fi
+
     log "Pre-filtering QC..."
     set +e
     for i in $(cat samples); do
         resume_done "01_reads/QC/${i}/NanoStats.txt" && continue
-        MPLBACKEND=Agg PLOTLY_RENDERER=kaleido NanoPlot --fastq 01_reads/${i}.fastq.gz -o 01_reads/QC/${i} --downsample 20000 --threads 4 --loglength &
+        MPLBACKEND=Agg NanoPlot --fastq 01_reads/${i}.fastq.gz -o 01_reads/QC/${i} --downsample 20000 --threads 4 --loglength &
     done; wait
     set -e
 
@@ -259,7 +269,7 @@ if [ -z "$SKIP_PREPROCESSING" ]; then
     set +e
     for i in $(cat samples); do
         resume_done "02_filter/QC/${i}/NanoStats.txt" && continue
-        MPLBACKEND=Agg PLOTLY_RENDERER=kaleido NanoPlot --fastq 02_filter/${i}.fastq.gz -o 02_filter/QC/${i} --downsample 20000 --threads 4 --loglength &
+        MPLBACKEND=Agg NanoPlot --fastq 02_filter/${i}.fastq.gz -o 02_filter/QC/${i} --downsample 20000 --threads 4 --loglength &
     done; wait
     set -e
 else
