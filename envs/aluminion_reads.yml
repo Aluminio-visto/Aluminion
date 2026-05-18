@@ -4,11 +4,11 @@ channels:
   - bioconda
   - defaults
 dependencies:
+  - python=3.12  # Pin to stable release; Python 3.13/3.14 breaks kaleido wheels and pysam
   - nanoplot
   - chopper
   - pillow   # DPI metadata embedding in NanoPlot PNG output
   - pip
   - pip:
     - kaleido  # Plotly static image export via PLOTLY_RENDERER=kaleido
-               # Not on conda-forge; pip installs the 1.x Go-based binary (~small, fast)
-               # NanoPlot 1.46.2 requires kaleido>=1.0.0, so pip resolves the right version
+               # Not on conda-forge; requires Python 3.12 for stable binary wheels

@@ -393,6 +393,8 @@ aluminion -r BAC_2025_NOV_25 -b /$your_database_folder -t 30 -l /path/to/list_se
 | `--skip-integrons` | Skip Integron_Finder and integron parsing | — |
 | `--skip-plasmids` | Skip Copla plasmid typing (MOB-suite always runs) | — |
 | `--skip-phages` | Skip Phastest prophage detection | — |
+| `--just-preprocessing` | Run only Stage 1 (QC + filtering) and exit. Output: `02_filter/<sample>.fastq.gz` | — |
+| `--just-assembly` | Run Stages 1–2 (QC + filtering + assembly + polishing + QUAST) and exit. Output: `03_assemblies/<sample>/assembly.fasta` | — |
 
 ### Resuming a partial run
 

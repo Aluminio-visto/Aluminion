@@ -62,6 +62,10 @@ Additional options:
   --skip-integrons  Skip Integron_Finder and integron parsing.
   --skip-plasmids   Skip Copla plasmid typing (MOB-suite always runs).
   --skip-phages     Skip Phastest prophage detection.
+
+Early-stop flags (run only up to the named stage, then exit):
+  --just-preprocessing  Stop after read QC and filtering. Output: filtered FASTQ in 02_filter/.
+  --just-assembly       Stop after assembly, polishing, and QUAST. Output: FASTA in 03_assemblies/.
   -h, --help      Show this help message and exit.
 
 Example:
@@ -70,16 +74,23 @@ Example:
 EOF
 }
 
-log() { echo -e "\n\033[1;32m[$(date +'%Y-%m-%d %H:%M:%S')] $1\033[0m"; }
+log()       { echo -e "\n\033[1;32m[$(date +'%Y-%m-%d %H:%M:%S')] $1\033[0m"; }
 error_log() { echo -e "\n\033[1;31m[ERROR] $1\033[0m"; }
+warn()      { echo -e "\033[1;33m[WARNING] $1\033[0m"; }
 # Returns true if --resume is active and the sentinel file or directory already exists
 resume_done() { [ -n "$RESUME" ] && { [ -f "$1" ] || [ -d "$1" ]; }; }
+
+# Tracks samples that completed assembly but failed optional refinement steps
+failed_polish=()
+failed_deconcat=()
+failed_circlator=()
 
 # ==============================================================================
 # COMMAND LINE ARGUMENT PARSING
 # ==============================================================================
 
 RESUME=""
+STOP_AFTER=""
 SKIP_PREPROCESSING=""
 SKIP_PHAGES=""
 SKIP_INTEGRONS=""
@@ -108,6 +119,9 @@ while [[ "$#" -gt 0 ]]; do
         --skip-kraken) SKIP_KRAKEN="--skip-kraken" ;;
         --skip-abr) SKIP_ABR="--skip-abr" ;;
         --init-db) INIT_DB="--init" ;;
+        # Early-stop flags
+        --just-preprocessing) STOP_AFTER="preprocessing" ;;
+        --just-assembly) STOP_AFTER="assembly" ;;
         -h|--help) show_help; exit 0 ;;
         *) error_log "Unknown parameter: $1"; show_help; exit 1 ;;
     esac
@@ -241,9 +255,9 @@ if [ -z "$SKIP_PREPROCESSING" ]; then
 
     conda activate aluminion_reads
 
-    # Chrome (used by NanoPlot's plot renderer) requires --no-sandbox on headless servers.
-    # We locate the bundled Chrome binary and wrap it with the necessary flags.
-    CHROME_REAL=$(python -c "import os, choreographer; print(os.path.join(os.path.dirname(choreographer.__file__), 'cli/browser_exe/chrome-linux64/chrome'))" 2>/dev/null)
+    # Chrome (used by NanoPlot's plot renderer) requires --no-sandbox on headless Linux servers.
+    # Use glob to find the bundled binary — more reliable than calling Python after conda activate.
+    CHROME_REAL=$(ls "$HOME/mambaforge/envs/aluminion_reads/lib/python"*/site-packages/choreographer/cli/browser_exe/chrome-linux64/chrome 2>/dev/null | head -1)
     if [ -n "$CHROME_REAL" ] && [ -x "$CHROME_REAL" ]; then
         CHROME_WRAPPER="${WORKDIR}/.chrome_wrapper"
         printf '#!/bin/bash\nexec "%s" --no-sandbox --disable-gpu --disable-dev-shm-usage "$@"\n' "$CHROME_REAL" > "$CHROME_WRAPPER"
@@ -252,12 +266,10 @@ if [ -z "$SKIP_PREPROCESSING" ]; then
     fi
 
     log "Pre-filtering QC..."
-    set +e
     for i in $(cat samples); do
         resume_done "01_reads/QC/${i}/NanoStats.txt" && continue
         MPLBACKEND=Agg NanoPlot --fastq 01_reads/${i}.fastq.gz -o 01_reads/QC/${i} --downsample 20000 --threads 4 --loglength &
-    done; 
-    set -e
+    done
 
     log "Filtering (Chopper)..."
     for i in $(cat samples); do
@@ -266,12 +278,10 @@ if [ -z "$SKIP_PREPROCESSING" ]; then
     done
 
     log "Post-filtering QC..."
-    set +e
     for i in $(cat samples); do
         resume_done "02_filter/QC/${i}/NanoStats.txt" && continue
         MPLBACKEND=Agg NanoPlot --fastq 02_filter/${i}.fastq.gz -o 02_filter/QC/${i} --downsample 20000 --threads 4 --loglength &
-    done; 
-    set -e
+    done
 else
     log "Skipping preprocessing — using existing reads and QC from previous run."
     if [ ! -s "samples" ]; then
@@ -279,6 +289,8 @@ else
         exit 1
     fi
 fi
+
+[ "$STOP_AFTER" = "preprocessing" ] && { log "Done — stopping after preprocessing (--just-preprocessing). Filtered reads in 02_filter/."; exit 0; }
 
 # 2. Taxonomy, assembly, polishing, and assembly QC
 conda activate aluminion_assembly
@@ -305,13 +317,13 @@ for i in $(cat samples); do
     if ! flye --nano-hq 02_filter/${i}.fastq.gz --threads $THREADS_TOTAL --out-dir 03_assemblies/${i}; then
         echo ""
         echo "  ┌──────────────────────────────────────────────────────────────────────┐"
-        echo "  │  ASSEMBLY FAILED: ${i}"
-        echo "  │  Flye could not assemble this sample (no disjointigs produced)."
+        echo "  │  ASSEMBLY FAILED: ${i}                                               |"
+        echo "  │  Flye could not assemble this sample (no disjointigs produced).      |"
         echo "  │                                                                      │"
         echo "  │  Options:                                                            │"
-        echo "  │    1) Skip sample and continue with the rest                        │"
-        echo "  │    2) Retry with --meta (for high-copy or fragmented assemblies)    │"
-        echo "  │    3) Stop pipeline for manual inspection                           │"
+        echo "  │    1) Skip sample and continue with the rest                         │"
+        echo "  │    2) Retry with --meta (for high-copy or fragmented assemblies)     │"
+        echo "  │    3) Stop pipeline for manual inspection                            │"
         echo "  └──────────────────────────────────────────────────────────────────────┘"
         read -rp "  Choose [1/2/3]: " flye_choice
         case "$flye_choice" in
@@ -348,35 +360,64 @@ if [ ${#failed_assembly[@]} -gt 0 ]; then
     done
 fi
 
-log "Polishing"
+log "Polishing (minimap2 + dorado polish)..."
 for i in $(cat samples); do
     if resume_done "03_assemblies/${i}/.polished"; then
         log "  [resume] Polishing: ${i} done, skipping."
         continue
     fi
-    dorado aligner 03_assemblies/${i}/assembly.fasta 02_filter/${i}.fastq.gz | samtools sort --threads $THREADS_TOTAL > 03_assemblies/${i}/${i}_aligned_reads.bam
-    samtools index 03_assemblies/${i}/${i}_aligned_reads.bam
-    dorado polish 03_assemblies/${i}/${i}_aligned_reads.bam 03_assemblies/${i}/assembly.fasta --bacteria --ignore-read-groups > 03_assemblies/${i}/polished_assembly.fasta
-    mv 03_assemblies/${i}/polished_assembly.fasta 03_assemblies/${i}/assembly.fasta
-    rm 03_assemblies/${i}/${i}_aligned_reads.bam 03_assemblies/${i}/${i}_aligned_reads.bam.bai
-    touch "03_assemblies/${i}/.polished"
+    minimap2 -ax map-ont -t $THREADS_TOTAL 03_assemblies/${i}/assembly.fasta 02_filter/${i}.fastq.gz \
+        | samtools sort -@ $THREADS_TOTAL -o 03_assemblies/${i}/${i}_aligned_reads.bam
+    samtools index -@ $THREADS_TOTAL 03_assemblies/${i}/${i}_aligned_reads.bam
+    if dorado polish --threads $THREADS_TOTAL --device cpu \
+            03_assemblies/${i}/${i}_aligned_reads.bam \
+            03_assemblies/${i}/assembly.fasta \
+            --bacteria --ignore-read-groups \
+            > 03_assemblies/${i}/polished_assembly.fasta 2>/dev/null; then
+        mv 03_assemblies/${i}/polished_assembly.fasta 03_assemblies/${i}/assembly.fasta
+        touch "03_assemblies/${i}/.polished"
+    else
+        warn "Polishing failed for ${i} (dorado polish requires basecaller model in BAM header). Assembly kept unpolished."
+        failed_polish+=("$i")
+        rm -f 03_assemblies/${i}/polished_assembly.fasta
+    fi
+    rm -f 03_assemblies/${i}/${i}_aligned_reads.bam 03_assemblies/${i}/${i}_aligned_reads.bam.bai
 done
 
 log "Deconcatenation & Recircularization..."
 > 03_assemblies/deconcat.log
 conda activate aluminion_assembly
 for i in $(cat samples); do
-    resume_done "03_assemblies/${i}/deconcat/assembly_corr.fasta" && { log "  [resume] Deconcat: ${i} done, skipping."; continue; }
-    python3 "$SCRIPTS_PATH/deconcat.py" --fasta_file 03_assemblies/${i}/assembly.fasta --fastq_file 02_filter/${i}.fastq.gz --out_path 03_assemblies/${i}/deconcat >> 03_assemblies/deconcat.log 2>&1 || true
-    cp 03_assemblies/${i}/deconcat/assembly_corr.fasta 03_assemblies/${i}.fasta
+    if resume_done "03_assemblies/${i}/deconcat/assembly_corr.fasta"; then
+        log "  [resume] Deconcat: ${i} done, skipping."
+        continue
+    fi
+    if python3 "$SCRIPTS_PATH/deconcat.py" --fasta_file 03_assemblies/${i}/assembly.fasta \
+            --fastq_file 02_filter/${i}.fastq.gz \
+            --out_path 03_assemblies/${i}/deconcat >> 03_assemblies/deconcat.log 2>&1 \
+        && [ -f 03_assemblies/${i}/deconcat/assembly_corr.fasta ]; then
+        cp 03_assemblies/${i}/deconcat/assembly_corr.fasta 03_assemblies/${i}.fasta
+    else
+        warn "Deconcat failed or produced no output for ${i}. Using assembly.fasta as-is."
+        failed_deconcat+=("$i")
+        cp 03_assemblies/${i}/assembly.fasta 03_assemblies/${i}.fasta 2>/dev/null || true
+    fi
 done
 conda activate aluminion_circlator
 for i in $(cat samples); do
-    resume_done "03_assemblies/${i}/.circlator_done" && { log "  [resume] Circlator: ${i} done, skipping."; continue; }
-    circlator fixstart 03_assemblies/${i}.fasta 03_assemblies/${i}.fix
-    mv 03_assemblies/${i}.fix.fasta 03_assemblies/${i}.fasta
-    rm -f 03_assemblies/*fix* 03_assemblies/*fasta.*
-    touch "03_assemblies/${i}/.circlator_done"
+    if resume_done "03_assemblies/${i}/.circlator_done"; then
+        log "  [resume] Circlator: ${i} done, skipping."
+        continue
+    fi
+    if circlator fixstart 03_assemblies/${i}.fasta 03_assemblies/${i}.fix 2>/dev/null; then
+        mv 03_assemblies/${i}.fix.fasta 03_assemblies/${i}.fasta
+        rm -f 03_assemblies/*fix* 03_assemblies/*fasta.*
+        touch "03_assemblies/${i}/.circlator_done"
+    else
+        warn "Circlator fixstart failed for ${i}. Assembly kept without recircularization."
+        failed_circlator+=("$i")
+        rm -f 03_assemblies/${i}.fix* 2>/dev/null || true
+    fi
 done
 
 log "Assembly QC..."
@@ -389,6 +430,8 @@ for i in $(cat samples); do
     resume_done "03_assemblies/${i}.png" && continue
     Bandage image 03_assemblies/${i}/assembly_graph.gfa 03_assemblies/${i}.png --lengths --depth --toutline 1.0
 done
+
+[ "$STOP_AFTER" = "assembly" ] && { log "Done — stopping after assembly (--just-assembly). Assemblies in 03_assemblies/."; exit 0; }
 
 # 3. Annotation
 conda activate aluminion_annot
@@ -563,5 +606,18 @@ python3 "$SCRIPTS_PATH/aluminion_reporter.py" "$PWD"
 
 log "Updating historical databases (data_seq.tsv / data_analysis.tsv)..."
 python3 "$SCRIPTS_PATH/Datos_seq_unified2.py" --input_path . $INIT_DB
+
+# Print a consolidated warning summary for all non-fatal failures
+if [ ${#failed_polish[@]} -gt 0 ] || [ ${#failed_deconcat[@]} -gt 0 ] || [ ${#failed_circlator[@]} -gt 0 ]; then
+    echo ""
+    warn "========================================================================"
+    warn "Pipeline finished with warnings — assemblies are valid but not fully"
+    warn "refined for the following samples:"
+    [ ${#failed_polish[@]}    -gt 0 ] && warn "  Unpolished  (dorado polish failed): ${failed_polish[*]}"
+    [ ${#failed_deconcat[@]}  -gt 0 ] && warn "  Deconcatenation failed            : ${failed_deconcat[*]}"
+    [ ${#failed_circlator[@]} -gt 0 ] && warn "  Not recircularized (circlator)    : ${failed_circlator[*]}"
+    warn "========================================================================"
+    echo ""
+fi
 
 log "Pipeline successfully finished. Aluminion out."
