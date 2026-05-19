@@ -297,12 +297,21 @@ conda activate aluminion_assembly
 
 if [ -z "$SKIP_KRAKEN" ]; then
     log "Taxonomy (Kraken2)..."
-    cp ${KRAKEN_DB}/*.k2d /dev/shm/
+    # Check whether any sample still needs Kraken2 before the expensive /dev/shm copy
+    kraken_needed=false
     for i in $(cat samples); do
-        resume_done "04_taxonomies/kraken2/${i}.report" && { log "  [resume] Kraken2: ${i} done, skipping."; continue; }
-        kraken2 --memory-mapping --db /dev/shm --minimum-base-quality 10 --minimum-hit-groups 100 --output 04_taxonomies/kraken2/${i}.out --use-names --report 04_taxonomies/kraken2/${i}.report --gzip-compressed 02_filter/${i}.fastq.gz --threads $THREADS_TOTAL
+        resume_done "04_taxonomies/kraken2/${i}.report" || { kraken_needed=true; break; }
     done
-    rm -f /dev/shm/*.k2d
+    if [ "$kraken_needed" = true ]; then
+        cp ${KRAKEN_DB}/*.k2d /dev/shm/
+        for i in $(cat samples); do
+            resume_done "04_taxonomies/kraken2/${i}.report" && { log "  [resume] Kraken2: ${i} done, skipping."; continue; }
+            kraken2 --memory-mapping --db /dev/shm --minimum-base-quality 10 --minimum-hit-groups 100 --output 04_taxonomies/kraken2/${i}.out --use-names --report 04_taxonomies/kraken2/${i}.report --gzip-compressed 02_filter/${i}.fastq.gz --threads $THREADS_TOTAL
+        done
+        rm -f /dev/shm/*.k2d
+    else
+        log "  [resume] All Kraken2 reports found — skipping database copy."
+    fi
 else
     log "Skipping Kraken2..."
 fi
