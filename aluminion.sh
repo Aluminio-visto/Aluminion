@@ -233,13 +233,16 @@ if [ -z "$SKIP_PREPROCESSING" ]; then
 
     tail -n +2 list_seq.tsv | while IFS=$'\t' read -r cult cep id bc c rep; do
         [ -z "$id" ] && continue
+        # Zero-pad barcode to match MinKNOW's two-digit directory naming (barcode01, barcode09…).
+        # The copy step above already pads with printf "%02d"; this keeps the two in sync.
+        padded_bc=$(printf "%02d" "$bc")
         if resume_done "01_reads/${id}.fastq.gz"; then
             log "  [resume] Read concat: ${id} already done, skipping."
         elif [ -z "$rep" ]; then
-            cat fastq_pass/barcode${bc}/*.fastq.gz > 01_reads/${id}.fastq.gz
+            cat fastq_pass/barcode${padded_bc}/*.fastq.gz > 01_reads/${id}.fastq.gz
             cp 01_reads/${id}.fastq.gz ../repositorio/01_reads/${id}.fastq.gz
         else
-            cat ../repositorio/01_reads/${id}.fastq.gz fastq_pass/barcode${bc}/*.fastq.gz > 01_reads/${id}.fastq.gz
+            cat ../repositorio/01_reads/${id}.fastq.gz fastq_pass/barcode${padded_bc}/*.fastq.gz > 01_reads/${id}.fastq.gz
             cp 01_reads/${id}.fastq.gz ../repositorio/01_reads/${id}.fastq.gz
         fi
         echo -e "${id}\t\t\t$PWD/01_reads/${id}.fastq.gz\t\t" >> samplesheet.tsv
@@ -369,24 +372,66 @@ if [ ${#failed_assembly[@]} -gt 0 ]; then
     done
 fi
 
-log "Polishing (minimap2 + dorado polish)..."
+log "Polishing (dorado polish with @RG injection)..."
 for i in $(cat samples); do
     if resume_done "03_assemblies/${i}/.polished"; then
         log "  [resume] Polishing: ${i} done, skipping."
         continue
     fi
-    minimap2 -ax map-ont -t $THREADS_TOTAL 03_assemblies/${i}/assembly.fasta 02_filter/${i}.fastq.gz \
-        | samtools sort -@ $THREADS_TOTAL -o 03_assemblies/${i}/${i}_aligned_reads.bam
+
+    # dorado polish requires the basecaller model in the BAM @RG DS field.
+    # Dorado embeds it in the FASTQ description — extract it before alignment.
+    header=$(zcat 02_filter/${i}.fastq.gz | head -n 1)
+
+    if echo "$header" | grep -q 'basecall_model_version_id='; then
+        model=$(echo "$header" | awk -F 'basecall_model_version_id=' '{print $2}' | awk '{print $1}')
+    else
+        # Older Dorado header format without explicit basecall_model_version_id field
+        model=$(echo "$header" | grep -o 'dna_[^[:space:]]*' | rev | cut -f3- -d'_' | rev)
+    fi
+
+    if [ -z "$model" ]; then
+        warn "  Could not detect basecaller model for ${i} — polishing skipped."
+        failed_polish+=("$i")
+        continue
+    fi
+    log "  Basecaller model detected for ${i}: ${model}"
+
+    if echo "$header" | grep -q 'RG:Z:'; then
+        # Newer Dorado FASTQ format includes RG:Z: tag.
+        # Use dorado aligner --add-fastq-rg to propagate it, then overwrite DS field.
+        log "  [polish] FASTQ has RG:Z: — using dorado aligner --add-fastq-rg"
+        rg=$(echo "$header" | awk -F 'RG:Z:' '{print $2}' | awk '{print $1}')
+        dorado aligner --add-fastq-rg \
+                03_assemblies/${i}/assembly.fasta 02_filter/${i}.fastq.gz \
+            | samtools sort -@ $THREADS_TOTAL -o 03_assemblies/${i}/${i}_aligned_reads.bam
+        samtools addreplacerg -w \
+            -r "@RG\tID:${rg}\tDS:basecall_model=${model}" \
+            -O bam -o 03_assemblies/${i}/${i}_aligned_reads.tmp.bam \
+            03_assemblies/${i}/${i}_aligned_reads.bam
+    else
+        # Standard Dorado FASTQ (no RG:Z:): align with minimap2, inject @RG manually.
+        log "  [polish] No RG:Z: tag — using minimap2 + samtools addreplacerg"
+        minimap2 -ax map-ont -t $THREADS_TOTAL \
+                03_assemblies/${i}/assembly.fasta 02_filter/${i}.fastq.gz \
+            | samtools sort -@ $THREADS_TOTAL -o 03_assemblies/${i}/${i}_aligned_reads.bam
+        samtools addreplacerg \
+            -r "@RG\tID:1\tDS:basecall_model=${model}" \
+            -O bam -o 03_assemblies/${i}/${i}_aligned_reads.tmp.bam \
+            03_assemblies/${i}/${i}_aligned_reads.bam
+    fi
+    mv 03_assemblies/${i}/${i}_aligned_reads.tmp.bam 03_assemblies/${i}/${i}_aligned_reads.bam
     samtools index -@ $THREADS_TOTAL 03_assemblies/${i}/${i}_aligned_reads.bam
-    if dorado polish --threads $THREADS_TOTAL --device cpu \
+
+    # --bacteria uses a move-table-free model; GPU auto-detected (remove flag for CPU-only servers)
+    if dorado polish --threads $THREADS_TOTAL --bacteria \
             03_assemblies/${i}/${i}_aligned_reads.bam \
             03_assemblies/${i}/assembly.fasta \
-            --bacteria --ignore-read-groups \
-            > 03_assemblies/${i}/polished_assembly.fasta 2>/dev/null; then
+            > 03_assemblies/${i}/polished_assembly.fasta; then
         mv 03_assemblies/${i}/polished_assembly.fasta 03_assemblies/${i}/assembly.fasta
         touch "03_assemblies/${i}/.polished"
     else
-        warn "Polishing failed for ${i} (dorado polish requires basecaller model in BAM header). Assembly kept unpolished."
+        warn "  Polishing failed for ${i}. Assembly kept unpolished."
         failed_polish+=("$i")
         rm -f 03_assemblies/${i}/polished_assembly.fasta
     fi

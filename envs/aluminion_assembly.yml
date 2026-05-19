@@ -10,3 +10,4 @@ dependencies:
   - bandage
   - samtools
   - minimap2
+  - biopython
