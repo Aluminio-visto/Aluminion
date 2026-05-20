@@ -80,6 +80,11 @@ warn()      { echo -e "\033[1;33m[WARNING] $1\033[0m"; }
 # Returns true if --resume is active and the sentinel file or directory already exists
 resume_done() { [ -n "$RESUME" ] && { [ -f "$1" ] || [ -d "$1" ]; }; }
 
+# ERR trap: with set -e the script exits silently on any non-zero command. This
+# trap fires *before* the exit so the log records exactly which line and which
+# command died, instead of leaving the user with an empty "Polishing..." trail.
+trap 'rc=$?; error_log "Aborted at line ${BASH_LINENO[0]} (exit ${rc}) — last command: ${BASH_COMMAND}"' ERR
+
 # Tracks samples that completed assembly but failed optional refinement steps
 failed_polish=()
 failed_deconcat=()
@@ -397,7 +402,16 @@ for i in $(cat samples); do
 
     # dorado polish requires the basecaller model in the BAM @RG DS field.
     # Dorado embeds it in the FASTQ description — extract it before alignment.
-    header=$(zcat 02_filter/${i}.fastq.gz | head -n 1)
+    # `zcat | head -n 1` would trigger SIGPIPE on zcat under set -o pipefail and
+    # kill the script silently. Reading via process substitution avoids that:
+    # the substituted command's exit status is not part of the foreground pipeline.
+    if [ ! -f "02_filter/${i}.fastq.gz" ]; then
+        warn "  Missing reads file for ${i} — polishing skipped."
+        failed_polish+=("$i")
+        continue
+    fi
+    header=""
+    IFS= read -r header < <(zcat 02_filter/${i}.fastq.gz) || true
 
     if echo "$header" | grep -q 'basecall_model_version_id='; then
         model=$(echo "$header" | awk -F 'basecall_model_version_id=' '{print $2}' | awk '{print $1}')
