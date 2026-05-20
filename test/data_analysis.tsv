@@ -1,0 +1,141 @@
+Nº Cultivo	ID único	Barcode	Profundidad	Calidad (ass)	Subespecie	MLST	Serotype	K/O locus	Posibles contaminantes	Carba adquirida	BLEE adquirida	Otras	Nº genes AMR	AMRscore	VIRscore	Plásmidos	Profagos	Integrones	alelo #1	alelo #2	alelo #3	alelo #4	alelo #5	alelo #6	alelo #7	MLSTs posibles	Alelos posibles	Género mayoritario	Especie mayoritaria	Esquema MLST
+27	HUCA-01	27		0												0	0	0												
+28	HUCA-02	28		0												0	0	0												
+1	HUMV-001	01	63	0	Enterobacter hormaechei subsp. xiangfangensis	-	-:-	KL53/O3/O3a	-	GES-6	CTX-M-15	ACT-45, TEM-1D, OXA-1	11	3	0	5	7	0	dnaA(52)	fusA(21)	gyrB(20)	leuS(44)	pyrG(-)	rplB(4)	rpoB(6)	{'ST': ['Ningún alelo de este gen coincide con esta combinación']}		Enterobacter   (74%)	Enterobacter hormaechei  (44%)	ecloacae
+2	HUMV-002	02	122	0	Enterobacter sp. 5-4	595	-:-	KL10/O3/O3a	-	-	-	MIR-20	4	0	0	2	5	0	dnaA(80)	fusA(55)	gyrB(92)	leuS(72)	pyrG(169)	rplB(12)	rpoB(26)			Enterobacter   (72%)	Enterobacter roggenkampii  (67%)	ecloacae
+3	HUMV-004	03		0												0	0	0												
+4	HUMV-008	04		0												0	0	0												
+5	HUMV-009	05	48	0	Escherichia coli VL2732	10	-:H30	KL28/O4	-	-	CTX-M-32	AmpC1, TEM-1D	9	1	3	2	6	0	adk(10)	fumC(11)	gyrB(4)	icd(8)	mdh(8)	purA(8)	recA(2)			Escherichia   (59%)	Escherichia coli  (55%)	ecoli_achtman_4
+6	HUMV-010	06		0												0	0	0												
+7	HUMV-016	07		0												0	0	0												
+8	HUMV-020	08	39	0	Escherichia coli	770	O153:H16	KL156-D1/OL102	Escherichia fergusonii  (6%)	-	SHV-12	AmpC1*	7	1	0	8	7	0	adk(52)	fumC(116)	gyrB(55)	icd(101)	mdh(113)	purA(40)	recA(38)			Escherichia   (81%)	Escherichia coli  (72%)	ecoli_achtman_4
+9	HUMV-023	09		0												0	0	0												
+10	HUMV-024	10		0												0	0	0												
+11	HUMV-026	11	101	0	Escherichia coli	-	O9/O30:H19	KL5/O3/O3a	-	-	CTX-M-1	TEM-1D, AmpC1*	11	1	0	3	13	0	adk(9)	fumC(65)	gyrB(5)	icd(~788)	mdh(9)	purA(13)	recA(6)	{'ST': ['Ningún alelo de este gen coincide con esta combinación']}		Escherichia   (72%)	Escherichia coli  (70%)	ecoli_achtman_4
+12	HUMV-031	12		0												0	0	0												
+13	HUMV-034	13	95	0	Klebsiella oxytoca OK-1	2	-:-	KL74/OL104	Enterobacter hormaechei  (7%),Aeromonas caviae  (7%)	GES-6	OXY-2-8*	-	9	3	0	4	7	0	gapA(1)	infB(2)	mdh(2)	pgi(1)	phoE(2)	rpoB(1)	tonB(2)			Klebsiella   (53%)	Klebsiella oxytoca  (46%)	koxytoca
+14	HUMV-036	14	35	0	Escherichia coli	117	O54:H21	KL156-D1/OL102	-	-	CTX-M-9	AmpC1*	8	1	3	3	5	0	adk(20)	fumC(45)	gyrB(41)	icd(43)	mdh(5)	purA(32)	recA(2)			Escherichia   (86%)	Escherichia coli  (85%)	ecoli_achtman_4
+15	HUMV-038	15		0												0	0	0												
+16	HUMV-041	16		0												0	0	0												
+17	HUMV-042	17		0												0	0	0												
+18	HUMV-045	18		0												0	0	0												
+19	HUMV-053	19		0												0	0	0												
+20	HUMV-058	20		0												0	0	0												
+21	HUMV-062	21		0												0	0	0												
+22	HUMV-064	22		0												0	0	0												
+23	HUMV-068	23		0												0	0	0												
+24	HUMV-069	24		0												0	0	0												
+25	HUMV-070	25		0												0	0	0												
+26	HUMV-071	26		0												0	0	0												
+27	HUMV-072	27		0												0	0	0												
+28	HUMV-074	28		0												0	0	0												
+1	HUMV-075	33		0												0	0	0												
+2	HUMV-080	34		0												0	0	0												
+3	HUMV-084	35		0												0	0	0												
+4	HUMV-086	36		0												0	0	0												
+5	HUMV-087	37		0												0	0	0												
+6	HUMV-088	38		0												0	0	0												
+7	HUMV-089	39		0												0	0	0												
+8	HUMV-090	40		0												0	0	0												
+9	HUMV-091	41		0												0	0	0												
+10	HUMV-111	42		0												0	0	0												
+11	HUMV-113	43		0												0	0	0												
+12	HUMV-114	44		0												0	0	0												
+13	HUMV-115	45		0												0	0	0												
+14	HUMV-116	46		0												0	0	0												
+15	HUMV-118	47		0												0	0	0												
+16	HUMV-119	48		0												0	0	0												
+17	HUMV-122	49		0												0	0	0												
+18	HUMV-124	50		0												0	0	0												
+19	HUMV-126	51		0												0	0	0												
+20	HUMV-129	52		0												0	0	0												
+21	HUMV-132	53		0												0	0	0												
+22	HUMV-133	54		0												0	0	0												
+23	HUMV-136	55		0												0	0	0												
+24	HUMV-139	56		0												0	0	0												
+25	HUMV-141	29		0												0	0	0												
+26	HUMV-144	30		0												0	0	0												
+27	HUMV-145	31		0												0	0	0												
+28	HUMV-151	32		0												0	0	0												
+1	HUMV-154	57	33	0	Enterobacter hormaechei subsp. xiangfangensis	182	-:-	KL53/O3/O3a	Enterobacter sp. BIDMC100 (8%),Enterobacter cloacae  (4%)	IMP-13	-	ACT-16, OXA-2, OXA-10	11	3	0	1	0	0	dnaA(49)	fusA(20)	gyrB(19)	leuS(44)	pyrG(90)	rplB(24)	rpoB(32)			Enterobacter   (87%)	Enterobacter hormaechei  (46%)	ecloacae
+2	HUMV-156	58		0												0	0	0												
+3	HUMV-159	59		0												0	0	0												
+4	HUMV-166	60		0												0	0	0												
+5	HUMV-169	61		0												0	0	0												
+6	HUMV-170	62		0												0	0	0												
+7	HUMV-171	63	84	0	Enterobacter hormaechei subsp. xiangfangensis	66	-:-	KL53/O3/O3a	-	GES-6	CTX-M-15	ACT-45, TEM-1D, OXA-1	10	3	0	5	0	0	dnaA(52)	fusA(21)	gyrB(20)	leuS(44)	pyrG(45)	rplB(4)	rpoB(6)			Enterobacter   (70%)	Enterobacter hormaechei  (42%)	ecloacae
+8	HUMV-172	64	100	0	Enterobacter hormaechei subsp. xiangfangensis	66	-:-	KL53/O3/O3a	Leclercia adecarboxylata  (4%)	GES-6	CTX-M-15	ACT-45, TEM-1D, OXA-1	10	3	0	5	0	0	dnaA(52)	fusA(21)	gyrB(20)	leuS(44)	pyrG(45)	rplB(4)	rpoB(6)			Enterobacter   (64%)	Enterobacter hormaechei  (41%)	ecloacae
+9	HUMV-183	65	143	0	Citrobacter freundii UCI 31	91	-:-	KL177/O5	Escherichia coli  (11%)	-	-	TEM-1D, CMY-113*	9	0	0	2	0	0	aspC(48)	clpX(10)	fadD(14)	mdh(13)	arcA(32)	dnaG(6)	lysP(11)			Citrobacter   (75%)	Citrobacter freundii  (53%)	cfreundii
+10	HUMV-184	66	80	0	Escherichia coli	69	O77/O17/O44/O106:H18	KL156-D1/OL102	-	-	CTX-M-1	TEM-1D, AmpC1*	13	1	0	4	0	0	adk(21)	fumC(35)	gyrB(27)	icd(6)	mdh(5)	purA(5)	recA(4)			Escherichia   (81%)	Escherichia coli  (80%)	ecoli_achtman_4
+11	HUMV-188	67	96	0	Citrobacter freundii UCI 31	91	-:-	KL177/O5	Escherichia coli  (15%)	-	-	CMY-113*	10	0	0	2	0	0	aspC(48)	clpX(10)	fadD(14)	mdh(13)	arcA(32)	dnaG(6)	lysP(11)			Citrobacter   (70%)	Citrobacter freundii  (48%)	cfreundii
+12	HUMV-192	68	120	0	Enterobacter hormaechei subsp. steigerwaltii	536	-:-	KL43/O3/O3a	-	-	-	ACT-15	2	0	0	1	0	0	dnaA(6)	fusA(4)	gyrB(4)	leuS(6)	pyrG(37)	rplB(4)	rpoB(6)			Enterobacter   (93%)	Enterobacter hormaechei  (56%)	ecloacae
+13	HUMV-194	69	52	0	Enterobacter hormaechei subsp. steigerwaltii	50	-:-	KL20/O3/O3a	Enterobacter roggenkampii  (6%),Enterobacter cloacae  (5%)	-	-	ACT-15	2	0	0	1	0	0	dnaA(4)	fusA(4)	gyrB(4)	leuS(6)	pyrG(37)	rplB(4)	rpoB(25)			Enterobacter   (85%)	Enterobacter hormaechei  (25%)	ecloacae
+14	HUMV-195	70	63	0	Escherichia coli	212	O18:H49	KL156-D1/OL102	-	-	SHV-12	AmpC1*	4	1	0	7	0	0	adk(6)	fumC(29)	gyrB(4)	icd(18)	mdh(11)	purA(8)	recA(6)			Escherichia   (72%)	Escherichia coli  (70%)	ecoli_achtman_4
+15	HUMV-196	71	199	0	Enterobacter hormaechei subsp. xiangfangensis	182	-:-	KL53/O3/O3a	Enterobacter sp. BIDMC100 (6%),Enterobacter cloacae  (5%)	IMP-13	-	ACT-16, OXA-2, TEM-1D, TEM-1D.v1	15	3	0	4	0	0	dnaA(49)	fusA(20)	gyrB(19)	leuS(44)	pyrG(90)	rplB(24)	rpoB(32)			Enterobacter   (80%)	Enterobacter hormaechei  (38%)	ecloacae
+16	HUMV-197	72		0												0	0	0												
+17	HUMV-198	73		0												0	0	0												
+18	HUMV-199	74	126	0	Enterobacter hormaechei subsp. xiangfangensis	66	-:-	KL53/O3/O3a	-	GES-6	CTX-M-15	ACT-45, TEM-1D, OXA-1	14	3	0	5	0	0	dnaA(52)	fusA(21)	gyrB(20)	leuS(44)	pyrG(45)	rplB(4)	rpoB(6)			Enterobacter   (74%)	Enterobacter hormaechei  (44%)	ecloacae
+19	HUMV-200	75	163	0	Enterobacter hormaechei subsp. xiangfangensis	66	-:-	KL53/O3/O3a	-	GES-6	CTX-M-15	ACT-45, TEM-1D, OXA-1	10	3	0	5	0	0	dnaA(52)	fusA(21)	gyrB(20)	leuS(44)	pyrG(45)	rplB(4)	rpoB(6)			Enterobacter   (78%)	Enterobacter hormaechei  (50%)	ecloacae
+20	HUMV-206	76	112	0	Enterobacter hormaechei subsp. xiangfangensis	66	-:-	KL53/O3/O3a	-	GES-6	CTX-M-15	ACT-45, TEM-1D, OXA-1	11	3	0	6	0	0	dnaA(52)	fusA(21)	gyrB(20)	leuS(44)	pyrG(45)	rplB(4)	rpoB(6)			Enterobacter   (67%)	Enterobacter hormaechei  (40%)	ecloacae
+21	HUMV-207	77	77	0	Enterobacter hormaechei subsp. xiangfangensis	66	-:-	KL53/O3/O3a	-	GES-6	CTX-M-15	ACT-45, TEM-1D, OXA-1	15	3	0	4	0	0	dnaA(52)	fusA(21)	gyrB(20)	leuS(44)	pyrG(45)	rplB(4)	rpoB(6)			Enterobacter   (70%)	Enterobacter hormaechei  (43%)	ecloacae
+22	HUMV-210	78	115	0	Escherichia coli	1642	O8:H7	KL80/O5	Salmonella sp. SJTUF14154 (10%)	-	CTX-M-14	AmpC1*	5	1	3	4	0	0	adk(6)	fumC(4)	gyrB(5)	icd(18)	mdh(11)	purA(8)	recA(6)			Escherichia   (47%)	Escherichia coli  (44%)	ecoli_achtman_4
+23	HUMV-214	79	253	0	Enterobacter hormaechei subsp. xiangfangensis	66	-:-	KL53/O3/O3a	-	GES-6	CTX-M-15	ACT-45, TEM-1D, OXA-1	14	3	0	4	0	0	dnaA(52)	fusA(21)	gyrB(20)	leuS(44)	pyrG(45)	rplB(4)	rpoB(6)			Enterobacter   (69%)	Enterobacter hormaechei  (41%)	ecloacae
+24	HUMV-216	80	48	0	Klebsiella pneumoniae	2938	-:-	KL186/O4	Klebsiella oxytoca  (7%)	-	CTX-M-15	-	11	1	0	3	0	0	gapA(2)	infB(3)	mdh(2)	pgi(1)	phoE(7)	rpoB(4)	tonB(12)			Klebsiella   (89%)	Klebsiella pneumoniae  (72%)	klebsiella
+25	HUMV-217	81	143	0	Enterobacter asburiae	672	-:-	KL112/O3/O3a	Enterobacter roggenkampii  (7%),Enterobacter hormaechei  (7%),Enterobacter cloacae  (4%)	-	-	ACT-10*	1	0	0	2	0	0	dnaA(168)	fusA(161)	gyrB(228)	leuS(203)	pyrG(167)	rplB(11)	rpoB(58)			Enterobacter   (82%)	Enterobacter asburiae  (47%)	ecloacae
+26	HUMV-218	82	83	0	Klebsiella aerogenes	242	O9:-	KL68/O3/O3a	Enterobacter hormaechei  (14%)	-	-	ACT-43*	3	0	0	3	0	0	dnaA(6)	fusA(8)	gyrB(11)	leuS(7)	pryG(4)	rplB(1)	rpoB(11)			Enterobacter   (24%)	Klebsiella aerogenes  (63%)	kaerogenes
+27	HUMV-221	83	102	0	Enterobacter hormaechei subsp. xiangfangensis	66	-:-	KL53/O3/O3a	-	-	CTX-M-15	ACT-45, TEM-1D, OXA-1	14	1	0	3	0	0	dnaA(52)	fusA(21)	gyrB(20)	leuS(44)	pyrG(45)	rplB(4)	rpoB(6)			Enterobacter   (78%)	Enterobacter hormaechei  (47%)	ecloacae
+28	HUMV-225	84	54	0	Enterobacter hormaechei subsp. xiangfangensis	66	-:-	KL53/O3/O3a	-	GES-6	-	ACT-45	7	3	0	5	0	0	dnaA(52)	fusA(21)	gyrB(20)	leuS(44)	pyrG(45)	rplB(4)	rpoB(6)			Enterobacter   (58%)	Enterobacter hormaechei  (22%)	ecloacae
+1	HUMV-226	89	42	0	Enterobacter hormaechei subsp. xiangfangensis	66	-:-	KL53/O3/O3a	-	GES-6	CTX-M-15	ACT-45, TEM-1D, OXA-1	10	3	0	5	0	0	dnaA(52)	fusA(21)	gyrB(20)	leuS(44)	pyrG(45)	rplB(4)	rpoB(6)			Enterobacter   (75%)	Enterobacter hormaechei  (43%)	ecloacae
+2	HUMV-227	90	48	0	Klebsiella aerogenes	242	O9:-	KL68/O3/O3a	-	-	-	-	0	0	0	0	0	0	dnaA(6)	fusA(8)	gyrB(11)	leuS(7)	pryG(4)	rplB(1)	rpoB(11)			Klebsiella   (88%)	Klebsiella aerogenes  (87%)	kaerogenes
+3	HUMV-232	91		0												0	0	0												
+4	HUMV-233	92	60	0	Escherichia coli 113302	-	O8:H30	KL156-D1/O5	-	-	CTX-M-65	OXA-10, TEM-1D, AmpC1*	16	1	0	3	0	0	adk(6)	fumC(65)	gyrB(3)	icd(~1)	mdh(11)	purA(13)	recA(6)	{'ST': ['Ningún alelo de este gen coincide con esta combinación']}		Escherichia   (63%)	Escherichia coli  (60%)	ecoli_achtman_4
+5	HUMV-240	93	74	0	Enterobacter hormaechei subsp. xiangfangensis	66	-:-	KL53/O3/O3a	-	GES-6	CTX-M-15	ACT-45, TEM-1D, OXA-1	14	3	0	5	0	0	dnaA(52)	fusA(21)	gyrB(20)	leuS(44)	pyrG(45)	rplB(4)	rpoB(6)			Enterobacter   (61%)	Enterobacter hormaechei  (35%)	ecloacae
+6	HUMV-241	94	91	0	Enterobacter hormaechei subsp. xiangfangensis	66	-:-	KL53/O3/O3a	-	GES-6	CTX-M-15	ACT-45, TEM-1D, OXA-1	14	3	0	4	0	0	dnaA(52)	fusA(21)	gyrB(20)	leuS(44)	pyrG(45)	rplB(4)	rpoB(6)			Enterobacter   (82%)	Enterobacter hormaechei  (48%)	ecloacae
+7	HUMV-242	95	39	0	Enterobacter hormaechei	78	-:-	KL20/O3/O3a	Enterobacter cloacae  (4%)	-	-	ACT-24, LAP-2	4	0	0	5	0	0	dnaA(8)	fusA(9)	gyrB(6)	leuS(9)	pyrG(9)	rplB(6)	rpoB(8)			Enterobacter   (78%)	Enterobacter hormaechei  (18%)	ecloacae
+8	HUMV-244	96	40	0	Escherichia coli 681	10	O89:H17	KL57/O3b	-	-	CTX-M-3	TEM-1D, AmpC1*	9	1	3	4	0	0	adk(10)	fumC(11)	gyrB(4)	icd(8)	mdh(8)	purA(8)	recA(2)			Escherichia   (55%)	Escherichia coli  (51%)	ecoli_achtman_4
+9	HUMV-245	01	74	0	Escherichia coli	4981	-:H9	KL123/O12	Escherichia fergusonii  (9%)	-	CTX-M-15	TEM-1D, AmpC1*	12	1	3	4	0	0	adk(10)	fumC(616)	gyrB(4)	icd(8)	mdh(8)	purA(13)	recA(73)			Escherichia   (64%)	Escherichia coli  (51%)	ecoli_achtman_4
+16	SCT-HURS-01	08	37	0	Klebsiella pneumoniae	323	O9:-	KL21/O3b	-	-	CTX-M-15	TEM-1D, OXA-1	15	1	1	3	0	0	gapA(2)	infB(1)	mdh(1)	pgi(1)	phoE(9)	rpoB(1)	tonB(93)			Klebsiella   (86%)	Klebsiella pneumoniae  (69%)	klebsiella
+17	SCT-HURS-02	09	209	0	Enterobacter roggenkampii MGH 54	526	-:-	KL135/O1/O2v3	Enterobacter hormaechei  (6%)	-	-	MIR-16	2	0	0	5	0	0	dnaA(37)	fusA(27)	gyrB(35)	leuS(126)	pyrG(49)	rplB(12)	rpoB(26)			Enterobacter   (69%)	Enterobacter roggenkampii  (56%)	ecloacae
+18	SCT-HURS-03	10	64	0	Enterobacter asburiae	-	-:-	KL62/O3/O3a	Klebsiella pneumoniae  (8%),Kluyvera ascorbata  (9%)	-	-	ACT-13*	3	0	0	5	0	0	dnaA(26)	fusA(16)	gyrB(25)	leuS(53)	pyrG(22)	rplB(~9)	rpoB(15)	{'ST': ['Ningún alelo de este gen coincide con esta combinación']}		Enterobacter   (60%)	Enterobacter asburiae  (37%)	ecloacae
+19	SCT-HURS-04	11	141	0	Klebsiella pneumoniae	323	O9:-	KL21/O3b	-	-	CTX-M-15	TEM-1D, OXA-1	11	1	1	3	0	0	gapA(2)	infB(1)	mdh(1)	pgi(1)	phoE(9)	rpoB(1)	tonB(93)			Klebsiella   (92%)	Klebsiella pneumoniae  (81%)	klebsiella
+20	SCT-HURS-05	12		0												0	0	0												
+21	SCT-HURS-06	13	84	0	Enterobacter asburiae	24	-:-	KL62/O3/O3a	-	IMP-23	-	ACT-1	8	3	0	4	0	0	dnaA(23)	fusA(15)	gyrB(23)	leuS(16)	pyrG(28)	rplB(11)	rpoB(11)			Enterobacter   (81%)	Enterobacter asburiae  (69%)	ecloacae
+22	SCT-HURS-07	14	105	0	Klebsiella pneumoniae BIDMC 23	469	O9:-	KL139/O3b	-	-	CTX-M-15	-	11	1	0	1	0	0	gapA(2)	infB(1)	mdh(2)	pgi(1)	phoE(10)	rpoB(1)	tonB(4)			Klebsiella   (94%)	Klebsiella pneumoniae  (82%)	klebsiella
+23	SCT-HURS-08	15	82	0	Klebsiella pneumoniae BIDMC 23	469	O9:-	KL139/O3b	-	-	CTX-M-15	-	11	1	0	1	0	0	gapA(2)	infB(1)	mdh(2)	pgi(1)	phoE(10)	rpoB(1)	tonB(4)			Klebsiella   (95%)	Klebsiella pneumoniae  (85%)	klebsiella
+24	SCT-HURS-10	16	62	0	Escherichia coli	155	O86:H51	KL156-D1/O3/O3a	-	-	CTX-M-1	TEM-1D, AmpC1*	9	1	3	4	0	0	adk(6)	fumC(4)	gyrB(14)	icd(16)	mdh(24)	purA(8)	recA(14)			Escherichia   (61%)	Escherichia coli  (59%)	ecoli_achtman_4
+25	SCT-HURS-11	85	68	0	Escherichia coli 907710	162	O29:H31	KL130/O5	-	-	SHV-12	TEM-1D, AmpC1*	17	1	3	2	0	0	adk(9)	fumC(65)	gyrB(5)	icd(1)	mdh(9)	purA(13)	recA(6)			Escherichia   (62%)	Escherichia coli  (59%)	ecoli_achtman_4
+26	SCT-HURS-13	86		0												0	0	0												
+27	SCT-HURS-15	87		0												0	0	0												
+28	SCT-HURS-16	88	48	0	Escherichia coli	405	O102:H6	KL156-D1/O3b	-	-	CTX-M-14	TEM-1D, AmpC1*	13	1	0	2	0	0	adk(35)	fumC(37)	gyrB(29)	icd(25)	mdh(4)	purA(5)	recA(73)			Escherichia   (85%)	Escherichia coli  (80%)	ecoli_achtman_4
+1	SCT-HURS-18	01		0												0	0	0												
+2	SCT-HURS-21	02	86	0	Escherichia coli	3489	O153:H25	KL156-D1/OL102	Klebsiella pneumoniae  (5%)	-	CTX-M-32	TEM-1D, AmpC1*	22	1	0	8	0	3	adk(136)	fumC(7)	gyrB(4)	icd(8)	mdh(8)	purA(8)	recA(2)			Escherichia   (64%)	Escherichia coli  (61%)	ecoli_achtman_4
+3	SCT-HURS-28	03		0												0	0	0												
+4	SCT-HURS-29	04	73	0	Escherichia coli	3489	O153:H25	KL156-D1/OL102	Klebsiella pneumoniae  (5%)	-	CTX-M-32	TEM-1D, AmpC1*	19	1	0	7	0	3	adk(136)	fumC(7)	gyrB(4)	icd(8)	mdh(8)	purA(8)	recA(2)			Escherichia   (67%)	Escherichia coli  (64%)	ecoli_achtman_4
+5	SCT-HURS-30	05	49	0	Escherichia coli	1193	O75:H5	KL156-D1/O3b	-	-	CTX-M-27	-	11	1	0	5	0	1	adk(14)	fumC(14)	gyrB(10)	icd(200)	mdh(17)	purA(7)	recA(10)			Escherichia   (59%)	Escherichia coli  (55%)	ecoli_achtman_4
+6	SCT-HURS-41	06	57	0	Escherichia coli	1193	O75:H5	KL156-D1/O3b	-	-	CTX-M-27	-	12	1	0	5	0	1	adk(14)	fumC(14)	gyrB(10)	icd(200)	mdh(17)	purA(7)	recA(10)			Escherichia   (56%)	Escherichia coli  (52%)	ecoli_achtman_4
+7	SCT-HURS-42	07	87	0	Escherichia coli	1193	O75:H5	KL156-D1/O3b	-	-	CTX-M-27	-	11	1	0	4	0	1	adk(14)	fumC(14)	gyrB(10)	icd(200)	mdh(17)	purA(7)	recA(10)			Escherichia   (64%)	Escherichia coli  (60%)	ecoli_achtman_4
+8	SCT-HURS-43	08		0												0	0	0												
+9	SCT-HURS-44	09		0												0	0	0												
+10	SCT-HURS-45	10	44	0	Escherichia coli	1193	O75:H5	KL156-D1/O3b	-	-	CTX-M-27	-	11	1	0	6	0	1	adk(14)	fumC(14)	gyrB(10)	icd(200)	mdh(17)	purA(7)	recA(10)			Escherichia   (50%)	Escherichia coli  (47%)	ecoli_achtman_4
+11	SCT-HURS-46	11	57	0	Escherichia coli	1193	O75:H5	KL156-D1/O3b	-	-	CTX-M-27	-	11	1	0	5	0	1	adk(14)	fumC(14)	gyrB(10)	icd(200)	mdh(17)	purA(7)	recA(10)			Escherichia   (59%)	Escherichia coli  (55%)	ecoli_achtman_4
+12	SCT-HURS-47	12		0												0	0	0												
+13	SCT-HURS-48	13		0												0	0	0												
+14	SCT-HURS-57	14		0												0	0	0												
+15	SCT-HURS-58	15		0												0	0	0												
+16	SCT-HURS-59	16		0												0	0	0												
+17	SCT-HURS-61	17		0												0	0	0												
+18	SCT-HURS-63	18	35	0	Klebsiella pneumoniae	512	-:-	KL107/O1/O2v2	-	KPC-3	-	TEM-1D	11	3	0	3	0	1	gapA(54)	infB(3)	mdh(1)	pgi(1)	phoE(1)	rpoB(1)	tonB(79)			Klebsiella   (88%)	Klebsiella pneumoniae  (55%)	klebsiella
+19	SCT-HURS-65	19	42	0	Enterobacter hormaechei subsp. steigerwaltii	177	-:-	KL43/O3/O3a	Enterobacter cloacae complex (4%),Escherichia coli  (15%)	-	-	ACT-17	7	0	0	4	0	0	dnaA(9)	fusA(4)	gyrB(14)	leuS(61)	pyrG(89)	rplB(4)	rpoB(9)			Enterobacter   (65%)	Enterobacter hormaechei  (20%)	ecloacae
+20	SCT-HURS-70	20		0												0	0	0												
+21	SCT-HURS-71	21		0												0	0	0												
+22	SCT-HURS-72	22		0												0	0	0												
+23	SCT-HURS-73	23	54	0	Escherichia coli	131	O25:H4	KL156-D1/OL102	-	-	-	OXA-1	13	0	0	3	0	1	adk(53)	fumC(40)	gyrB(47)	icd(13)	mdh(36)	purA(28)	recA(29)			Escherichia   (87%)	Escherichia coli  (86%)	ecoli_achtman_4
+24	SCT-HURS-74	24		0												0	0	0												
+25	SCT-HURS-75	25	56	0	Escherichia coli	131	O25:H4	KL156-D1/OL102	-	-	-	OXA-1	22	0	0	3	0	2	adk(53)	fumC(40)	gyrB(47)	icd(13)	mdh(36)	purA(28)	recA(29)			Escherichia   (87%)	Escherichia coli  (86%)	ecoli_achtman_4
+26	SCT-HURS-76	26	78	0	Escherichia coli	1485	O83:H42	KL177/OL102	-	-	SHV-12	AmpC1*	4	1	0	3	0	0	adk(92)	fumC(231)	gyrB(87)	icd(96)	mdh(70)	purA(58)	recA(2)			Escherichia   (87%)	Escherichia coli  (86%)	ecoli_achtman_4
+10	SCT-HUSAL-001	02	186	0	Escherichia coli	1598	O9:H4	KL46/O3/O3a	-	-	CTX-M-15	TEM-1D, AmpC1*, TEM-190	16	1	0	6	0	0	adk(8)	fumC(7)	gyrB(1)	icd(8)	mdh(8)	purA(13)	recA(47)			Escherichia   (66%)	Escherichia coli  (63%)	ecoli_achtman_4
+11	SCT-HUSAL-002	03	442	0	Escherichia coli	1598	O9:H4	KL46/O3/O3a	-	-	CTX-M-15	TEM-1D, AmpC1*, TEM-190	15	1	0	6	0	0	adk(8)	fumC(7)	gyrB(1)	icd(8)	mdh(8)	purA(13)	recA(47)			Escherichia   (67%)	Escherichia coli  (64%)	ecoli_achtman_4
+12	SCT-HUSAL-004	04	83	0	Escherichia coli 2-177-06_S4_C1	117	O119:H4	KL156-D1/OL102	Salmonella enterica  (12%)	-	SHV-12	AmpC1*	11	1	3	7	0	0	adk(20)	fumC(45)	gyrB(41)	icd(43)	mdh(5)	purA(32)	recA(2)			Escherichia   (70%)	Escherichia coli  (69%)	ecoli_achtman_4
+13	SCT-HUSAL-006	05	165	0	Escherichia coli 2-177-06_S4_C1	117	O119:H4	KL156-D1/OL102	Salmonella enterica  (7%)	-	SHV-12	AmpC1*	12	1	3	6	0	0	adk(20)	fumC(45)	gyrB(41)	icd(43)	mdh(5)	purA(32)	recA(2)			Escherichia   (81%)	Escherichia coli  (80%)	ecoli_achtman_4
+14	SCT-HUSAL-008	06	135	0	Escherichia coli	117	O54:H21	KL156-D1/OL102	-	-	SHV-12, CTX-M-9	AmpC1*	13	1	3	3	0	0	adk(20)	fumC(45)	gyrB(41)	icd(43)	mdh(5)	purA(32)	recA(2)			Escherichia   (80%)	Escherichia coli  (79%)	ecoli_achtman_4
+15	SCT-HUSAL-015	07	121	0	Klebsiella pneumoniae	307	-:-	KL102/O1/O2v2	-	-	CTX-M-15	TEM-1D, OXA-1	10	1	1	1	0	0	gapA(4)	infB(1)	mdh(2)	pgi(52)	phoE(1)	rpoB(1)	tonB(7)			Klebsiella   (95%)	Klebsiella pneumoniae  (86%)	klebsiella

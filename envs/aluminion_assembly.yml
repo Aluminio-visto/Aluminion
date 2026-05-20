@@ -11,3 +11,10 @@ dependencies:
   - samtools
   - minimap2
   - biopython
+  # The following are required by scripts/deconcat.py — without them, all
+  # samples fall through to the "Deconcat failed" branch in aluminion.sh.
+  - blast
+  - mafft
+  - emboss
+  - pandas
+  - matplotlib

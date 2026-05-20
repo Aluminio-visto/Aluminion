@@ -508,3 +508,15 @@ Docker images required: `kbessonov/mob_suite:3.0.3`, `rpalcab/copla:1.0`, phaste
   Skipped samples are removed from the `samples` file so downstream loops ignore them.
 - `copla.txt` is only truncated (`> copla.txt`) on a fresh run, not on `--resume`, to
   allow appending results for samples that weren't done yet.
+- **Polishing — two-step @RG injection**: `dorado polish` enforces two checks on the
+  input BAM: (1) `@PG` must contain `PN:dorado` — meaning `dorado aligner` must be used,
+  **not minimap2** (minimap2 fails this check with "Input BAM file was not aligned using
+  Dorado"); (2) `@RG` must contain `DS:basecall_model=<model>`. `dorado aligner` from
+  FASTQ input writes the `PN:dorado` `@PG` but does NOT inject `@RG DS:basecall_model`.
+  Fix: extract `basecall_model_version_id` from the FASTQ read header, align with
+  `dorado aligner`, then inject `@RG\tID:1\tDS:basecall_model=<model>` via
+  `samtools addreplacerg`. Two FASTQ formats handled: with `RG:Z:` tag → use
+  `--add-fastq-rg` + `addreplacerg -w` (overwrite); without `RG:Z:` (current standard
+  Dorado output) → `dorado aligner` alone + `addreplacerg`. Neither `--ignore-read-groups`
+  nor `--device cpu` are used: the former was a workaround for missing @RG (now fixed),
+  the latter prevented GPU use (dorado now auto-detects).

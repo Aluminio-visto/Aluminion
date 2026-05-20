@@ -10,9 +10,27 @@ from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
 
 def read_summary(infile):
-    """Reads Phastest summary output."""
-    df = pd.read_table(infile, skipinitialspace=True, skiprows=32, sep=' ')
-    df.drop(index=0, inplace=True)
+    """Reads Phastest summary output.
+
+    The header row is located by searching for the line that starts with 'REGION'
+    instead of relying on a fixed skiprows offset — Phastest has shifted the
+    number of preamble lines between releases, and a hardcoded value silently
+    misaligns every column when the format changes.
+    """
+    header_idx = None
+    with open(infile) as fh:
+        for i, line in enumerate(fh):
+            if line.lstrip().startswith('REGION '):
+                header_idx = i
+                break
+    if header_idx is None:
+        return None
+
+    df = pd.read_table(infile, skipinitialspace=True, skiprows=header_idx, sep=r'\s+', engine='python')
+    # Phastest writes a divider line of dashes right under the header; drop it.
+    if len(df) > 0 and str(df.iloc[0, 0]).startswith('-'):
+        df = df.drop(index=df.index[0]).reset_index(drop=True)
+
     if len(df) > 0:
         df['MOST_COMMON_PHAGE_NAME(hit_genes_count)'] = df['MOST_COMMON_PHAGE_NAME(hit_genes_count)'].str.split(',').str[0].replace(r'\(.*\)', '', regex=True)
         df = df[['REGION', 'REGION_POSITION', 'REGION_LENGTH', 'COMPLETENESS(score)', 'SPECIFIC_KEYWORD',
@@ -24,10 +42,16 @@ def read_summary(infile):
 def execute_blastn(assembly_fasta, phage_fna):
     """Executes BLASTN to find exact phage regions in the original assembly."""
     mkbl_cmd = ['makeblastdb', '-in', assembly_fasta, '-parse_seqids', '-dbtype', 'nucl']
-    subprocess.run(mkbl_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    # check=True surfaces makeblastdb failures (e.g. truncated FASTA, missing perms)
+    # instead of letting the subsequent blastn fail with a less helpful error.
+    subprocess.run(mkbl_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, check=True)
     blast_cmd = ['blastn', '-query', phage_fna, '-db', assembly_fasta, '-outfmt', '6 qseqid sseqid pident qcovhsp length qlen slen qstart qend sstart send sframe evalue bitscore']
-    pipe = subprocess.Popen(blast_cmd, stdout=subprocess.PIPE)
+    pipe = subprocess.Popen(blast_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     df_blast = pd.read_table(pipe.stdout, header=None)
+    pipe.wait()
+    if pipe.returncode != 0:
+        err = pipe.stderr.read().decode(errors='replace')
+        raise RuntimeError(f"blastn failed (rc={pipe.returncode}): {err}")
     if not df_blast.empty:
         df_blast.columns = ['qseqid', 'sseqid', 'pident', 'qcovhsp', 'length', 'qlen', 'slen', 'qstart', 'qend', 'sstart', 'send', 'sframe', 'evalue', 'bitscore']
     return df_blast

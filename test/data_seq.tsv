@@ -1,0 +1,141 @@
+Nº Cultivo	Cepario	ID único	Barcode	BC (rep)	BC (rep2)	Fecha seq	Fecha seq (rep)	Fecha seq (rep2)	[DNA]	Profundidad	Calidad (ass)	Kit Extracción	Kit Barcoding	Posición	Tipo FlowCell	FlowCell	Poros inicio	Poros final	Horas seq	Cepas/run	Cepas a repetir/run	Lmediana (pre)	Qmediana (pre)	Nreads (pre)	Nbases (pre)	Lmediana (post)	Qmediana (post)	Nreads (post)	Nbases (post)	% Bases Filtrado
+1	x	HUMV-001	01	01					62,2	63	0	DNeasy Blood & Tissue								140	76	1686	23.8	81240	329663512	2458	25.7	60673	314662551	95.44961439347888
+2	x	HUMV-002	02	02					38	122	0	DNeasy Blood & Tissue								140	76	1751	23.9	181842	658488678	2658	25.6	141482	627170191	95.2438837528502
+3	x	HUMV-004	03	03					1200		0	DNeasy Blood & Tissue								140	76									
+4	x	HUMV-008	04	04					30,5		0	DNeasy Blood & Tissue								140	76									
+5	x	HUMV-009	05	05					38,3	48	0	DNeasy Blood & Tissue								140	76	766	23.6	86268	260156088	1734	26.1	56624	240491316	92.44116401381312
+6	x	HUMV-010	06	06					44,9		0	DNeasy Blood & Tissue								140	76									
+7	x	HUMV-016	07	07					821		0	DNeasy Blood & Tissue								140	76									
+8	x	HUMV-020	08	08					24,2	39	0	DNeasy Blood & Tissue								140	76	736	23.0	99209	262184608	2295	25.4	61705	225031568	85.82943511313982
+9	x	HUMV-023	09	09					24,3		0	DNeasy Blood & Tissue								140	76									
+10	x	HUMV-024	10	10					24,6		0	DNeasy Blood & Tissue								140	76									
+11	x	HUMV-026	11	11					35,2	101	0	DNeasy Blood & Tissue								140	76	1051	24.0	185698	663736680	2067	26.0	131149	625795126	94.28364362807251
+12	x	HUMV-031	12	12					40,1		0	DNeasy Blood & Tissue								140	76									
+13	x	HUMV-034	13	13					33,9	95	0	DNeasy Blood & Tissue								140	76	1125	22.9	265806	649572885	2380	24.8	186620	608957687	93.74739941615636
+14	x	HUMV-036	14	14					33,8	35	0	DNeasy Blood & Tissue								140	76	634	22.2	103865	203452830	1520	24.8	61306	184997568	90.92897257806638
+15	x	HUMV-038	15	15					40,7		0	DNeasy Blood & Tissue								140	76									
+16	x	HUMV-041	16	16					31,7		0	DNeasy Blood & Tissue								140	76									
+17	x	HUMV-042	17	17					34,9		0	DNeasy Blood & Tissue								140	76									
+18	x	HUMV-045	18	18					55,9		0	DNeasy Blood & Tissue								140	76									
+19	x	HUMV-053	19	19					29,5		0	DNeasy Blood & Tissue								140	76									
+20	x	HUMV-058	20	20					30,8		0	DNeasy Blood & Tissue								140	76									
+21	x	HUMV-062	21	21					577		0	DNeasy Blood & Tissue								140	76									
+22	x	HUMV-064	22	22					49,1		0	DNeasy Blood & Tissue								140	76									
+23	x	HUMV-068	23	23					50,9		0	DNeasy Blood & Tissue								140	76									
+24	x	HUMV-069	24	24					54		0	DNeasy Blood & Tissue								140	76									
+25	x	HUMV-070	25	25					47,6		0	DNeasy Blood & Tissue								140	76									
+26	x	HUMV-071	26	26					36,2		0	DNeasy Blood & Tissue								140	76									
+27	x	HUMV-072	27	27					33,4		0	DNeasy Blood & Tissue								140	76									
+28	x	HUMV-074	28	28					55,5		0	DNeasy Blood & Tissue								140	76									
+1	x	HUMV-075	33	33					69,8		0	DNeasy Blood & Tissue								140	76									
+2	x	HUMV-080	34	34					116		0	DNeasy Blood & Tissue								140	76									
+3	x	HUMV-084	35	35					111		0	DNeasy Blood & Tissue								140	76									
+4	x	HUMV-086	36	36					67,8		0	DNeasy Blood & Tissue								140	76									
+5	x	HUMV-087	37	37					124		0	DNeasy Blood & Tissue								140	76									
+6	x	HUMV-088	38	38					84,8		0	DNeasy Blood & Tissue								140	76									
+7	x	HUMV-089	39	39					76,6		0	DNeasy Blood & Tissue								140	76									
+8	x	HUMV-090	40	40					55,6		0	DNeasy Blood & Tissue								140	76									
+9	x	HUMV-091	41	41					51,9		0	DNeasy Blood & Tissue								140	76									
+10	x	HUMV-111	42	42					86,9		0	DNeasy Blood & Tissue								140	76									
+11	x	HUMV-113	43	43					95,8		0	DNeasy Blood & Tissue								140	76									
+12	x	HUMV-114	44	44					55		0	DNeasy Blood & Tissue								140	76									
+13	x	HUMV-115	45	45					48,7		0	DNeasy Blood & Tissue								140	76									
+14	x	HUMV-116	46	46					62,3		0	DNeasy Blood & Tissue								140	76									
+15	x	HUMV-118	47	47					28,1		0	DNeasy Blood & Tissue								140	76									
+16	x	HUMV-119	48	48					55,5		0	DNeasy Blood & Tissue								140	76									
+17	x	HUMV-122	49	49					41,6		0	DNeasy Blood & Tissue								140	76									
+18	x	HUMV-124	50	50					58		0	DNeasy Blood & Tissue								140	76									
+19	x	HUMV-126	51	51					95,4		0	DNeasy Blood & Tissue								140	76									
+20	x	HUMV-129	52	52					63,5		0	DNeasy Blood & Tissue								140	76									
+21	x	HUMV-132	53	53					93,6		0	DNeasy Blood & Tissue								140	76									
+22	x	HUMV-133	54	54					77,3		0	DNeasy Blood & Tissue								140	76									
+23	x	HUMV-136	55	55					33,8		0	DNeasy Blood & Tissue								140	76									
+24	x	HUMV-139	56	56					39,2		0	DNeasy Blood & Tissue								140	76									
+25	x	HUMV-141	29	29					57		0	DNeasy Blood & Tissue								140	76									
+26	x	HUMV-144	30	30					80,4		0	DNeasy Blood & Tissue								140	76									
+27	x	HUMV-145	31	31					53		0	DNeasy Blood & Tissue								140	76									
+28	x	HUMV-151	32	32					62,3		0	DNeasy Blood & Tissue								140	76									
+1	x	HUMV-154	57	57					27	33	0	DNeasy Blood & Tissue								140	76	1518	23.1	42900	169980641	3075	25.1	30022	166432630	97.91269701118493
+2	x	HUMV-156	58	58					47,2		0	DNeasy Blood & Tissue								140	76									
+3	x	HUMV-159	59	59					43,2		0	DNeasy Blood & Tissue								140	76									
+4	x	HUMV-166	60	60					74,4		0	DNeasy Blood & Tissue								140	76									
+5	x	HUMV-169	61	61					31,7		0	DNeasy Blood & Tissue								140	76									
+6	x	HUMV-170	62	62					36,7		0	DNeasy Blood & Tissue								140	76									
+7	x	HUMV-171	63	63					48,3	84	0	DNeasy Blood & Tissue								140	76	1979	23.4	119904	437621229	2461	24.5	95108	426675563	97.49882654801465
+8	x	HUMV-172	64	64					40,9	100	0	DNeasy Blood & Tissue								140	76	2458	23.4	124847	519788850	3165	24.4	92244	508265840	97.78313636392932
+9	x	HUMV-183	65	65					65,4	143	0	DNeasy Blood & Tissue								140	76	1442	23.4	212229	734623335	2063	24.6	164413	712218176	96.95011607547151
+10	x	HUMV-184	66	66					76,4	80	0	DNeasy Blood & Tissue								140	76	590	22.9	210246	460202831	1255	24.5	136431	440315070	95.67847921387515
+11	x	HUMV-188	67	67					63,1	96	0	DNeasy Blood & Tissue								140	76	999	22.8	169338	491092472	2061	24.5	114637	475682496	96.86210298902729
+12	x	HUMV-192	68	68					39,5	120	0	DNeasy Blood & Tissue								140	76	937	23.0	170043	588158177	2652	25.2	107180	570090016	96.92800989486202
+13	x	HUMV-194	69	69					57	52	0	DNeasy Blood & Tissue								140	76	1411	23.2	78219	257511354	2886	24.7	54895	251438580	97.64174514806055
+14	x	HUMV-195	70	70					111	63	0	DNeasy Blood & Tissue								140	76	1537	22.6	104726	330704258	2082	23.9	73661	321547313	97.23107738153163
+15	x	HUMV-196	71	71					35,3	199	0	DNeasy Blood & Tissue								140	76	1502	23.7	346004	1053184963	2133	24.9	273622	1019894099	96.83902968903288
+16	x	HUMV-197	72	72					58,9		0	DNeasy Blood & Tissue								140	76									
+17	x	HUMV-198	73	73					56		0	DNeasy Blood & Tissue								140	76									
+18	x	HUMV-199	74	74					41,1	126	0	DNeasy Blood & Tissue								140	76	2028	23.8	180810	666201921	2458	24.7	149214	648625157	97.36164615472491
+19	x	HUMV-200	75	75					66,5	163	0	DNeasy Blood & Tissue								140	76	2018	23.6	207947	851719477	3186	24.8	151771	830543097	97.51369076651983
+20	x	HUMV-206	76	76					47,1	112	0	DNeasy Blood & Tissue								140	76	1277	23.0	189031	589286285	2457	24.5	130836	570964999	96.89093629592958
+21	x	HUMV-207	77	77					36,3	77	0	DNeasy Blood & Tissue								140	76	1988	23.5	111017	402053717	3259	24.6	86253	391564743	97.39115109337492
+22	x	HUMV-210	78	78					34,3	115	0	DNeasy Blood & Tissue								140	76	1027	23.3	213173	641128943	2082	24.7	151294	619908650	96.69016767505379
+23	x	HUMV-214	79	79					22,7	253	0	DNeasy Blood & Tissue								140	76	2002	23.5	372604	1324732778	2843	24.5	303868	1286154535	97.08784717637597
+24	x	HUMV-216	80	80					31,2	48	0	DNeasy Blood & Tissue								140	76	900	21.8	101195	291467146	2346	23.7	64734	281385943	96.54122149327938
+25	x	HUMV-217	81	81					36,4	143	0	DNeasy Blood & Tissue								140	76	1550	23.3	247393	714916271	2263	24.2	197975	694056476	97.08220446978748
+26	x	HUMV-218	82	82					59,3	83	0	DNeasy Blood & Tissue								140	76	1625	23.6	209892	889478450	3010	24.9	155778	869499136	97.75381696993334
+27	x	HUMV-221	83	83					32,5	102	0	DNeasy Blood & Tissue								140	76	1625	23.4	161204	523686309	2454	24.6	122293	508580397	97.11546554867067
+28	x	HUMV-225	84	84					378	54	0	DNeasy Blood & Tissue								140	76	608	22.6	305418	276791723	853	24.0	216301	254567965	91.97094560519065
+1	x	HUMV-226	89	89					30,3	42	0	DNeasy Blood & Tissue								140	76	1316	24.2	69303	218873032	2449	26.0	50111	212611118	97.13901984964507
+2	x	HUMV-227	90	90					36,4	48	0	DNeasy Blood & Tissue								140	76	710	24.2	86071	255899489	2355	26.3	51094	247913230	96.87914226354708
+3	x	HUMV-232	91	91					56		0	DNeasy Blood & Tissue								140	76									
+4	x	HUMV-233	92	92					56,9	60	0	DNeasy Blood & Tissue								140	76	695	24.2	112607	312001238	1775	26.1	74365	301553485	96.65137450512296
+5	x	HUMV-240	93	93					29,5	74	0	DNeasy Blood & Tissue								140	76	1721	24.2	121458	374170384	2452	25.5	95194	364159214	97.32443549032999
+6	x	HUMV-241	94	94					110	91	0	DNeasy Blood & Tissue								140	76	1111	24.3	127797	464625850	2454	26.1	87348	451884200	97.25765365831454
+7	x	HUMV-242	95	95					34,5	39	0	DNeasy Blood & Tissue								140	76	1155	24.3	76554	212694888	1755	25.9	59123	206517241	97.09553574226007
+8	x	HUMV-244	96	96					31,3	40	0	DNeasy Blood & Tissue								140	76	637	23.7	71050	209624735	1886	26.2	44715	202787722	96.73845121378449
+9	x	HUMV-245	01	01					28,5	74	0	DNeasy Blood & Tissue								140	76	521	23.4	177725	404343059	1513	25.6	108505	387645796	95.87052068080635
+10	x	SCT-HUSAL-001	02	02					104	186	0	DNeasy Blood & Tissue								140	76	1748	25.1	217359	974307046	2522	26.4	176966	953616723	97.87640630487651
+11	x	SCT-HUSAL-002	03	03					56	442	0	DNeasy Blood & Tissue								140	76	1861	25.1	665922	2265262225	2372	26.2	557074	2215617190	97.80841995014507
+12	x	SCT-HUSAL-004	04	04					39,6	83	0	DNeasy Blood & Tissue								140	76	733	23.6	209813	468851097	1935	25.5	139559	450470058	96.07955721600881
+13	x	SCT-HUSAL-006	05	05					49,7	165	0	DNeasy Blood & Tissue								140	76	1625	24.9	273910	916096067	1948	26.0	228481	893924373	97.57976321494239
+14	x	SCT-HUSAL-008	06	06					37	135	0	DNeasy Blood & Tissue								140	76	1491	24.0	296049	742012696	1516	25.1	236006	719640051	96.98487032356654
+15	x	SCT-HUSAL-015	07	07					52	121	0	DNeasy Blood & Tissue								140	76	1875	24.9	140146	682531215	3237	26.5	105756	668681056	97.9707654835977
+16	x	SCT-HURS-01	08	08					488	37	0	DNeasy Blood & Tissue								140	76	609	23.6	125320	214862739	1218	25.8	81632	204190072	95.03279765971894
+17	x	SCT-HURS-02	09	09					65,9	209	0	DNeasy Blood & Tissue								140	76	1846	23.8	295386	1099594167	2457	25.1	225652	1074027779	97.6749250980703
+18	x	SCT-HURS-03	10	10					45,1	64	0	DNeasy Blood & Tissue								140	76	1283	23.6	110152	349936264	2322	25.2	79779	339506932	97.01964812655142
+19	x	SCT-HURS-04	11	11					44,2	141	0	DNeasy Blood & Tissue								140	76	1949	24.6	180876	801696138	3031	25.9	142885	782104767	97.55625977582045
+20	x	SCT-HURS-05	12	12					53		0	DNeasy Blood & Tissue								140	76									
+21	x	SCT-HURS-06	13	13					41,3	84	0	DNeasy Blood & Tissue								140	76	1200	24.2	147221	491494767	2237	26.1	105763	477868175	97.22752043054814
+22	x	SCT-HURS-07	14	14					35,2	105	0	DNeasy Blood & Tissue								140	76	1496	24.9	148691	574160140	2464	26.5	113811	559885831	97.51388018680642
+23	x	SCT-HURS-08	15	15					44,8	82	0	DNeasy Blood & Tissue								140	76	1554	24.5	94828	445201906	3280	26.6	66251	434297198	97.55061515841759
+24	x	SCT-HURS-10	16	16					48,5	62	0	DNeasy Blood & Tissue								140	76	1473	23.9	106616	332657464	1863	25.0	82941	323644722	97.2906839691413
+25	x	SCT-HURS-11	85	85					49,3	68	0	DNeasy Blood & Tissue								140	76	578	23.3	163850	360380213	1631	25.9	99299	346759010	96.22032439389228
+26	x	SCT-HURS-13	86	86					38,9		0	DNeasy Blood & Tissue								140	76									
+27	x	SCT-HURS-15	87	87					76,3		0	DNeasy Blood & Tissue								140	76									
+28	x	SCT-HURS-16	88	88					54	48	0	DNeasy Blood & Tissue								140	76	818	23.9	103994	267818326	1595	25.9	70077	258573419	96.54806781220789
+1	x	SCT-HURS-18	01	01					53		0	DNeasy Blood & Tissue								140	76									
+2	x	SCT-HURS-21	02	02					51	86	0	DNeasy Blood & Tissue								140	76	1312	22.8	118849	436256085	2593	24.0	88967	426742923	97.81936290928755
+3	x	SCT-HURS-28	03	03					52		0	DNeasy Blood & Tissue								140	76									
+4	x	SCT-HURS-29	04	04					61,4	73	0	DNeasy Blood & Tissue								140	76	1783	23.0	87393	366714186	2972	24.0	68730	359455385	98.02058352877573
+5	x	SCT-HURS-30	05	05					62,9	49	0	DNeasy Blood & Tissue								140	76	1959	23.8	63593	257433173	2073	24.6	54491	253430793	98.44527418383645
+6	x	SCT-HURS-41	06	06					36	57	0	DNeasy Blood & Tissue								140	76	1680	23.3	100896	303985458	1941	24.4	80408	297079195	97.72809428272059
+7	x	SCT-HURS-42	07	07					63,5	87	0	DNeasy Blood & Tissue								140	76	1959	23.4	95038	456462295	2342	24.6	73235	449241887	98.41818084886945
+8	x	SCT-HURS-43	08	08					73,2		0	DNeasy Blood & Tissue								140	76									
+9	x	SCT-HURS-44	09	09					180		0	DNeasy Blood & Tissue								140	76									
+10	x	SCT-HURS-45	10	10					192	44	0	DNeasy Blood & Tissue								140	76	1005	22.6	133216	237816544	1467	23.7	102451	226923009	95.41935358374396
+11	x	SCT-HURS-46	11	11					397	57	0	DNeasy Blood & Tissue								140	76	1494	23.3	90411	297635323	1940	24.5	69429	290982392	97.76473741996007
+12	x	SCT-HURS-47	12	12					172		0	DNeasy Blood & Tissue								140	76									
+13	x	SCT-HURS-48	13	13					298		0	DNeasy Blood & Tissue								140	76									
+14	x	SCT-HURS-57	14	14					126		0	DNeasy Blood & Tissue								140	76									
+15	x	SCT-HURS-58	15	15					99,4		0	DNeasy Blood & Tissue								140	76									
+16	x	SCT-HURS-59	16	16					134		0	DNeasy Blood & Tissue								140	76									
+17	x	SCT-HURS-61	17	17					129		0	DNeasy Blood & Tissue								140	76									
+18	x	SCT-HURS-63	18	18					223	35	0	DNeasy Blood & Tissue								140	76	821	22.5	74320	208986540	1856	24.4	49393	202716826	96.99994363273348
+19	x	SCT-HURS-65	19	19					118	42	0	DNeasy Blood & Tissue								140	76	1217	22.4	81038	219205910	2471	24.4	52739	212920374	97.13258825913954
+20	x	SCT-HURS-70	20	20					111		0	DNeasy Blood & Tissue								140	76									
+21	x	SCT-HURS-71	21	21					215		0	DNeasy Blood & Tissue								140	76									
+22	x	SCT-HURS-72	22	22					62,7		0	DNeasy Blood & Tissue								140	76									
+23	x	SCT-HURS-73	23	23					164	54	0	DNeasy Blood & Tissue								140	76	1196	23.2	91440	288409143	2244	24.7	65904	279967687	97.07309695102143
+24	x	SCT-HURS-74	24	24					401		0	DNeasy Blood & Tissue								140	76									
+25	x	SCT-HURS-75	25	25					293	56	0	DNeasy Blood & Tissue								140	76	1573	23.5	75005	299474737	2845	24.9	56087	293338272	97.95092398728778
+26	x	SCT-HURS-76	26	26					308	78	0	DNeasy Blood & Tissue								140	76	917	23.4	120137	426192434	1982	25.0	84338	416020998	97.61341704156109
+27	x	HUCA-01	27	27					292		0	DNeasy Blood & Tissue								140	76									
+28	x	HUCA-02	28	28					171		0	DNeasy Blood & Tissue								140	76									

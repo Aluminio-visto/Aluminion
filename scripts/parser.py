@@ -20,7 +20,6 @@ try:
     import phage_parser
     import integron_parser
     import copla_parser
-    import Datos_seq_unified2 as run_info_parser
 except ImportError as e:
     warnings.warn(f"Missing script in scripts/ folder: {e}")
 
@@ -65,9 +64,6 @@ def get_arguments():
     skip_group.add_argument('--skip-kraken', action='store_true', help="Skip Kraken2 contamination parsing")
     skip_group.add_argument('--skip-abr', action='store_true', help="Skip resistance gene extraction (Abricate)")
 
-    # EXTRA METADATA
-    parser.add_argument('--include-run-info', type=str, default=None, help="Path to MinKNOW final_summary.txt file")
-    
     return parser.parse_args()
 
 
@@ -330,14 +326,7 @@ def main():
     ectyper['Sample'] = ectyper['Sample'].astype(str)
     resultado_final = pd.merge(resultado, ectyper, how="left", on='Sample')
 
-    # Optional MinKNOW metadata integration
-    if args.include_run_info and os.path.exists(args.include_run_info):
-        print(f"-> Integrating MinKNOW metadata from: {args.include_run_info}")
-        if hasattr(run_info_parser, 'parse_minion_sum'):
-            
-            pass
-
-    columnas_finales = ['Sample','Majority_genus','Majority_species','Subspecies','MLST','Serotype','KO_locus','Contaminants','Carbapenemase','ESBL','Other_resistance','N_AMR_genes','AMRscore','VIRscore','MLST_scheme','allele_1','allele_2','allele_3','allele_4','allele_5','allele_6','allele_7','Possible_MLSTs','Possible_alleles']
+    columnas_finales =['Sample','Majority_genus','Majority_species','Subspecies','MLST','Serotype','KO_locus','Contaminants','Carbapenemase','ESBL','Other_resistance','N_AMR_genes','AMRscore','VIRscore','MLST_scheme','allele_1','allele_2','allele_3','allele_4','allele_5','allele_6','allele_7','Possible_MLSTs','Possible_alleles']
     for col in columnas_finales:
         if col not in resultado_final.columns: resultado_final[col] = ""
 

@@ -1,0 +1,376 @@
+/home/usuario/mambaforge/envs/minion/lib/python3.10/site-packages/quast-5.2.0-py3.10.egg/EGG-INFO/scripts/quast.py -o 03_assemblies/quast -t 30 03_assemblies/HUMV-001.fasta 03_assemblies/HUMV-002.fasta 03_assemblies/HUMV-009.fasta 03_assemblies/HUMV-020.fasta 03_assemblies/HUMV-026.fasta 03_assemblies/HUMV-034.fasta 03_assemblies/HUMV-036.fasta 03_assemblies/HUMV-154.fasta 03_assemblies/HUMV-171.fasta 03_assemblies/HUMV-172.fasta 03_assemblies/HUMV-183.fasta 03_assemblies/HUMV-184.fasta 03_assemblies/HUMV-188.fasta 03_assemblies/HUMV-192.fasta 03_assemblies/HUMV-194.fasta 03_assemblies/HUMV-195.fasta 03_assemblies/HUMV-196.fasta 03_assemblies/HUMV-199.fasta 03_assemblies/HUMV-200.fasta 03_assemblies/HUMV-206.fasta 03_assemblies/HUMV-207.fasta 03_assemblies/HUMV-210.fasta 03_assemblies/HUMV-214.fasta 03_assemblies/HUMV-216.fasta 03_assemblies/HUMV-217.fasta 03_assemblies/HUMV-218.fasta 03_assemblies/HUMV-221.fasta 03_assemblies/HUMV-225.fasta 03_assemblies/HUMV-226.fasta 03_assemblies/HUMV-227.fasta 03_assemblies/HUMV-233.fasta 03_assemblies/HUMV-240.fasta 03_assemblies/HUMV-241.fasta 03_assemblies/HUMV-242.fasta 03_assemblies/HUMV-244.fasta 03_assemblies/HUMV-245.fasta 03_assemblies/SCT-HURS-01.fasta 03_assemblies/SCT-HURS-02.fasta 03_assemblies/SCT-HURS-03.fasta 03_assemblies/SCT-HURS-04.fasta 03_assemblies/SCT-HURS-06.fasta 03_assemblies/SCT-HURS-07.fasta 03_assemblies/SCT-HURS-08.fasta 03_assemblies/SCT-HURS-10.fasta 03_assemblies/SCT-HURS-11.fasta 03_assemblies/SCT-HURS-16.fasta 03_assemblies/SCT-HURS-21.fasta 03_assemblies/SCT-HURS-29.fasta 03_assemblies/SCT-HURS-30.fasta 03_assemblies/SCT-HURS-41.fasta 03_assemblies/SCT-HURS-42.fasta 03_assemblies/SCT-HURS-45.fasta 03_assemblies/SCT-HURS-46.fasta 03_assemblies/SCT-HURS-63.fasta 03_assemblies/SCT-HURS-65.fasta 03_assemblies/SCT-HURS-73.fasta 03_assemblies/SCT-HURS-75.fasta 03_assemblies/SCT-HURS-76.fasta 03_assemblies/SCT-HUSAL-001.fasta 03_assemblies/SCT-HUSAL-002.fasta 03_assemblies/SCT-HUSAL-004.fasta 03_assemblies/SCT-HUSAL-006.fasta 03_assemblies/SCT-HUSAL-008.fasta 03_assemblies/SCT-HUSAL-015.fasta
+
+Version: 5.2.0
+
+System information:
+  OS: Linux-6.8.0-106-generic-x86_64-with-glibc2.35 (linux_64)
+  Python version: 3.10.13
+  CPUs number: 36
+
+Started: 2026-05-11 18:18:09
+
+Logging to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/quast.log
+
+CWD: /home/usuario/Seqs/Enthere/repositorio
+Main parameters: 
+  MODE: default, threads: 30, min contig length: 500, min alignment length: 65, min alignment IDY: 95.0, \
+  ambiguity: one, min local misassembly length: 200, min extensive misassembly length: 1000
+
+Contigs:
+  Pre-processing...
+  1  03_assemblies/HUMV-001.fasta ==> HUMV-001
+  2  03_assemblies/HUMV-002.fasta ==> HUMV-002
+  3  03_assemblies/HUMV-009.fasta ==> HUMV-009
+  4  03_assemblies/HUMV-020.fasta ==> HUMV-020
+  5  03_assemblies/HUMV-026.fasta ==> HUMV-026
+  6  03_assemblies/HUMV-034.fasta ==> HUMV-034
+  7  03_assemblies/HUMV-036.fasta ==> HUMV-036
+  8  03_assemblies/HUMV-154.fasta ==> HUMV-154
+  9  03_assemblies/HUMV-171.fasta ==> HUMV-171
+  10 03_assemblies/HUMV-172.fasta ==> HUMV-172
+  11 03_assemblies/HUMV-183.fasta ==> HUMV-183
+  12 03_assemblies/HUMV-184.fasta ==> HUMV-184
+  13 03_assemblies/HUMV-188.fasta ==> HUMV-188
+  14 03_assemblies/HUMV-192.fasta ==> HUMV-192
+  15 03_assemblies/HUMV-194.fasta ==> HUMV-194
+  16 03_assemblies/HUMV-195.fasta ==> HUMV-195
+  17 03_assemblies/HUMV-196.fasta ==> HUMV-196
+  18 03_assemblies/HUMV-199.fasta ==> HUMV-199
+  19 03_assemblies/HUMV-200.fasta ==> HUMV-200
+  20 03_assemblies/HUMV-206.fasta ==> HUMV-206
+  21 03_assemblies/HUMV-207.fasta ==> HUMV-207
+  22 03_assemblies/HUMV-210.fasta ==> HUMV-210
+  23 03_assemblies/HUMV-214.fasta ==> HUMV-214
+  24 03_assemblies/HUMV-216.fasta ==> HUMV-216
+  25 03_assemblies/HUMV-217.fasta ==> HUMV-217
+  26 03_assemblies/HUMV-218.fasta ==> HUMV-218
+  27 03_assemblies/HUMV-221.fasta ==> HUMV-221
+  28 03_assemblies/HUMV-225.fasta ==> HUMV-225
+  29 03_assemblies/HUMV-226.fasta ==> HUMV-226
+  30 03_assemblies/HUMV-227.fasta ==> HUMV-227
+  31 03_assemblies/HUMV-233.fasta ==> HUMV-233
+  32 03_assemblies/HUMV-240.fasta ==> HUMV-240
+  33 03_assemblies/HUMV-241.fasta ==> HUMV-241
+  34 03_assemblies/HUMV-242.fasta ==> HUMV-242
+  35 03_assemblies/HUMV-244.fasta ==> HUMV-244
+  36 03_assemblies/HUMV-245.fasta ==> HUMV-245
+  37 03_assemblies/SCT-HURS-01.fasta ==> SCT-HURS-01
+  38 03_assemblies/SCT-HURS-02.fasta ==> SCT-HURS-02
+  39 03_assemblies/SCT-HURS-03.fasta ==> SCT-HURS-03
+  40 03_assemblies/SCT-HURS-04.fasta ==> SCT-HURS-04
+  41 03_assemblies/SCT-HURS-06.fasta ==> SCT-HURS-06
+  42 03_assemblies/SCT-HURS-07.fasta ==> SCT-HURS-07
+  43 03_assemblies/SCT-HURS-08.fasta ==> SCT-HURS-08
+  44 03_assemblies/SCT-HURS-10.fasta ==> SCT-HURS-10
+  45 03_assemblies/SCT-HURS-11.fasta ==> SCT-HURS-11
+  46 03_assemblies/SCT-HURS-16.fasta ==> SCT-HURS-16
+  47 03_assemblies/SCT-HURS-21.fasta ==> SCT-HURS-21
+  48 03_assemblies/SCT-HURS-29.fasta ==> SCT-HURS-29
+  49 03_assemblies/SCT-HURS-30.fasta ==> SCT-HURS-30
+  50 03_assemblies/SCT-HURS-41.fasta ==> SCT-HURS-41
+  51 03_assemblies/SCT-HURS-42.fasta ==> SCT-HURS-42
+  52 03_assemblies/SCT-HURS-45.fasta ==> SCT-HURS-45
+  53 03_assemblies/SCT-HURS-46.fasta ==> SCT-HURS-46
+  54 03_assemblies/SCT-HURS-63.fasta ==> SCT-HURS-63
+  55 03_assemblies/SCT-HURS-65.fasta ==> SCT-HURS-65
+  56 03_assemblies/SCT-HURS-73.fasta ==> SCT-HURS-73
+  57 03_assemblies/SCT-HURS-75.fasta ==> SCT-HURS-75
+  58 03_assemblies/SCT-HURS-76.fasta ==> SCT-HURS-76
+  59 03_assemblies/SCT-HUSAL-001.fasta ==> SCT-HUSAL-001
+  60 03_assemblies/SCT-HUSAL-002.fasta ==> SCT-HUSAL-002
+  61 03_assemblies/SCT-HUSAL-004.fasta ==> SCT-HUSAL-004
+  62 03_assemblies/SCT-HUSAL-006.fasta ==> SCT-HUSAL-006
+  63 03_assemblies/SCT-HUSAL-008.fasta ==> SCT-HUSAL-008
+  64 03_assemblies/SCT-HUSAL-015.fasta ==> SCT-HUSAL-015
+
+2026-05-11 18:18:10
+Running Basic statistics processor...
+  Contig files: 
+    1  HUMV-001
+    2  HUMV-002
+    3  HUMV-009
+    4  HUMV-020
+    5  HUMV-026
+    6  HUMV-034
+    7  HUMV-036
+    8  HUMV-154
+    9  HUMV-171
+    10 HUMV-172
+    11 HUMV-183
+    12 HUMV-184
+    13 HUMV-188
+    14 HUMV-192
+    15 HUMV-194
+    16 HUMV-195
+    17 HUMV-196
+    18 HUMV-199
+    19 HUMV-200
+    20 HUMV-206
+    21 HUMV-207
+    22 HUMV-210
+    23 HUMV-214
+    24 HUMV-216
+    25 HUMV-217
+    26 HUMV-218
+    27 HUMV-221
+    28 HUMV-225
+    29 HUMV-226
+    30 HUMV-227
+    31 HUMV-233
+    32 HUMV-240
+    33 HUMV-241
+    34 HUMV-242
+    35 HUMV-244
+    36 HUMV-245
+    37 SCT-HURS-01
+    38 SCT-HURS-02
+    39 SCT-HURS-03
+    40 SCT-HURS-04
+    41 SCT-HURS-06
+    42 SCT-HURS-07
+    43 SCT-HURS-08
+    44 SCT-HURS-10
+    45 SCT-HURS-11
+    46 SCT-HURS-16
+    47 SCT-HURS-21
+    48 SCT-HURS-29
+    49 SCT-HURS-30
+    50 SCT-HURS-41
+    51 SCT-HURS-42
+    52 SCT-HURS-45
+    53 SCT-HURS-46
+    54 SCT-HURS-63
+    55 SCT-HURS-65
+    56 SCT-HURS-73
+    57 SCT-HURS-75
+    58 SCT-HURS-76
+    59 SCT-HUSAL-001
+    60 SCT-HUSAL-002
+    61 SCT-HUSAL-004
+    62 SCT-HUSAL-006
+    63 SCT-HUSAL-008
+    64 SCT-HUSAL-015
+  Calculating N50 and L50...
+    1  HUMV-001, N50 = 4755284, L50 = 1, auN = 4514679.5, Total length = 5014657, GC % = 55.16, # N's per 100 kbp =  0.00
+    2  HUMV-002, N50 = 5005572, L50 = 1, auN = 4883287.9, Total length = 5131971, GC % = 55.87, # N's per 100 kbp =  0.00
+    3  HUMV-009, N50 = 4727720, L50 = 1, auN = 4432299.2, Total length = 5051854, GC % = 50.55, # N's per 100 kbp =  0.00
+    4  HUMV-020, N50 = 5279824, L50 = 1, auN = 4862029.6, Total length = 5742162, GC % = 50.40, # N's per 100 kbp =  0.00
+    5  HUMV-026, N50 = 339545, L50 = 5, auN = 442144.0, Total length = 6202506, GC % = 50.47, # N's per 100 kbp =  0.00
+    6  HUMV-034, N50 = 4148293, L50 = 1, auN = 3230594.2, Total length = 6384253, GC % = 54.85, # N's per 100 kbp =  0.00
+    7  HUMV-036, N50 = 3266987, L50 = 1, auN = 2574388.5, Total length = 5315566, GC % = 50.53, # N's per 100 kbp =  0.00
+    8  HUMV-154, N50 = 4719418, L50 = 1, auN = 4444527.2, Total length = 5029068, GC % = 55.28, # N's per 100 kbp =  0.00
+    9  HUMV-171, N50 = 4817059, L50 = 1, auN = 4556947.2, Total length = 5098033, GC % = 55.06, # N's per 100 kbp =  0.00
+    10 HUMV-172, N50 = 4817045, L50 = 1, auN = 4564433.7, Total length = 5089633, GC % = 55.07, # N's per 100 kbp =  0.00
+    11 HUMV-183, N50 = 4924830, L50 = 1, auN = 4886872.0, Total length = 4963348, GC % = 51.82, # N's per 100 kbp =  0.00
+    12 HUMV-184, N50 = 5145125, L50 = 1, auN = 4819134.6, Total length = 5500407, GC % = 50.61, # N's per 100 kbp =  0.00
+    13 HUMV-188, N50 = 4925668, L50 = 1, auN = 4886329.8, Total length = 4965617, GC % = 51.84, # N's per 100 kbp =  0.00
+    14 HUMV-192, N50 = 4634240, L50 = 1, auN = 4533187.6, Total length = 4740013, GC % = 55.51, # N's per 100 kbp =  0.00
+    15 HUMV-194, N50 = 4777888, L50 = 1, auN = 4719283.0, Total length = 4837607, GC % = 55.41, # N's per 100 kbp =  0.00
+    16 HUMV-195, N50 = 4814199, L50 = 1, auN = 4512620.7, Total length = 5144163, GC % = 50.63, # N's per 100 kbp =  0.41
+    17 HUMV-196, N50 = 4672840, L50 = 1, auN = 4291571.3, Total length = 5113409, GC % = 54.97, # N's per 100 kbp =  0.00
+    18 HUMV-199, N50 = 4815030, L50 = 1, auN = 4527700.8, Total length = 5128724, GC % = 55.06, # N's per 100 kbp =  0.00
+    19 HUMV-200, N50 = 4817027, L50 = 1, auN = 4555269.5, Total length = 5099875, GC % = 55.06, # N's per 100 kbp =  0.00
+    20 HUMV-206, N50 = 4818346, L50 = 1, auN = 4550197.4, Total length = 5107646, GC % = 55.07, # N's per 100 kbp =  0.00
+    21 HUMV-207, N50 = 4796309, L50 = 1, auN = 4527473.9, Total length = 5090016, GC % = 55.10, # N's per 100 kbp =  0.00
+    22 HUMV-210, N50 = 5072621, L50 = 1, auN = 4786320.0, Total length = 5381287, GC % = 50.58, # N's per 100 kbp =  0.00
+    23 HUMV-214, N50 = 4796307, L50 = 1, auN = 4537860.9, Total length = 5078179, GC % = 55.11, # N's per 100 kbp =  0.00
+    24 HUMV-216, N50 = 5189011, L50 = 1, auN = 4620778.2, Total length = 5855587, GC % = 56.59, # N's per 100 kbp =  0.15
+    25 HUMV-217, N50 = 4653859, L50 = 1, auN = 4464695.0, Total length = 4860001, GC % = 55.61, # N's per 100 kbp =  0.00
+    26 HUMV-218, N50 = 4691727, L50 = 2, auN = 4634613.4, Total length = 10479804, GC % = 54.92, # N's per 100 kbp =  0.00
+    27 HUMV-221, N50 = 4799260, L50 = 1, auN = 4629087.9, Total length = 4981668, GC % = 55.14, # N's per 100 kbp =  0.00
+    28 HUMV-225, N50 = 46076, L50 = 34, auN = 53956.3, Total length = 4740462, GC % = 55.60, # N's per 100 kbp =  0.00
+    29 HUMV-226, N50 = 3380081, L50 = 1, auN = 2653330.8, Total length = 5086560, GC % = 55.06, # N's per 100 kbp =  0.00
+    30 HUMV-227, N50 = 5105399, L50 = 1, auN = 5040661.3, Total length = 5171507, GC % = 54.66, # N's per 100 kbp =  0.00
+    31 HUMV-233, N50 = 4746958, L50 = 1, auN = 4478604.4, Total length = 5044975, GC % = 50.64, # N's per 100 kbp =  0.00
+    32 HUMV-240, N50 = 4786304, L50 = 1, auN = 4629112.1, Total length = 4952465, GC % = 55.19, # N's per 100 kbp =  0.00
+    33 HUMV-241, N50 = 4794628, L50 = 1, auN = 4651267.7, Total length = 4946410, GC % = 55.20, # N's per 100 kbp =  0.00
+    34 HUMV-242, N50 = 1828408, L50 = 2, auN = 1579469.9, Total length = 5229266, GC % = 54.87, # N's per 100 kbp =  0.00
+    35 HUMV-244, N50 = 4847622, L50 = 1, auN = 4618097.7, Total length = 5095027, GC % = 50.79, # N's per 100 kbp =  0.33
+    36 HUMV-245, N50 = 4934142, L50 = 1, auN = 4649312.6, Total length = 5244872, GC % = 50.68, # N's per 100 kbp =  0.00
+    37 SCT-HURS-01, N50 = 2446199, L50 = 2, auN = 2467619.9, Total length = 5556066, GC % = 57.25, # N's per 100 kbp =  0.00
+    38 SCT-HURS-02, N50 = 4866773, L50 = 1, auN = 4622125.9, Total length = 5128607, GC % = 55.57, # N's per 100 kbp =  0.23
+    39 SCT-HURS-03, N50 = 4975795, L50 = 1, auN = 4656697.0, Total length = 5342128, GC % = 55.04, # N's per 100 kbp =  0.00
+    40 SCT-HURS-04, N50 = 5298967, L50 = 1, auN = 5063710.3, Total length = 5557008, GC % = 57.23, # N's per 100 kbp =  0.00
+    41 SCT-HURS-06, N50 = 5208232, L50 = 1, auN = 4763553.6, Total length = 5720976, GC % = 54.91, # N's per 100 kbp =  0.00
+    42 SCT-HURS-07, N50 = 5102493, L50 = 1, auN = 4911245.6, Total length = 5309951, GC % = 57.42, # N's per 100 kbp =  0.00
+    43 SCT-HURS-08, N50 = 5104240, L50 = 1, auN = 4912987.3, Total length = 5311698, GC % = 57.41, # N's per 100 kbp =  0.00
+    44 SCT-HURS-10, N50 = 4981874, L50 = 1, auN = 4734291.0, Total length = 5250506, GC % = 50.65, # N's per 100 kbp =  0.00
+    45 SCT-HURS-11, N50 = 4843881, L50 = 1, auN = 4577021.1, Total length = 5131287, GC % = 50.68, # N's per 100 kbp =  0.00
+    46 SCT-HURS-16, N50 = 5239915, L50 = 1, auN = 5070308.7, Total length = 5419309, GC % = 50.72, # N's per 100 kbp =  0.07
+    47 SCT-HURS-21, N50 = 4674437, L50 = 1, auN = 4399954.5, Total length = 4971891, GC % = 50.66, # N's per 100 kbp =  0.00
+    48 SCT-HURS-29, N50 = 4673661, L50 = 1, auN = 4412392.2, Total length = 4956185, GC % = 50.66, # N's per 100 kbp =  0.00
+    49 SCT-HURS-30, N50 = 4988965, L50 = 1, auN = 4838119.1, Total length = 5146865, GC % = 50.65, # N's per 100 kbp =  0.00
+    50 SCT-HURS-41, N50 = 5000958, L50 = 1, auN = 4815934.3, Total length = 5196003, GC % = 50.63, # N's per 100 kbp =  0.00
+    51 SCT-HURS-42, N50 = 4988987, L50 = 1, auN = 4849353.5, Total length = 5134950, GC % = 50.65, # N's per 100 kbp =  0.00
+    52 SCT-HURS-45, N50 = 3506041, L50 = 1, auN = 2704571.7, Total length = 5155353, GC % = 50.61, # N's per 100 kbp =  0.17
+    53 SCT-HURS-46, N50 = 4989055, L50 = 1, auN = 4862931.6, Total length = 5120695, GC % = 50.63, # N's per 100 kbp =  0.00
+    54 SCT-HURS-63, N50 = 3112217, L50 = 1, auN = 2575625.3, Total length = 5822375, GC % = 57.05, # N's per 100 kbp =  0.00
+    55 SCT-HURS-65, N50 = 3910458, L50 = 1, auN = 3227832.5, Total length = 5015529, GC % = 55.20, # N's per 100 kbp =  0.00
+    56 SCT-HURS-73, N50 = 5058951, L50 = 1, auN = 4917127.6, Total length = 5208919, GC % = 50.78, # N's per 100 kbp =  0.00
+    57 SCT-HURS-75, N50 = 5097829, L50 = 1, auN = 4953766.1, Total length = 5249415, GC % = 50.81, # N's per 100 kbp =  0.00
+    58 SCT-HURS-76, N50 = 5002459, L50 = 1, auN = 4674796.1, Total length = 5364454, GC % = 50.46, # N's per 100 kbp =  0.00
+    59 SCT-HUSAL-001, N50 = 4724172, L50 = 1, auN = 4358127.1, Total length = 5129055, GC % = 50.65, # N's per 100 kbp =  0.00
+    60 SCT-HUSAL-002, N50 = 4724219, L50 = 1, auN = 4458035.9, Total length = 5012513, GC % = 50.73, # N's per 100 kbp =  0.00
+    61 SCT-HUSAL-004, N50 = 5054565, L50 = 1, auN = 4726645.6, Total length = 5412588, GC % = 50.71, # N's per 100 kbp =  0.00
+    62 SCT-HUSAL-006, N50 = 5054617, L50 = 1, auN = 4723106.3, Total length = 5416721, GC % = 50.69, # N's per 100 kbp =  0.00
+    63 SCT-HUSAL-008, N50 = 5002807, L50 = 1, auN = 4719260.6, Total length = 5312154, GC % = 50.63, # N's per 100 kbp =  0.00
+    64 SCT-HUSAL-015, N50 = 5375725, L50 = 1, auN = 5220856.8, Total length = 5540380, GC % = 57.20, # N's per 100 kbp =  0.00
+  Drawing Nx plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/Nx_plot.pdf
+  Drawing cumulative plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/cumulative_plot.pdf
+  Drawing GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/GC_content_plot.pdf
+  Drawing HUMV-001 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-001_GC_content_plot.pdf
+  Drawing HUMV-002 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-002_GC_content_plot.pdf
+  Drawing HUMV-009 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-009_GC_content_plot.pdf
+  Drawing HUMV-020 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-020_GC_content_plot.pdf
+  Drawing HUMV-026 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-026_GC_content_plot.pdf
+  Drawing HUMV-034 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-034_GC_content_plot.pdf
+  Drawing HUMV-036 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-036_GC_content_plot.pdf
+  Drawing HUMV-154 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-154_GC_content_plot.pdf
+  Drawing HUMV-171 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-171_GC_content_plot.pdf
+  Drawing HUMV-172 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-172_GC_content_plot.pdf
+  Drawing HUMV-183 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-183_GC_content_plot.pdf
+  Drawing HUMV-184 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-184_GC_content_plot.pdf
+  Drawing HUMV-188 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-188_GC_content_plot.pdf
+  Drawing HUMV-192 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-192_GC_content_plot.pdf
+  Drawing HUMV-194 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-194_GC_content_plot.pdf
+  Drawing HUMV-195 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-195_GC_content_plot.pdf
+  Drawing HUMV-196 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-196_GC_content_plot.pdf
+  Drawing HUMV-199 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-199_GC_content_plot.pdf
+  Drawing HUMV-200 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-200_GC_content_plot.pdf
+  Drawing HUMV-206 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-206_GC_content_plot.pdf
+  Drawing HUMV-207 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-207_GC_content_plot.pdf
+  Drawing HUMV-210 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-210_GC_content_plot.pdf
+  Drawing HUMV-214 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-214_GC_content_plot.pdf
+  Drawing HUMV-216 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-216_GC_content_plot.pdf
+  Drawing HUMV-217 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-217_GC_content_plot.pdf
+  Drawing HUMV-218 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-218_GC_content_plot.pdf
+  Drawing HUMV-221 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-221_GC_content_plot.pdf
+  Drawing HUMV-225 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-225_GC_content_plot.pdf
+  Drawing HUMV-226 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-226_GC_content_plot.pdf
+  Drawing HUMV-227 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-227_GC_content_plot.pdf
+  Drawing HUMV-233 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-233_GC_content_plot.pdf
+  Drawing HUMV-240 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-240_GC_content_plot.pdf
+  Drawing HUMV-241 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-241_GC_content_plot.pdf
+  Drawing HUMV-242 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-242_GC_content_plot.pdf
+  Drawing HUMV-244 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-244_GC_content_plot.pdf
+  Drawing HUMV-245 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/HUMV-245_GC_content_plot.pdf
+  Drawing SCT-HURS-01 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HURS-01_GC_content_plot.pdf
+  Drawing SCT-HURS-02 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HURS-02_GC_content_plot.pdf
+  Drawing SCT-HURS-03 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HURS-03_GC_content_plot.pdf
+  Drawing SCT-HURS-04 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HURS-04_GC_content_plot.pdf
+  Drawing SCT-HURS-06 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HURS-06_GC_content_plot.pdf
+  Drawing SCT-HURS-07 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HURS-07_GC_content_plot.pdf
+  Drawing SCT-HURS-08 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HURS-08_GC_content_plot.pdf
+  Drawing SCT-HURS-10 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HURS-10_GC_content_plot.pdf
+  Drawing SCT-HURS-11 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HURS-11_GC_content_plot.pdf
+  Drawing SCT-HURS-16 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HURS-16_GC_content_plot.pdf
+  Drawing SCT-HURS-21 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HURS-21_GC_content_plot.pdf
+  Drawing SCT-HURS-29 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HURS-29_GC_content_plot.pdf
+  Drawing SCT-HURS-30 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HURS-30_GC_content_plot.pdf
+  Drawing SCT-HURS-41 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HURS-41_GC_content_plot.pdf
+  Drawing SCT-HURS-42 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HURS-42_GC_content_plot.pdf
+  Drawing SCT-HURS-45 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HURS-45_GC_content_plot.pdf
+  Drawing SCT-HURS-46 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HURS-46_GC_content_plot.pdf
+  Drawing SCT-HURS-63 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HURS-63_GC_content_plot.pdf
+  Drawing SCT-HURS-65 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HURS-65_GC_content_plot.pdf
+  Drawing SCT-HURS-73 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HURS-73_GC_content_plot.pdf
+  Drawing SCT-HURS-75 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HURS-75_GC_content_plot.pdf
+  Drawing SCT-HURS-76 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HURS-76_GC_content_plot.pdf
+  Drawing SCT-HUSAL-001 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HUSAL-001_GC_content_plot.pdf
+  Drawing SCT-HUSAL-002 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HUSAL-002_GC_content_plot.pdf
+  Drawing SCT-HUSAL-004 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HUSAL-004_GC_content_plot.pdf
+  Drawing SCT-HUSAL-006 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HUSAL-006_GC_content_plot.pdf
+  Drawing SCT-HUSAL-008 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HUSAL-008_GC_content_plot.pdf
+  Drawing SCT-HUSAL-015 GC content plot...
+    saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/basic_stats/SCT-HUSAL-015_GC_content_plot.pdf
+Done.
+
+NOTICE: Genes are not predicted by default. Use --gene-finding or --glimmer option to enable it.
+
+2026-05-11 18:18:38
+Creating large visual summaries...
+This may take a while: press Ctrl-C to skip this step..
+  1 of 2: Creating PDF with all tables and plots...
+  2 of 2: Creating Icarus viewers...
+Done
+
+2026-05-11 18:18:52
+RESULTS:
+  Text versions of total report are saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/report.txt, report.tsv, and report.tex
+  Text versions of transposed total report are saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/transposed_report.txt, transposed_report.tsv, and transposed_report.tex
+  HTML version (interactive tables and plots) is saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/report.html
+  PDF version (tables and plots) is saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/report.pdf
+  Icarus (contig browser) is saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/icarus.html
+  Log is saved to /home/usuario/Seqs/Enthere/repositorio/03_assemblies/quast/quast.log
+
+Finished: 2026-05-11 18:18:52
+Elapsed time: 0:00:42.794524
+NOTICEs: 1; WARNINGs: 0; non-fatal ERRORs: 0
+
+Thank you for using QUAST!

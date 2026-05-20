@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wsl -e bash -c \"source /home/usuario/miniconda3/etc/profile.d/conda.sh && conda run -n nano python -c 'import bcbio; print\\(\\\\\"bcbio OK\\\\\"\\)' 2>&1\")"
+    ]
+  }
+}

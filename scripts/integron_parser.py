@@ -3,6 +3,7 @@
 
 import pandas as pd
 import subprocess
+import shutil
 from Bio import SeqIO
 from BCBio import GFF
 import os
@@ -27,18 +28,20 @@ def abr_parse(abr_out):
     return pd.DataFrame(columns=['pos_beg', 'pos_end', 'abr_ann'])
 
 def prokka_parse(prokka_dir):
-    df_prokka = pd.DataFrame(columns=['pos_beg', 'pos_end', 'prokka_ann'])
+    # Accumulate rows in a plain list and build the DataFrame once at the end.
+    # The previous `df.loc[-1] = ...; df.index += 1` pattern silently overwrites
+    # a row when the index value -1 already exists in the frame, which can happen
+    # if pandas internals decide to renumber after concat.
+    rows = []
     for prokka_file in glob.glob(f'{prokka_dir}/*.gff'):
-        in_handle = open(prokka_file)
-        for rec in GFF.parse(in_handle):
-            for feature in rec.features:
+        with open(prokka_file) as in_handle:
+            for rec in GFF.parse(in_handle):
                 start, end = rec.id.split('_')[-2:]
-                gene = feature.qualifiers.get('gene',['NA'])[0]
-                product = feature.qualifiers.get('product')[0]
-                df_prokka.loc[-1] = [start, end, f'{gene};{product}']
-                df_prokka.index = df_prokka.index + 1
-                df_prokka = df_prokka.sort_index()
-        in_handle.close()
+                for feature in rec.features:
+                    gene = feature.qualifiers.get('gene', ['NA'])[0]
+                    product = feature.qualifiers.get('product', ['NA'])[0]
+                    rows.append([start, end, f'{gene};{product}'])
+    df_prokka = pd.DataFrame(rows, columns=['pos_beg', 'pos_end', 'prokka_ann'])
     df_prokka['pos_beg'] = df_prokka['pos_beg'].astype('int64')
     df_prokka['pos_end'] = df_prokka['pos_end'].astype('int64')
     return df_prokka
@@ -51,14 +54,15 @@ def write_fasta(cds_output_file, d_int):
     return None
 
 def annotate_cds(cds_output_file, input_path, replicon, integron):
-    # Annotation with Prokka
-    prokka_cmd = ['prokka', '--quiet', '--force', cds_output_file, '--outdir', input_path + f'/prokka_{replicon}_{integron}']
-    subprocess.run(prokka_cmd)
-    # Annotation with Abricate
-    abr_cmd1 = ['abricate', cds_output_file]
-    abr_out = open(input_path + f'/abricate_{replicon}_{integron}.out', 'w')
-    subprocess.run(abr_cmd1, stdout=abr_out)
-    return input_path + f'/prokka_{replicon}_{integron}', input_path + f'/abricate_{replicon}_{integron}.out'
+    prokka_dir = input_path + f'/prokka_{replicon}_{integron}'
+    abr_path = input_path + f'/abricate_{replicon}_{integron}.out'
+    # check=True so a Prokka or Abricate failure halts integron annotation for this
+    # sample with a visible traceback instead of producing empty downstream files.
+    prokka_cmd = ['prokka', '--quiet', '--force', cds_output_file, '--outdir', prokka_dir]
+    subprocess.run(prokka_cmd, check=True)
+    with open(abr_path, 'w') as abr_out:
+        subprocess.run(['abricate', cds_output_file], stdout=abr_out, check=True)
+    return prokka_dir, abr_path
 
 def extract_fastas(gbk_file, cds_output_file, fna_file, integron):
     # Open GBK file and output files
@@ -180,9 +184,9 @@ def extract_info(sample, subdf, replicon, integron, input_path, original_path):
     for i in formatted_cassettes: info.append(i)
     info.extend([""] * (20-len(info)))
 
-    # Save nucleotide sequence
-    cp_cmd = ['cp', fna_file, f'{original_path}/11_integrons/{name}.fasta']
-    subprocess.run(cp_cmd)
+    # Save nucleotide sequence. shutil.copy is portable across OSes and raises
+    # immediately on permission / missing-source errors instead of swallowing them.
+    shutil.copy(fna_file, f'{original_path}/11_integrons/{name}.fasta')
 
     return info
 
@@ -205,7 +209,10 @@ def run_parsing(original_path, out_folder=None):
 
     for integron_file in integron_files:
         input_path = os.path.dirname(os.path.abspath(integron_file))
-        sample = input_path.split('/')[-2]
+        # The sample directory is two levels up from the .integrons file:
+        # 11_integrons/<sample>/Results_Integron_Finder_*/<file>.integrons
+        # os.path keeps this portable across Windows and POSIX path separators.
+        sample = os.path.basename(os.path.dirname(input_path))
         
         try:
             df_integron = pd.read_table(integron_file, comment='#')

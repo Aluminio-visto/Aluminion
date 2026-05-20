@@ -1,0 +1,92 @@
+Output_directory is /home/usuario/Seqs/Enthere/repositorio/04_taxonomies/ectyper
+Command-line arguments Namespace(cores=1, dbpath=None, debug=False, input='04_taxonomies/gtdb', output='04_taxonomies/ectyper', percentCoverageHtype=50, percentCoverageOtype=90, percentIdentityHtype=95, percentIdentityOtype=90, refseq=None, sequence=False, verify=False)
+RefSeq sketch (refseq.genomes.k21s1000.msh) and assembly meta data (assembly_summary_refseq.txt) is in good health and does not need to be downloaded
+Gathering genome files
+Gathering genomes from directory 04_taxonomies/gtdb
+Identifying genome file types
+Folowing files were not found in the input: 
+Creating combined serotype and identification fasta file
+Assembling final list of fasta files
+Standardizing the E.coli genome headers based on file names
+Predicting serotype from blast output
+Highly similar O-antigen candidates were found for ['O9', 'O30']
+Highly similar O-antigen candidates were found for ['O77', 'O17', 'O44', 'O106']
+No H antigen alleles were identified in this sample
+No H antigen alleles were identified in this sample
+No H antigen alleles were identified in this sample
+No H antigen alleles were identified in this sample
+No H antigen alleles were identified in this sample
+No H antigen alleles were identified in this sample
+Serotype prediction completed
+BLAST output file against reference alleles is written at 04_taxonomies/ectyper/blast_output_alleles.txt
+Predicting serotype from blast output
+Serotype prediction completed
+BLAST output file against reference alleles is written at 04_taxonomies/ectyper/blast_output_alleles.txt
+Reporting results:
+Name	Species	O-type	H-type	Serotype	QC	Evidence	GeneScores	AlleleKeys	GeneIdentities(%)	GeneCoverages(%)	GeneContigNames	GeneRanges	GeneLengths	Database	Warnings
+SCT-HURS-42	-	O75	H5	O75:H5	-	Based on 3 allele(s)	wzx:1;wzy:1;fliC:1;	O75-6-wzx;O75-11-wzy;H5-6-fliC;	100;100;100;	100;100;100;	contig_4;contig_4;contig_4;	1931232-1932764;1925260-1926333;2099875-2101184;	1533;1074;1310;	v1.0 (11-03-2020)	-
+SCT-HURS-45	-	O75	H5	O75:H5	-	Based on 3 allele(s)	wzx:1;wzy:1;fliC:1;	O75-6-wzx;O75-11-wzy;H5-6-fliC;	100;100;100;	100;100;100;	contig_6;contig_6;contig_6;	132947-134479;139378-140451;1232423-1233732;	1533;1074;1310;	v1.0 (11-03-2020)	-
+SCT-HURS-46	-	O75	H5	O75:H5	-	Based on 3 allele(s)	wzx:1;wzy:1;fliC:1;	O75-6-wzx;O75-11-wzy;H5-6-fliC;	100;100;100;	100;100;100;	contig_2;contig_2;contig_2;	1931231-1932763;1925259-1926332;2099878-2101187;	1533;1074;1310;	v1.0 (11-03-2020)	-
+SCT-HURS-73	-	O25	H4	O25:H4	-	Based on 3 allele(s)	wzx:0.96;wzy:0.957;fliC:1;	O25-1-wzx-origin;O25-2-wzy-origin;H4-2-fliC-origin;	96.032;95.673;100;	100;100;100;	contig_3;contig_3;contig_3;	1863807-1865066;1867219-1868281;2033888-2034937;	1260;1063;1050;	v1.0 (11-03-2020)	-
+SCT-HURS-75	-	O25	H4	O25:H4	-	Based on 3 allele(s)	wzx:0.96;wzy:0.957;fliC:1;	O25-1-wzx-origin;O25-2-wzy-origin;H4-2-fliC-origin;	96.032;95.673;100;	100;100;100;	contig_4;contig_4;contig_4;	1902671-1903930;1906083-1907145;2072752-2073801;	1260;1063;1050;	v1.0 (11-03-2020)	-
+SCT-HURS-76	-	O83	H42	O83:H42	-	Based on 3 allele(s)	wzx:0.999;wzy:0.999;fliC:1;	O83-3-wzx-origin;O83-2-wzy-origin;H42-13-fliC;	99.855;99.919;100;	100;100;100;	contig_1;contig_1;contig_1;	1917739-1919115;1919112-1920347;2065795-2067074;	1377;1236;1280;	v1.0 (11-03-2020)	-
+SCT-HUSAL-001	-	O9	H4	O9:H4	-	Based on 3 allele(s)	wzm:1;wzt:0.999;fliC:1;	O9-14-wzm;O9-19-wzt;H4-15-fliC;	100;99.923;100;	100;100;100;	contig_1;contig_1;contig_1;	1768504-1769289;1769292-1770587;1917173-1918222;	786;1296;1050;	v1.0 (11-03-2020)	-
+SCT-HUSAL-002	-	O9	H4	O9:H4	-	Based on 3 allele(s)	wzm:1;wzt:0.999;fliC:1;	O9-14-wzm;O9-19-wzt;H4-15-fliC;	100;99.923;100;	100;100;100;	contig_4;contig_4;contig_4;	1768506-1769291;1769294-1770589;1917175-1918224;	786;1296;1050;	v1.0 (11-03-2020)	-
+SCT-HUSAL-004	-	O119	H4	O119:H4	-	Based on 3 allele(s)	wzx:0.995;wzy:0.997;fliC:1;	O119-1-wzx-origin;O119-2-wzy-origin;H4-2-fliC-origin;	99.53;99.667;100;	100;100;100;	contig_2;contig_2;contig_2;	1983822-1985309;1986451-1987653;2137823-2138872;	1488;1203;1050;	v1.0 (11-03-2020)	-
+SCT-HUSAL-006	-	O119	H4	O119:H4	-	Based on 3 allele(s)	wzx:0.995;wzy:0.997;fliC:1;	O119-1-wzx-origin;O119-2-wzy-origin;H4-2-fliC-origin;	99.53;99.667;100;	100;100;100;	contig_2;contig_2;contig_2;	1983873-1985360;1986502-1987704;2137874-2138923;	1488;1203;1050;	v1.0 (11-03-2020)	-
+SCT-HUSAL-008	-	O54	H21	O54:H21	-	Based on 3 allele(s)	wzx:1;wzy:1;fliC:1;	O54-1-wzx-origin;O54-2-wzy-origin;H21-9-fliC;	100;100;100;	100;100;100;	contig_2;contig_2;contig_2;	1841540-1842790;1836638-1837696;3657562-3659037;	1251;1059;1476;	v1.0 (11-03-2020)	-
+HUMV-009	-	-	H30	-:H30	-	Based on 1 allele(s)	fliC:1;	H30-5-fliC;	100;	100;	contig_3;	1891087-1892799;	1713;	v1.0 (11-03-2020)	-
+HUMV-020	-	O153	H16	O153:H16	-	Based on 3 allele(s)	wzx:1;wzy:1;fliC:1;	O153-3-wzx-origin;O153-4-wzy-origin;H16-25-fliC;	100;100;99.937;	100;100;100;	contig_8;contig_8;contig_8;	1984280-1985458;1982145-1983323;2154577-2156151;	1179;1179;1575;	v1.0 (11-03-2020)	High similarity O-antigen group 11:O153/O178 as per A.Iguchi et.al (PMID: 25428893)
+HUMV-026	-	O9/O30	H19	O9/O30:H19	-	Based on 3 allele(s)	wzm:1;wzt:1;fliC:1;	O9-11-wzm;O9-17-wzt;H19-4-fliC;	100;100;99.945;	100;100;100;	contig_49;contig_49;contig_40;	14899-15684;15687-16982;1-1832;	786;1296;1832;	v1.0 (11-03-2020)	-
+HUMV-036	-	O54	H21	O54:H21	-	Based on 3 allele(s)	wzx:1;wzy:1;fliC:1;	O54-1-wzx-origin;O54-2-wzy-origin;H21-9-fliC;	100;100;100;	100;100;100;	contig_10;contig_10;contig_5;	1859567-1860817;1854665-1855723;812983-814458;	1251;1059;1476;	v1.0 (11-03-2020)	-
+HUMV-184	-	O77/O17/O44/O106	H18	O77/O17/O44/O106:H18	-	Based on 3 allele(s)	wzx:1;wzy:1;fliC:1;	O77-1-wzx-origin/O17-1-wzx-origin;O77-3-wzy-inhouse/O17-2-wzy-origin;H18-1-fliC-origin;	100;100;100;	100;100;100;	contig_1;contig_1;contig_1;	2072850-2074085;2071477-2072808;2175065-2176729;	1236;1332;1665;	v1.0 (11-03-2020)	High similarity O-antigen group 9:O17/O44/O73/O77/O106 as per A.Iguchi et.al (PMID: 25428893)
+HUMV-195	-	O18	H49	O18:H49	-	Based on 3 allele(s)	wzx:0.999;wzy:0.997;fliC:1;	O18-7-wzx;O18-12-wzy;H49-3-fliC;	99.92;99.748;100;	100;100;100;	contig_3;contig_3;contig_3;	1841729-1842976;1843033-1844223;1937287-1938981;	1248;1191;1695;	v1.0 (11-03-2020)	-
+HUMV-210	-	O8	H7	O8:H7	-	Based on 3 allele(s)	wzm:1;wzt:1;fliC:1;	O8-16-wzm;O8-32-wzt;H7-6-fliC-origin;	100;100;100;	100;100;100;	contig_1;contig_1;contig_1;	1934781-1935575;1935575-1936789;2062693-2064450;	795;1215;1758;	v1.0 (11-03-2020)	-
+HUMV-218	-	O9	-	O9:-	-	Based on 2 allele(s)	wzm:0.943;wzt:0.954;	O9-5-wzm-origin;O9-20-wzt;	94.275;95.37;	100;100;	contig_7;contig_7;	1771822-1772607;1772610-1773905;	786;1296;	v1.0 (11-03-2020)	-
+HUMV-227	-	O9	-	O9:-	-	Based on 2 allele(s)	wzm:0.943;wzt:0.954;	O9-5-wzm-origin;O9-20-wzt;	94.275;95.37;	100;100;	contig_2;contig_2;	1733309-1734094;1734097-1735392;	786;1296;	v1.0 (11-03-2020)	-
+HUMV-233	-	O8	H30	O8:H30	-	Based on 3 allele(s)	wzm:1;wzt:0.998;fliC:1;	O8-1-wzm-origin;O8-29-wzt;H30-2-fliC;	100;99.835;100;	100;100;100;	contig_2;contig_2;contig_2;	1812278-1813072;1813072-1814286;1921644-1923356;	795;1215;1713;	v1.0 (11-03-2020)	-
+HUMV-244	-	O89	H17	O89:H17	-	Based on 3 allele(s)	wzm:0.941;wzt:0.936;fliC:1;	O89-1-wzm-origin;O89-4-wzt;H17-4-fliC;	94.103;93.625;100;	100;100;100;	contig_2;contig_2;contig_2;	3439995-3440774;3439236-3439988;2027273-2028322;	780;753;1050;	v1.0 (11-03-2020)	High similarity O-antigen group 15:O89/O101/O162 as per A.Iguchi et.al (PMID: 25428893)
+HUMV-245	-	-	H9	-:H9	-	Based on 1 allele(s)	fliC:1;	H9-3-fliC;	100;	100;	contig_1;	1998425-2000437;	2013;	v1.0 (11-03-2020)	-
+SCT-HURS-01	-	O9	-	O9:-	-	Based on 2 allele(s)	wzm:0.98;wzt:0.931;	O9-5-wzm-origin;O9-6-wzt-origin;	97.964;93.133;	100;100;	contig_6;contig_6;	42143-42928;42931-44226;	786;1296;	v1.0 (11-03-2020)	-
+SCT-HURS-04	-	O9	-	O9:-	-	Based on 2 allele(s)	wzm:0.98;wzt:0.931;	O9-5-wzm-origin;O9-6-wzt-origin;	97.964;93.133;	100;100;	contig_2;contig_2;	1702879-1703664;1703667-1704962;	786;1296;	v1.0 (11-03-2020)	-
+SCT-HURS-07	-	O9	-	O9:-	-	Based on 2 allele(s)	wzm:0.969;wzt:0.931;	O9-5-wzm-origin;O9-6-wzt-origin;	96.947;93.133;	100;100;	contig_1;contig_1;	1652721-1653506;1653509-1654804;	786;1296;	v1.0 (11-03-2020)	-
+SCT-HURS-08	-	O9	-	O9:-	-	Based on 2 allele(s)	wzm:0.969;wzt:0.931;	O9-5-wzm-origin;O9-6-wzt-origin;	96.947;93.133;	100;100;	contig_1;contig_1;	1652645-1653430;1653433-1654728;	786;1296;	v1.0 (11-03-2020)	-
+SCT-HURS-10	-	O86	H51	O86:H51	-	Based on 3 allele(s)	wzx:0.999;wzy:0.999;fliC:1;	O86-7-wzx;O86-12-wzy;H51-2-fliC-origin;	99.917;99.929;100;	100;100;100;	contig_5;contig_5;contig_5;	1971100-1972302;1972933-1974332;2076480-2078297;	1203;1400;1818;	v1.0 (11-03-2020)	-
+SCT-HURS-11	-	O29	H31	O29:H31	-	Based on 3 allele(s)	wzx:1;wzy:1;fliC:1;	O29-4-wzx;O29-2-wzy-origin;H31-1-fliC-origin;	100;100;100;	100;100;100;	contig_1;contig_1;contig_1;	1806830-1808230;1808227-1809390;1926907-1928574;	1401;1164;1668;	v1.0 (11-03-2020)	-
+SCT-HURS-16	-	O102	H6	O102:H6	-	Based on 3 allele(s)	wzx:1;wzy:1;fliC:1;	O102-6-wzx;O102-9-wzy;H6-17-fliC;	100;100;100;	100;100;100;	contig_3;contig_3;contig_3;	2044944-2046131;2047134-2048264;2190163-2191815;	1188;1131;1653;	v1.0 (11-03-2020)	-
+SCT-HURS-21	-	O153	H25	O153:H25	-	Based on 3 allele(s)	wzx:1;wzy:1;fliC:1;	O153-3-wzx-origin;O153-4-wzy-origin;H25-2-fliC-origin;	100;100;99.925;	100;100;100;	contig_7;contig_7;contig_7;	1835040-1836218;1832905-1834083;1944380-1945711;	1179;1179;1332;	v1.0 (11-03-2020)	High similarity O-antigen group 11:O153/O178 as per A.Iguchi et.al (PMID: 25428893)
+SCT-HURS-29	-	O153	H25	O153:H25	-	Based on 3 allele(s)	wzx:1;wzy:1;fliC:1;	O153-3-wzx-origin;O153-4-wzy-origin;H25-2-fliC-origin;	100;100;99.925;	100;100;100;	contig_5;contig_5;contig_5;	1835040-1836218;1832905-1834083;1944380-1945711;	1179;1179;1332;	v1.0 (11-03-2020)	High similarity O-antigen group 11:O153/O178 as per A.Iguchi et.al (PMID: 25428893)
+SCT-HURS-30	-	O75	H5	O75:H5	-	Based on 3 allele(s)	wzx:1;wzy:1;fliC:1;	O75-6-wzx;O75-11-wzy;H5-6-fliC;	100;100;100;	100;100;100;	contig_2;contig_2;contig_2;	1931230-1932762;1925258-1926331;2099869-2101178;	1533;1074;1310;	v1.0 (11-03-2020)	-
+SCT-HURS-41	-	O75	H5	O75:H5	-	Based on 3 allele(s)	wzx:1;wzy:1;fliC:1;	O75-6-wzx;O75-11-wzy;H5-6-fliC;	100;100;100;	100;100;100;	contig_2;contig_2;contig_2;	1943194-1944726;1937222-1938295;2111845-2113154;	1533;1074;1310;	v1.0 (11-03-2020)	-
+HUMV-001	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+HUMV-002	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+HUMV-034	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+HUMV-154	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+HUMV-171	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+HUMV-172	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+HUMV-183	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+HUMV-188	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+HUMV-192	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+HUMV-194	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+HUMV-196	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+HUMV-199	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+HUMV-200	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+HUMV-206	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+HUMV-207	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+HUMV-214	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+HUMV-216	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+HUMV-217	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+HUMV-221	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+HUMV-225	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+HUMV-226	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+HUMV-240	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+HUMV-241	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+HUMV-242	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+SCT-HURS-02	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+SCT-HURS-03	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+SCT-HURS-06	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+SCT-HURS-63	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+SCT-HURS-65	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+SCT-HUSAL-015	-	-	-	-:-	-	-	-							v1.0 (11-03-2020)	No O and H antigen determinant E.coli genes were found. Try running with --verify parameter
+
+ECTyper has finished successfully.

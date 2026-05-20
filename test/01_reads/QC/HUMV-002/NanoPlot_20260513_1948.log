@@ -1,0 +1,31 @@
+2026-05-13 19:48:41,418 NanoPlot 1.42.0 started with arguments Namespace(threads=3, verbose=False, store=False, raw=False, huge=False, outdir='01_reads/QC/HUMV-002', no_static=False, prefix='', tsv_stats=False, only_report=False, info_in_report=False, maxlength=None, minlength=None, drop_outliers=False, downsample=20000, loglength=True, percentqual=False, alength=False, minqual=None, runtime_until=None, readtype='1D', barcoded=False, no_supplementary=False, color='#4CB391', colormap='Greens', format=['png'], plots=['kde', 'dot'], legacy=None, listcolors=False, listcolormaps=False, no_N50=False, N50=False, title=None, font_scale=1, dpi=100, hide_stats=False, fastq=['01_reads/HUMV-002.fastq.gz'], fasta=None, fastq_rich=None, fastq_minimal=None, summary=None, bam=None, ubam=None, cram=None, pickle=None, feather=None, path='01_reads/QC/HUMV-002/')
+2026-05-13 19:48:41,419 Python version is: 3.10.13 | packaged by conda-forge | (main, Dec 23 2023, 15:36:39) [GCC 12.3.0]
+2026-05-13 19:48:41,552 Nanoget: Starting to collect statistics from plain fastq file.
+2026-05-13 19:48:41,552 Nanoget: Decompressing gzipped fastq 01_reads/HUMV-002.fastq.gz
+2026-05-13 19:52:45,125 Reduced DataFrame memory usage from 2.774810791015625Mb to 2.774810791015625Mb
+2026-05-13 19:52:45,148 Nanoget: Gathered all metrics of 181842 reads
+2026-05-13 19:52:45,240 Calculated statistics
+2026-05-13 19:52:45,241 Using sequenced read lengths for plotting.
+2026-05-13 19:52:45,243 Using log10 scaled read lengths.
+2026-05-13 19:52:45,260 Removed 5 artefactual reads with very short length and very high quality.
+2026-05-13 19:52:45,260 Downsampling the dataset from 181837 to 20000 reads
+2026-05-13 19:52:45,285 Calculated statistics
+2026-05-13 19:52:45,286 NanoPlot:  Valid color #4CB391.
+2026-05-13 19:52:45,286 NanoPlot:  Valid colormap Greens.
+2026-05-13 19:52:45,288 NanoPlot:  Creating length plots for Read length.
+2026-05-13 19:52:45,289 NanoPlot:  Using 20000 reads maximum of 448584bp.
+2026-05-13 19:52:46,265 Saved 01_reads/QC/HUMV-002/WeightedHistogramReadlength  as png (or png for --legacy)
+2026-05-13 19:52:47,097 Saved 01_reads/QC/HUMV-002/WeightedLogTransformed_HistogramReadlength  as png (or png for --legacy)
+2026-05-13 19:52:47,997 Saved 01_reads/QC/HUMV-002/Non_weightedHistogramReadlength  as png (or png for --legacy)
+2026-05-13 19:52:48,823 Saved 01_reads/QC/HUMV-002/Non_weightedLogTransformed_HistogramReadlength  as png (or png for --legacy)
+2026-05-13 19:52:49,939 Saved 01_reads/QC/HUMV-002/Yield_By_Length  as png (or png for --legacy)
+2026-05-13 19:52:49,939 Created length plots
+2026-05-13 19:52:49,940 NanoPlot: Creating Read lengths vs Average read quality plots using 20000 reads.
+2026-05-13 19:52:51,358 Saved 01_reads/QC/HUMV-002/LengthvsQualityScatterPlot_dot  as png (or png for --legacy)
+2026-05-13 19:52:53,531 Saved 01_reads/QC/HUMV-002/LengthvsQualityScatterPlot_kde  as png (or png for --legacy)
+2026-05-13 19:52:53,532 NanoPlot: Creating Read lengths vs Average read quality plots using 20000 reads.
+2026-05-13 19:52:54,812 Saved 01_reads/QC/HUMV-002/LengthvsQualityScatterPlot_loglength_dot  as png (or png for --legacy)
+2026-05-13 19:52:57,474 Saved 01_reads/QC/HUMV-002/LengthvsQualityScatterPlot_loglength_kde  as png (or png for --legacy)
+2026-05-13 19:52:57,474 Created LengthvsQual plot
+2026-05-13 19:52:57,474 Writing html report.
+2026-05-13 19:52:57,499 Finished!

@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Raw sequencing data — never commit
+*.fastq
+*.fastq.gz
+*.fast5
+*.pod5
+*.bam
+*.bai
+
+# Pipeline run artifacts (uncomment if test/ should be gitignored)
+# test/
+# results/
+
+# Worktree scratch
+.claude/worktrees/

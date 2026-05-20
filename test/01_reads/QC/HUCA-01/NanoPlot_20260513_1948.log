@@ -1,0 +1,30 @@
+2026-05-13 19:48:39,891 NanoPlot 1.42.0 started with arguments Namespace(threads=3, verbose=False, store=False, raw=False, huge=False, outdir='01_reads/QC/HUCA-01', no_static=False, prefix='', tsv_stats=False, only_report=False, info_in_report=False, maxlength=None, minlength=None, drop_outliers=False, downsample=20000, loglength=True, percentqual=False, alength=False, minqual=None, runtime_until=None, readtype='1D', barcoded=False, no_supplementary=False, color='#4CB391', colormap='Greens', format=['png'], plots=['kde', 'dot'], legacy=None, listcolors=False, listcolormaps=False, no_N50=False, N50=False, title=None, font_scale=1, dpi=100, hide_stats=False, fastq=['01_reads/HUCA-01.fastq.gz'], fasta=None, fastq_rich=None, fastq_minimal=None, summary=None, bam=None, ubam=None, cram=None, pickle=None, feather=None, path='01_reads/QC/HUCA-01/')
+2026-05-13 19:48:39,891 Python version is: 3.10.13 | packaged by conda-forge | (main, Dec 23 2023, 15:36:39) [GCC 12.3.0]
+2026-05-13 19:48:39,975 Nanoget: Starting to collect statistics from plain fastq file.
+2026-05-13 19:48:39,976 Nanoget: Decompressing gzipped fastq 01_reads/HUCA-01.fastq.gz
+2026-05-13 19:49:32,326 Reduced DataFrame memory usage from 0.467376708984375Mb to 0.467376708984375Mb
+2026-05-13 19:49:32,376 Nanoget: Gathered all metrics of 30622 reads
+2026-05-13 19:49:32,509 Calculated statistics
+2026-05-13 19:49:32,514 Using sequenced read lengths for plotting.
+2026-05-13 19:49:32,524 Using log10 scaled read lengths.
+2026-05-13 19:49:32,554 Downsampling the dataset from 30622 to 20000 reads
+2026-05-13 19:49:32,651 Calculated statistics
+2026-05-13 19:49:32,652 NanoPlot:  Valid color #4CB391.
+2026-05-13 19:49:32,652 NanoPlot:  Valid colormap Greens.
+2026-05-13 19:49:32,661 NanoPlot:  Creating length plots for Read length.
+2026-05-13 19:49:32,661 NanoPlot:  Using 20000 reads maximum of 84126bp.
+2026-05-13 19:49:37,076 Saved 01_reads/QC/HUCA-01/WeightedHistogramReadlength  as png (or png for --legacy)
+2026-05-13 19:49:42,358 Saved 01_reads/QC/HUCA-01/WeightedLogTransformed_HistogramReadlength  as png (or png for --legacy)
+2026-05-13 19:49:45,468 Saved 01_reads/QC/HUCA-01/Non_weightedHistogramReadlength  as png (or png for --legacy)
+2026-05-13 19:49:51,057 Saved 01_reads/QC/HUCA-01/Non_weightedLogTransformed_HistogramReadlength  as png (or png for --legacy)
+2026-05-13 19:49:55,615 Saved 01_reads/QC/HUCA-01/Yield_By_Length  as png (or png for --legacy)
+2026-05-13 19:49:55,616 Created length plots
+2026-05-13 19:49:55,617 NanoPlot: Creating Read lengths vs Average read quality plots using 20000 reads.
+2026-05-13 19:50:00,370 Saved 01_reads/QC/HUCA-01/LengthvsQualityScatterPlot_dot  as png (or png for --legacy)
+2026-05-13 19:50:07,971 Saved 01_reads/QC/HUCA-01/LengthvsQualityScatterPlot_kde  as png (or png for --legacy)
+2026-05-13 19:50:07,972 NanoPlot: Creating Read lengths vs Average read quality plots using 20000 reads.
+2026-05-13 19:50:13,194 Saved 01_reads/QC/HUCA-01/LengthvsQualityScatterPlot_loglength_dot  as png (or png for --legacy)
+2026-05-13 19:50:26,309 Saved 01_reads/QC/HUCA-01/LengthvsQualityScatterPlot_loglength_kde  as png (or png for --legacy)
+2026-05-13 19:50:26,309 Created LengthvsQual plot
+2026-05-13 19:50:26,309 Writing html report.
+2026-05-13 19:50:26,404 Finished!

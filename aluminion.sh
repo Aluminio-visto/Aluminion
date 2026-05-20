@@ -205,6 +205,20 @@ if [ ! -f "list_seq.tsv" ]; then
     exit 1
 fi
 
+# Auto-translate legacy Spanish column headers (Cultivo, Cepa, ID, Barcode, Conc, Repetida)
+# to the current English schema. Earlier versions of the pipeline shipped Spanish names;
+# this keeps old lab sheets working without forcing the user to edit them manually.
+# Field order is preserved — only the header row is rewritten.
+list_header=$(head -n 1 list_seq.tsv | tr -d '\r')
+if echo "$list_header" | grep -qE '^(Cultivo|Cepa)\b'; then
+    warn "list_seq.tsv uses legacy Spanish column names — auto-translating to English (Lab_id, Strain, ID, Barcode, DNA_conc, is_repeated)."
+    {
+        echo -e "Lab_id\tStrain\tID\tBarcode\tDNA_conc\tis_repeated"
+        tail -n +2 list_seq.tsv | tr -d '\r'
+    } > list_seq.tsv.translated
+    mv list_seq.tsv.translated list_seq.tsv
+fi
+
 # Copy only the barcode subfolders referenced in list_seq.tsv (col 4 = Barcode).
 # tr -d '\r' strips CRLF line endings that appear when list_seq.tsv is exported from
 # Excel on Windows — without it, "01\r" would not match any printf %02d output.
@@ -472,6 +486,17 @@ done
 log "Deconcatenation & Recircularization..."
 > 03_assemblies/deconcat.log
 conda activate aluminion_assembly
+
+# Sanity-check the tools deconcat.py needs at runtime. If any are missing the script
+# would fail silently for every sample (the warn branch below catches it, but the
+# user has no way to know why). Fail fast with a clear message instead.
+for dep in blastn makeblastdb mafft em_cons minimap2; do
+    if ! command -v "$dep" >/dev/null 2>&1; then
+        error_log "deconcat.py dependency '${dep}' not found in aluminion_assembly env. Re-create the env with the current envs/aluminion_assembly.yml."
+        exit 1
+    fi
+done
+
 for i in $(cat samples); do
     if resume_done "03_assemblies/${i}/deconcat/assembly_corr.fasta"; then
         log "  [resume] Deconcat: ${i} done, skipping."
@@ -483,7 +508,7 @@ for i in $(cat samples); do
         && [ -f 03_assemblies/${i}/deconcat/assembly_corr.fasta ]; then
         cp 03_assemblies/${i}/deconcat/assembly_corr.fasta 03_assemblies/${i}.fasta
     else
-        warn "Deconcat failed or produced no output for ${i}. Using assembly.fasta as-is."
+        warn "Deconcat failed or produced no output for ${i}. See 03_assemblies/deconcat.log. Using assembly.fasta as-is."
         failed_deconcat+=("$i")
         cp 03_assemblies/${i}/assembly.fasta 03_assemblies/${i}.fasta 2>/dev/null || true
     fi
@@ -505,11 +530,17 @@ for i in $(cat samples); do
     fi
 done
 
+# QUAST and Bandage live in aluminion_assembly — the previous block left us in
+# aluminion_circlator, which does not have them installed.
+conda activate aluminion_assembly
+
 log "Assembly QC..."
 if resume_done "03_assemblies/quast/transposed_report.tsv"; then
     log "  [resume] QUAST: already done, skipping."
 else
-    quast.py -o 03_assemblies/quast -t $THREADS_TOTAL 03_assemblies/*.fasta
+    # QUAST 5.x ships the binary as `quast` (no .py suffix); the legacy `quast.py`
+    # name is no longer installed in current conda-forge / bioconda builds.
+    quast -o 03_assemblies/quast -t $THREADS_TOTAL 03_assemblies/*.fasta
 fi
 for i in $(cat samples); do
     resume_done "03_assemblies/${i}.png" && continue

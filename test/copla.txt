@@ -1,0 +1,2615 @@
+Sample: HUMV-001
+Contig: AB040
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 2
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	4901
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: HUMV-001
+Contig: AA514
+Query is a PTU-E3 plasmid
+Query is part of a sHSBM cluster of size 67
+Other info:
+  Size:	18839
+  MOB:	MOBP;MOBP;MOBP
+  MPF:	-
+  Repl:	Col440II;Col440II;Col440II;Col440II
+  AMR:	-
+Sample: HUMV-001
+Contig: AC507
+Query is a PTU-Q2 plasmid
+Query is part of a sHSBM cluster of size 5
+Other info:
+  Size:	8259
+  MOB:	MOBP
+  MPF:	-
+  Repl:	IncQ2
+  AMR:	GES-13
+Sample: HUMV-001
+Contig: AA424
+Query is a PTU-E60 plasmid
+Query is part of a sHSBM cluster of size 10
+Other info:
+  Size:	130397
+  MOB:	-
+  MPF:	-
+  Repl:	IncFIB(pECLA);IncFII(pECLA)
+  AMR:	AAC(3)-IIe;AAC(6')-Ib-cr;AAC(6')-Ib7;CTX-M-15;OXA-1;QnrB6;TEM-181;catB3;dfrA14
+Sample: HUMV-001
+Contig: AA002
+Query is a PTU-L/M plasmid
+Query is part of a sHSBM cluster of size 60
+Other info:
+  Size:	96977
+  MOB:	MOBP
+  MPF:	typeI
+  Repl:	IncL/M(pMU407)
+  AMR:	-
+Sample: HUMV-002
+Contig: AA514
+Query is a PTU-E3 plasmid
+Query is part of a sHSBM cluster of size 66
+Other info:
+  Size:	4783
+  MOB:	MOBP
+  MPF:	-
+  Repl:	Col440II
+  AMR:	-
+Sample: HUMV-002
+Contig: AA552
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 2
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	61112
+  MOB:	MOBF
+  MPF:	typeT
+  Repl:	IncN
+  AMR:	QnrA1;qacEdelta1;sul1;tet(A);tet(A)
+Sample: HUMV-009
+Contig: AA176
+Query is a PTU-FE plasmid
+Query is part of a sHSBM cluster of size 169
+Other info:
+  Size:	115861
+  MOB:	-
+  MPF:	-
+  Repl:	IncFIB(AP001918);IncFII;IncQ1
+  AMR:	AAC(6')-Ib7;APH(3'')-Ib;APH(6)-Id;TEM-181;dfrA5;sul2;tet(A)
+Sample: HUMV-009
+Contig: AA372
+Query is a PTU-I2 plasmid
+Query is part of a sHSBM cluster of size 32
+Other info:
+  Size:	54742
+  MOB:	MOBP
+  MPF:	typeT
+  Repl:	IncI2
+  AMR:	CTX-M-32
+Sample: HUMV-020
+Contig: AA378
+Query is a PTU-Y plasmid
+Query is part of a sHSBM cluster of size 19
+Other info:
+  Size:	96358
+  MOB:	-
+  MPF:	-
+  Repl:	p0111
+  AMR:	-
+Sample: HUMV-020
+Contig: AA281
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 2
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Query is related to PTU-B/O/K/Z plasmids
+Other info:
+  Size:	103145
+  MOB:	MOBP
+  MPF:	typeI
+  Repl:	IncB/O/K/Z
+  AMR:	AAC(6')-Ib7;ANT(3'')-IIa;SHV-66;aadA2;cmlA1;mefB;qacH;sul3
+Sample: HUMV-020
+Contig: AA577
+Query is a PTU-E20 plasmid
+Query is part of a sHSBM cluster of size 10
+Other info:
+  Size:	6789
+  MOB:	MOBQ
+  MPF:	-
+  Repl:	Col156
+  AMR:	-
+Sample: HUMV-020
+Contig: AA179
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	123471
+  MOB:	MOBF
+  MPF:	typeF
+  Repl:	IncFIB(AP001918);IncFII
+  AMR:	-
+Sample: HUMV-020
+Contig: AC509
+Query is a PTU-E1 plasmid
+Query is part of a sHSBM cluster of size 65
+Other info:
+  Size:	16050
+  MOB:	MOBP;MOBP
+  MPF:	-
+  Repl:	ColRNAI;ColRNAI
+  AMR:	-
+Sample: HUMV-020
+Contig: AA315
+Query is a PTU-FE plasmid
+Query is part of a sHSBM cluster of size 169
+Other info:
+  Size:	75670
+  MOB:	MOBF
+  MPF:	typeF
+  Repl:	IncFII
+  AMR:	-
+Sample: HUMV-020
+Contig: AA551
+Query is a PTU-N1 plasmid
+Query is part of a sHSBM cluster of size 62
+Other info:
+  Size:	29939
+  MOB:	MOBF
+  MPF:	-
+  Repl:	IncN
+  AMR:	-
+Sample: HUMV-020
+Contig: AA163
+Query is a PTU-E1 plasmid
+Query is part of a sHSBM cluster of size 83
+Other info:
+  Size:	6275
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: HUMV-026
+Contig: AA176
+Query is a PTU-FE plasmid
+Query is part of a sHSBM cluster of size 169
+Other info:
+  Size:	139488
+  MOB:	MOBF
+  MPF:	typeF
+  Repl:	IncFIB(AP001918);IncFII;IncQ1
+  AMR:	AAC(6')-Ib7;APH(3'')-Ib;APH(6)-Id;TEM-181;dfrA5;sul2;tet(A)
+Sample: HUMV-026
+Contig: AA474
+Query is a PTU-I1 plasmid
+Query is part of a sHSBM cluster of size 118
+Other info:
+  Size:	105538
+  MOB:	MOBP
+  MPF:	typeI
+  Repl:	IncI1
+  AMR:	CTX-M-1;sul2;tet(A)
+Sample: HUMV-026
+Contig: AC978
+New (putative) PTU
+Query is part of a sHSBM cluster of size 4
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	55056
+  MOB:	MOBP
+  MPF:	typeT
+  Repl:	-
+  AMR:	-
+Sample: HUMV-034
+Contig: AB040
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 2
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	6916
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: HUMV-034
+Contig: AA821
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	195319
+  MOB:	MOBF
+  MPF:	typeF
+  Repl:	IncFIB(K);IncFII(Yp)
+  AMR:	-
+Sample: HUMV-034
+Contig: AC125
+Query is a PTU-E15 plasmid
+Query is part of a sHSBM cluster of size 18
+Other info:
+  Size:	109361
+  MOB:	-
+  MPF:	-
+  Repl:	IncFIB(pKPHS1)
+  AMR:	-
+Sample: HUMV-034
+Contig: AC507
+Query is a PTU-Q2 plasmid
+Query is part of a sHSBM cluster of size 5
+Other info:
+  Size:	14487
+  MOB:	MOBP
+  MPF:	-
+  Repl:	IncQ2;IncQ2
+  AMR:	GES-13
+Sample: HUMV-036
+Contig: AA378
+Query is a PTU-Y plasmid
+Query is part of a sHSBM cluster of size 20
+Other info:
+  Size:	98309
+  MOB:	-
+  MPF:	-
+  Repl:	IncY
+  AMR:	-
+Sample: HUMV-036
+Contig: AA176
+New (putative) PTU
+Query is part of a sHSBM cluster of size 37
+This plasmid could form part of a new, still unnamed, PTU
+Query is related to PTU-FE plasmids
+Other info:
+  Size:	166927
+  MOB:	MOBF
+  MPF:	typeF
+  Repl:	IncFIB(AP001918);IncFII
+  AMR:	AAC(6')-Ib7;CTX-M-9;aadA2;dfrA16;qacEdelta1;sul1
+Sample: HUMV-036
+Contig: AB690
+PTU could not be assigned
+Query is part of a graph component of size 2
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	2279
+  MOB:	-
+  MPF:	-
+  Repl:	Col(MG828)
+  AMR:	-
+Sample: HUMV-154
+Contig: AF747
+PTU could not be assigned
+Query is part of a graph component of size 3
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	30363
+  MOB:	MOBP
+  MPF:	-
+  Repl:	-
+  AMR:	AAC(6')-Ib10;AAC(6')-Ib7;IMP-13;OXA-2;qacEdelta1;sul1
+Sample: HUMV-171
+Contig: AB040
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 3
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Query is related to PTU-E52 plasmids
+Other info:
+  Size:	2494
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: HUMV-171
+Contig: AA514
+Query is a PTU-E3 plasmid
+Query is part of a sHSBM cluster of size 66
+Other info:
+  Size:	4783
+  MOB:	MOBP
+  MPF:	-
+  Repl:	Col440II
+  AMR:	-
+Sample: HUMV-171
+Contig: AC507
+Query is a PTU-Q2 plasmid
+Query is part of a sHSBM cluster of size 5
+Other info:
+  Size:	8839
+  MOB:	MOBP
+  MPF:	-
+  Repl:	IncQ2
+  AMR:	GES-13
+Sample: HUMV-171
+Contig: AA424
+Query is a PTU-E60 plasmid
+Query is part of a sHSBM cluster of size 9
+Other info:
+  Size:	140061
+  MOB:	-
+  MPF:	-
+  Repl:	IncFIB(pECLA);IncFII(pECLA)
+  AMR:	AAC(6')-Ib-cr;AAC(6')-Ib7;CTX-M-15;OXA-1;QnrB6;TEM-181;catB3;dfrA14
+Sample: HUMV-171
+Contig: AA002
+Query is a PTU-L/M plasmid
+Query is part of a sHSBM cluster of size 60
+Other info:
+  Size:	96977
+  MOB:	MOBP
+  MPF:	typeI
+  Repl:	IncL/M(pMU407)
+  AMR:	-
+Sample: HUMV-172
+Contig: AB040
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 3
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Query is related to PTU-E52 plasmids
+Other info:
+  Size:	2494
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: HUMV-172
+Contig: AA514
+Query is a PTU-E3 plasmid
+Query is part of a sHSBM cluster of size 67
+Other info:
+  Size:	4783
+  MOB:	MOBP
+  MPF:	-
+  Repl:	Col440II
+  AMR:	-
+Sample: HUMV-172
+Contig: AC507
+Query is a PTU-Q2 plasmid
+Query is part of a sHSBM cluster of size 5
+Other info:
+  Size:	8262
+  MOB:	MOBP
+  MPF:	-
+  Repl:	IncQ2
+  AMR:	GES-13
+Sample: HUMV-172
+Contig: AA424
+Query is a PTU-E60 plasmid
+Query is part of a sHSBM cluster of size 10
+Other info:
+  Size:	132207
+  MOB:	-
+  MPF:	-
+  Repl:	IncFIB(pECLA);IncFII(pECLA)
+  AMR:	AAC(6')-Ib-cr;AAC(6')-Ib7;CTX-M-15;OXA-1;QnrB6;TEM-181;catB3;dfrA14
+Sample: HUMV-172
+Contig: AA002
+Query is a PTU-L/M plasmid
+Query is part of a sHSBM cluster of size 60
+Other info:
+  Size:	96977
+  MOB:	MOBP
+  MPF:	typeI
+  Repl:	IncL/M(pMU407)
+  AMR:	-
+Sample: HUMV-183
+Contig: AC748
+Query is a PTU-E47 plasmid
+Query is part of a sHSBM cluster of size 7
+Other info:
+  Size:	1825
+  MOB:	-
+  MPF:	-
+  Repl:	Col(BS512)
+  AMR:	-
+Sample: HUMV-183
+Contig: AB193
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	35947
+  MOB:	-
+  MPF:	-
+  Repl:	IncR
+  AMR:	AAC(3)-IId;APH(3'')-Ib;APH(6)-Id;TEM-181
+Sample: HUMV-184
+Contig: AA474
+Query is a PTU-I1 plasmid
+Query is part of a sHSBM cluster of size 118
+Other info:
+  Size:	87419
+  MOB:	MOBP
+  MPF:	typeI
+  Repl:	IncI1
+  AMR:	-
+Sample: HUMV-184
+Contig: AA576
+Query is a PTU-E20 plasmid
+Query is part of a sHSBM cluster of size 10
+Other info:
+  Size:	8120
+  MOB:	MOBQ
+  MPF:	-
+  Repl:	Col156
+  AMR:	-
+Sample: HUMV-184
+Contig: AA336
+Query is a PTU-FE plasmid
+Query is part of a sHSBM cluster of size 169
+Other info:
+  Size:	91347
+  MOB:	MOBF
+  MPF:	typeF
+  Repl:	IncFII
+  AMR:	AAC(3)-IV;APH(3'')-Ib;APH(4)-Ia;APH(6)-Id;CTX-M-1;mphA
+Sample: HUMV-184
+Contig: AA159
+Query is a PTU-E1 plasmid
+Query is part of a sHSBM cluster of size 73
+Other info:
+  Size:	7289
+  MOB:	MOBP
+  MPF:	-
+  Repl:	ColRNAI
+  AMR:	-
+Sample: HUMV-188
+Contig: AC748
+Query is a PTU-E47 plasmid
+Query is part of a sHSBM cluster of size 7
+Other info:
+  Size:	2101
+  MOB:	-
+  MPF:	-
+  Repl:	Col(BS512)
+  AMR:	-
+Sample: HUMV-188
+Contig: AB193
+Query is a PTU-E56 plasmid
+Query is part of a sHSBM cluster of size 15
+Other info:
+  Size:	37848
+  MOB:	-
+  MPF:	-
+  Repl:	IncR
+  AMR:	AAC(6')-Ib7;APH(3'')-Ib;APH(6)-Id;TEM-181;aadA5;dfrA17;qacEdelta1;sul1
+Sample: HUMV-192
+Contig: AG165
+PTU could not be assigned
+Query is part of a graph component of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	105773
+  MOB:	-
+  MPF:	-
+  Repl:	IncFIA(HI1);IncFII(pECLA)
+  AMR:	-
+Sample: HUMV-194
+Contig: AA519
+Query is a PTU-E3 plasmid
+Query is part of a sHSBM cluster of size 65
+Other info:
+  Size:	4938
+  MOB:	MOBP
+  MPF:	-
+  Repl:	Col440II
+  AMR:	-
+Sample: HUMV-195
+Contig: AA175
+Query is a PTU-FE plasmid
+Query is part of a sHSBM cluster of size 169
+Other info:
+  Size:	156627
+  MOB:	MOBF
+  MPF:	typeF
+  Repl:	IncFIB(AP001918);IncFII(pCoo)
+  AMR:	tet(A)
+Sample: HUMV-195
+Contig: AA474
+Query is a PTU-I1 plasmid
+Query is part of a sHSBM cluster of size 118
+Other info:
+  Size:	100592
+  MOB:	MOBP
+  MPF:	typeI
+  Repl:	IncI1
+  AMR:	SHV-66
+Sample: HUMV-195
+Contig: AC621
+New (putative) PTU
+Query is part of a graph component of size 4
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	48275
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: HUMV-195
+Contig: AA163
+Query is a PTU-E14 plasmid
+Query is part of a sHSBM cluster of size 10
+Other info:
+  Size:	3480
+  MOB:	MOBP
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: HUMV-195
+Contig: AA672
+Query is a PTU-E1 plasmid
+Query is part of a sHSBM cluster of size 74
+Other info:
+  Size:	4120
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: HUMV-195
+Contig: AA974
+Query is a PTU-E19 plasmid
+Query is part of a sHSBM cluster of size 11
+Other info:
+  Size:	10610
+  MOB:	MOBQ;MOBQ;MOBQ
+  MPF:	-
+  Repl:	Col156;Col156
+  AMR:	-
+Sample: HUMV-195
+Contig: AB044
+New (putative) PTU
+Query is part of a sHSBM cluster of size 5
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	4145
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: HUMV-196
+Contig: AA739
+Query is a PTU-HI2 plasmid
+Query is part of a sHSBM cluster of size 35
+Other info:
+  Size:	322474
+  MOB:	MOBH
+  MPF:	-
+  Repl:	IncHI2;IncHI2A
+  AMR:	AAC(6')-Ib7;ANT(3'')-IIa;APH(3'')-Ib;APH(6)-Id;QnrB6;TEM-181;catI;dfrA14;sul2
+Sample: HUMV-196
+Contig: AF747
+PTU could not be assigned
+Query is part of a graph component of size 3
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	51668
+  MOB:	MOBP
+  MPF:	typeT
+  Repl:	-
+  AMR:	AAC(6')-Ib10;AAC(6')-Ib10;AAC(6')-Ib7;AAC(6')-Ib7;IMP-13;IMP-13;OXA-2;OXA-2;TEM-181;qacEdelta1;qacEdelta1;sul1;sul1
+Sample: HUMV-196
+Contig: AA329
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	60207
+  MOB:	MOBF
+  MPF:	typeF
+  Repl:	IncFII(29)
+  AMR:	-
+Sample: HUMV-196
+Contig: AA515
+Query is a PTU-E3 plasmid
+Query is part of a sHSBM cluster of size 58
+Other info:
+  Size:	6220
+  MOB:	MOBP
+  MPF:	-
+  Repl:	Col440I;Col440II
+  AMR:	-
+Sample: HUMV-199
+Contig: AB040
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 2
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	3971
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: HUMV-199
+Contig: AA514
+Query is a PTU-E3 plasmid
+Query is part of a sHSBM cluster of size 69
+Other info:
+  Size:	4892
+  MOB:	MOBP
+  MPF:	-
+  Repl:	Col440II
+  AMR:	-
+Sample: HUMV-199
+Contig: AC507
+Query is a PTU-Q2 plasmid
+Query is part of a sHSBM cluster of size 5
+Other info:
+  Size:	8259
+  MOB:	MOBP
+  MPF:	-
+  Repl:	IncQ2
+  AMR:	GES-13
+Sample: HUMV-199
+Contig: AA424
+Query is a PTU-E60 plasmid
+Query is part of a sHSBM cluster of size 9
+Other info:
+  Size:	171730
+  MOB:	-
+  MPF:	-
+  Repl:	IncFIB(pECLA);IncFII(pECLA)
+  AMR:	AAC(6')-Ib-cr;AAC(6')-Ib7;APH(3'')-Ib;APH(6)-Id;CTX-M-15;OXA-1;QnrB6;TEM-181;catB3;catII;dfrA14;sul2
+Sample: HUMV-199
+Contig: AA002
+Query is a PTU-L/M plasmid
+Query is part of a sHSBM cluster of size 60
+Other info:
+  Size:	96977
+  MOB:	MOBP
+  MPF:	typeI
+  Repl:	IncL/M(pMU407)
+  AMR:	-
+Sample: HUMV-200
+Contig: AB040
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 3
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Query is related to PTU-E52 plasmids
+Other info:
+  Size:	3226
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: HUMV-200
+Contig: AA514
+Query is a PTU-E3 plasmid
+Query is part of a sHSBM cluster of size 63
+Other info:
+  Size:	14314
+  MOB:	MOBP;MOBP;MOBP
+  MPF:	-
+  Repl:	Col440II;Col440II;Col440II
+  AMR:	-
+Sample: HUMV-200
+Contig: AC507
+Query is a PTU-Q2 plasmid
+Query is part of a sHSBM cluster of size 5
+Other info:
+  Size:	8259
+  MOB:	MOBP
+  MPF:	-
+  Repl:	IncQ2
+  AMR:	GES-13
+Sample: HUMV-200
+Contig: AA424
+Query is a PTU-E60 plasmid
+Query is part of a sHSBM cluster of size 9
+Other info:
+  Size:	132207
+  MOB:	-
+  MPF:	-
+  Repl:	IncFIB(pECLA);IncFII(pECLA)
+  AMR:	AAC(6')-Ib-cr;AAC(6')-Ib7;CTX-M-15;OXA-1;QnrB6;TEM-181;catB3;dfrA14
+Sample: HUMV-200
+Contig: AA002
+Query is a PTU-L/M plasmid
+Query is part of a sHSBM cluster of size 60
+Other info:
+  Size:	96977
+  MOB:	MOBP
+  MPF:	typeI
+  Repl:	IncL/M(pMU407)
+  AMR:	-
+Sample: HUMV-206
+Contig: AB040
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	2631
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: HUMV-206
+Contig: AA514
+Query is a PTU-E3 plasmid
+Query is part of a sHSBM cluster of size 67
+Other info:
+  Size:	4756
+  MOB:	MOBP
+  MPF:	-
+  Repl:	Col440II
+  AMR:	-
+Sample: HUMV-206
+Contig: AA670
+Query is a PTU-E1 plasmid
+Query is part of a sHSBM cluster of size 70
+Other info:
+  Size:	2651
+  MOB:	-
+  MPF:	-
+  Repl:	ColRNAI
+  AMR:	-
+Sample: HUMV-206
+Contig: AC507
+Query is a PTU-Q2 plasmid
+Query is part of a sHSBM cluster of size 5
+Other info:
+  Size:	11139
+  MOB:	MOBP
+  MPF:	-
+  Repl:	IncQ2;IncQ2
+  AMR:	GES-13;GES-13
+Sample: HUMV-206
+Contig: AA424
+Query is a PTU-E60 plasmid
+Query is part of a sHSBM cluster of size 9
+Other info:
+  Size:	127923
+  MOB:	-
+  MPF:	typeFATA
+  Repl:	IncFIB(pECLA);IncFII(pECLA)
+  AMR:	AAC(6')-Ib-cr;AAC(6')-Ib7;CTX-M-15;OXA-1;QnrB6;TEM-181;catB3;dfrA14
+Sample: HUMV-206
+Contig: AA002
+Query is a PTU-L/M plasmid
+Query is part of a sHSBM cluster of size 60
+Other info:
+  Size:	112333
+  MOB:	MOBP
+  MPF:	typeB;typeI
+  Repl:	IncL/M(pMU407)
+  AMR:	-
+Sample: HUMV-207
+Contig: AA514
+Query is a PTU-E3 plasmid
+Query is part of a sHSBM cluster of size 70
+Other info:
+  Size:	6520
+  MOB:	MOBP
+  MPF:	-
+  Repl:	Col440II
+  AMR:	-
+Sample: HUMV-207
+Contig: AC507
+Query is a PTU-Q2 plasmid
+Query is part of a sHSBM cluster of size 5
+Other info:
+  Size:	8265
+  MOB:	MOBP
+  MPF:	-
+  Repl:	IncQ2
+  AMR:	GES-13
+Sample: HUMV-207
+Contig: AA424
+Query is a PTU-E60 plasmid
+Query is part of a sHSBM cluster of size 9
+Other info:
+  Size:	181067
+  MOB:	-
+  MPF:	-
+  Repl:	IncFIB(pECLA);IncFII(pECLA)
+  AMR:	AAC(3)-IIe;AAC(6')-Ib-cr;AAC(6')-Ib7;APH(3'')-Ib;APH(6)-Id;CTX-M-15;OXA-1;QnrB6;TEM-181;catB3;catII;dfrA14;sul2
+Sample: HUMV-207
+Contig: AA002
+Query is a PTU-L/M plasmid
+Query is part of a sHSBM cluster of size 60
+Other info:
+  Size:	96977
+  MOB:	MOBP
+  MPF:	typeI
+  Repl:	IncL/M(pMU407)
+  AMR:	-
+Sample: HUMV-210
+Contig: AA378
+Query is a PTU-Y plasmid
+Query is part of a sHSBM cluster of size 19
+Other info:
+  Size:	99386
+  MOB:	-
+  MPF:	-
+  Repl:	IncY
+  AMR:	-
+Sample: HUMV-210
+Contig: AA282
+Query is a PTU-B/O/K/Z plasmid
+Query is part of a sHSBM cluster of size 23
+Other info:
+  Size:	93552
+  MOB:	MOBP
+  MPF:	typeI
+  Repl:	IncB/O/K/Z
+  AMR:	CTX-M-14
+Sample: HUMV-210
+Contig: AA174
+Query is a PTU-FE plasmid
+Query is part of a sHSBM cluster of size 169
+Other info:
+  Size:	75957
+  MOB:	MOBF
+  MPF:	-
+  Repl:	IncFIA;IncFIB(AP001918)
+  AMR:	tet(B)
+Sample: HUMV-210
+Contig: AA147
+Query is a PTU-E1 plasmid
+Query is part of a sHSBM cluster of size 72
+Other info:
+  Size:	37007
+  MOB:	MOBP;MOBP;MOBP;MOBP;MOBP;MOBP
+  MPF:	-
+  Repl:	ColRNAI;ColRNAI;ColRNAI;ColRNAI;ColRNAI;ColRNAI;ColRNAI
+  AMR:	-
+Sample: HUMV-214
+Contig: AC507
+Query is a PTU-Q2 plasmid
+Query is part of a sHSBM cluster of size 5
+Other info:
+  Size:	8259
+  MOB:	MOBP
+  MPF:	-
+  Repl:	IncQ2
+  AMR:	GES-13
+Sample: HUMV-214
+Contig: AA424
+Query is a PTU-E60 plasmid
+Query is part of a sHSBM cluster of size 9
+Other info:
+  Size:	173291
+  MOB:	-
+  MPF:	-
+  Repl:	IncFIB(pECLA);IncFII(pECLA)
+  AMR:	AAC(3)-IIe;AAC(6')-Ib-cr;AAC(6')-Ib7;APH(3'')-Ib;APH(6)-Id;CTX-M-15;OXA-1;QnrB6;TEM-181;catB3;dfrA14;sul2
+Sample: HUMV-214
+Contig: AA515
+Query is a PTU-E3 plasmid
+Query is part of a sHSBM cluster of size 80
+Other info:
+  Size:	2466
+  MOB:	MOBP
+  MPF:	-
+  Repl:	Col440II
+  AMR:	-
+Sample: HUMV-214
+Contig: AA002
+Query is a PTU-L/M plasmid
+Query is part of a sHSBM cluster of size 60
+Other info:
+  Size:	96976
+  MOB:	MOBP
+  MPF:	typeI
+  Repl:	IncL/M(pMU407)
+  AMR:	-
+Sample: HUMV-216
+Contig: AB045
+Query is a PTU-E3 plasmid
+Query is part of a sHSBM cluster of size 62
+Other info:
+  Size:	3860
+  MOB:	-
+  MPF:	-
+  Repl:	Col440II
+  AMR:	-
+Sample: HUMV-216
+Contig: AA405
+Query is a PTU-HI1B plasmid
+Query is part of a sHSBM cluster of size 27
+Other info:
+  Size:	235140
+  MOB:	MOBH
+  MPF:	-
+  Repl:	IncFIB(Mar);IncHI1B
+  AMR:	AAC(6')-Ib-cr;AAC(6')-Ib7;CTX-M-15;QnrB6;QnrB6;aadA16;arr-3;dfrA27;qacEdelta1;qacEdelta1;sul1;sul1
+Sample: HUMV-216
+Contig: AA402
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	215058
+  MOB:	-
+  MPF:	-
+  Repl:	IncFIB(K)
+  AMR:	-
+Sample: HUMV-217
+Contig: AB040
+Query is a PTU-E63 plasmid
+Query is part of a sHSBM cluster of size 14
+Other info:
+  Size:	2494
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: HUMV-217
+Contig: AB038
+New (putative) PTU
+Query is part of a sHSBM cluster of size 5
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	2793
+  MOB:	-
+  MPF:	-
+  Repl:	Col440I
+  AMR:	-
+Sample: HUMV-218
+Contig: AA752
+Query is a PTU-E18 plasmid
+Query is part of a sHSBM cluster of size 12
+Other info:
+  Size:	114053
+  MOB:	-
+  MPF:	-
+  Repl:	IncFIB(pHCM2)
+  AMR:	-
+Sample: HUMV-218
+Contig: AA516
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	5530
+  MOB:	MOBP
+  MPF:	-
+  Repl:	Col440I;Col440I;Col440II
+  AMR:	-
+Sample: HUMV-218
+Contig: AA424
+Query is a PTU-E60 plasmid
+Query is part of a sHSBM cluster of size 9
+Other info:
+  Size:	234275
+  MOB:	MOBF
+  MPF:	typeF
+  Repl:	IncFIB(pECLA);IncFII(pECLA)
+  AMR:	MCR-9
+Sample: HUMV-221
+Contig: AB040
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 2
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	2494
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: HUMV-221
+Contig: AA514
+Query is a PTU-E3 plasmid
+Query is part of a sHSBM cluster of size 61
+Other info:
+  Size:	4783
+  MOB:	MOBP
+  MPF:	-
+  Repl:	Col440II
+  AMR:	-
+Sample: HUMV-221
+Contig: AA424
+Query is a PTU-E60 plasmid
+Query is part of a sHSBM cluster of size 9
+Other info:
+  Size:	175131
+  MOB:	-
+  MPF:	-
+  Repl:	IncFIB(pECLA);IncFII(pECLA)
+  AMR:	AAC(3)-IIe;AAC(6')-Ib-cr;AAC(6')-Ib7;APH(3'')-Ib;APH(6)-Id;CTX-M-15;OXA-1;QnrB6;TEM-181;catB3;catII;dfrA14;sul2
+Sample: HUMV-225
+Contig: AA514
+Query is a PTU-E71 plasmid
+Query is part of a sHSBM cluster of size 5
+Other info:
+  Size:	1865
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: HUMV-225
+Contig: AA810
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	20374
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: HUMV-225
+Contig: AC507
+Query is a PTU-Q2 plasmid
+Query is part of a sHSBM cluster of size 5
+Other info:
+  Size:	8265
+  MOB:	-
+  MPF:	-
+  Repl:	IncQ2
+  AMR:	GES-13
+Sample: HUMV-225
+Contig: AA424
+Query is a PTU-E60 plasmid
+Query is part of a sHSBM cluster of size 9
+Other info:
+  Size:	109149
+  MOB:	-
+  MPF:	-
+  Repl:	IncFII(pECLA)
+  AMR:	AAC(6')-Ib7;AAC(6')-Ib7;APH(3'')-Ib;APH(6)-Id;QnrB1;catII;dfrA14;sul2
+Sample: HUMV-225
+Contig: AA515
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	2239
+  MOB:	MOBP
+  MPF:	-
+  Repl:	Col440II
+  AMR:	-
+Sample: HUMV-226
+Contig: AB040
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 3
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Query is related to PTU-E52 plasmids
+Other info:
+  Size:	2494
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: HUMV-226
+Contig: AA514
+Query is a PTU-E3 plasmid
+Query is part of a sHSBM cluster of size 69
+Other info:
+  Size:	4783
+  MOB:	MOBP
+  MPF:	-
+  Repl:	Col440II
+  AMR:	-
+Sample: HUMV-226
+Contig: AC507
+Query is a PTU-Q2 plasmid
+Query is part of a sHSBM cluster of size 5
+Other info:
+  Size:	8259
+  MOB:	MOBP
+  MPF:	-
+  Repl:	IncQ2
+  AMR:	GES-13
+Sample: HUMV-226
+Contig: AA424
+Query is a PTU-E60 plasmid
+Query is part of a sHSBM cluster of size 9
+Other info:
+  Size:	134912
+  MOB:	-
+  MPF:	-
+  Repl:	IncFIB(pECLA);IncFII(pECLA)
+  AMR:	AAC(6')-Ib-cr;AAC(6')-Ib7;CTX-M-15;OXA-1;QnrB6;TEM-181;catB3;dfrA14
+Sample: HUMV-226
+Contig: AA002
+Query is a PTU-L/M plasmid
+Query is part of a sHSBM cluster of size 60
+Other info:
+  Size:	96977
+  MOB:	MOBP
+  MPF:	typeI
+  Repl:	IncL/M(pMU407)
+  AMR:	-
+Sample: HUMV-233
+Contig: AB229
+Query is a PTU-E80 plasmid
+Query is part of a sHSBM cluster of size 6
+Other info:
+  Size:	43865
+  MOB:	MOBP
+  MPF:	typeT
+  Repl:	IncX1;IncX3
+  AMR:	-
+Sample: HUMV-233
+Contig: AB442
+New (putative) PTU
+Query is part of a sHSBM cluster of size 4
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	11715
+  MOB:	-
+  MPF:	-
+  Repl:	ColRNAI;ColRNAI
+  AMR:	-
+Sample: HUMV-233
+Contig: AA738
+Query is a PTU-HI2 plasmid
+Query is part of a sHSBM cluster of size 32
+Other info:
+  Size:	242437
+  MOB:	MOBH
+  MPF:	-
+  Repl:	IncHI2;IncHI2A
+  AMR:	AAC(3)-IV;AAC(6')-Ib7;ANT(3'')-IIa;APH(3'')-Ib;APH(3')-Ia;APH(4)-Ia;APH(6)-Id;CTX-M-65;OXA-10;QnrS1;TEM-181;TEM-181;arr-2;cmlA5;dfrA14;floR;tet(A);tet(A)
+Sample: HUMV-240
+Contig: AB040
+Query is a PTU-E52 plasmid
+Query is part of a sHSBM cluster of size 6
+Other info:
+  Size:	2494
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: HUMV-240
+Contig: AA514
+Query is a PTU-E3 plasmid
+Query is part of a sHSBM cluster of size 71
+Other info:
+  Size:	4783
+  MOB:	MOBP
+  MPF:	-
+  Repl:	Col440II
+  AMR:	-
+Sample: HUMV-240
+Contig: AA810
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	20611
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: HUMV-240
+Contig: AC507
+Query is a PTU-Q2 plasmid
+Query is part of a sHSBM cluster of size 5
+Other info:
+  Size:	8259
+  MOB:	MOBP
+  MPF:	-
+  Repl:	IncQ2
+  AMR:	GES-13
+Sample: HUMV-240
+Contig: AA424
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 2
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	130014
+  MOB:	-
+  MPF:	-
+  Repl:	IncFIB(pECLA);IncFII(pECLA)
+  AMR:	AAC(6')-Ib-cr;AAC(6')-Ib7;APH(3'')-Ib;APH(6)-Id;CTX-M-15;OXA-1;QnrB6;TEM-181;catB3;catII;dfrA14;sul2
+Sample: HUMV-241
+Contig: AB040
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	2645
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: HUMV-241
+Contig: AA514
+Query is a PTU-E3 plasmid
+Query is part of a sHSBM cluster of size 65
+Other info:
+  Size:	4785
+  MOB:	MOBP
+  MPF:	-
+  Repl:	Col440II
+  AMR:	-
+Sample: HUMV-241
+Contig: AC507
+Query is a PTU-Q2 plasmid
+Query is part of a sHSBM cluster of size 5
+Other info:
+  Size:	8259
+  MOB:	MOBP
+  MPF:	-
+  Repl:	IncQ2
+  AMR:	GES-13
+Sample: HUMV-241
+Contig: AA424
+Query is a PTU-E60 plasmid
+Query is part of a sHSBM cluster of size 9
+Other info:
+  Size:	136093
+  MOB:	-
+  MPF:	-
+  Repl:	IncFIB(pECLA);IncFII(pECLA)
+  AMR:	AAC(6')-Ib-cr;AAC(6')-Ib7;APH(3'')-Ib;APH(6)-Id;CTX-M-15;OXA-1;QnrB6;TEM-181;catB3;catII;dfrA14;sul2
+Sample: HUMV-242
+Contig: AB169
+New (putative) PTU
+Query is part of a graph component of size 4
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	104506
+  MOB:	MOBP
+  MPF:	typeI
+  Repl:	-
+  AMR:	LAP-2;QnrS1
+Sample: HUMV-242
+Contig: AA752
+Query is a PTU-E18 plasmid
+Query is part of a sHSBM cluster of size 12
+Other info:
+  Size:	113328
+  MOB:	-
+  MPF:	-
+  Repl:	IncFIB(pHCM2)
+  AMR:	-
+Sample: HUMV-242
+Contig: AD887
+Query is a PTU-E60 plasmid
+Query is part of a sHSBM cluster of size 10
+Other info:
+  Size:	11990
+  MOB:	-
+  MPF:	-
+  Repl:	IncFIB(pECLA)
+  AMR:	-
+Sample: HUMV-242
+Contig: AA515
+Query is a PTU-E3 plasmid
+Query is part of a sHSBM cluster of size 68
+Other info:
+  Size:	23917
+  MOB:	MOBP;MOBP;MOBP;MOBP;MOBP
+  MPF:	-
+  Repl:	Col440I;Col440I;Col440I;Col440I;Col440II;Col440II;Col440II;Col440II;Col440II
+  AMR:	-
+Sample: HUMV-242
+Contig: AA002
+Query is a PTU-L/M plasmid
+Query is part of a sHSBM cluster of size 60
+Other info:
+  Size:	96976
+  MOB:	MOBP
+  MPF:	typeI
+  Repl:	IncL/M(pMU407)
+  AMR:	-
+Sample: HUMV-244
+Contig: AA176
+Query is a PTU-FE plasmid
+Query is part of a sHSBM cluster of size 169
+Other info:
+  Size:	150304
+  MOB:	MOBF
+  MPF:	typeF
+  Repl:	IncFIB(AP001918);IncFII;IncQ1
+  AMR:	AAC(6')-Ib7;APH(3'')-Ib;APH(3')-Ia;APH(6)-Id;TEM-181;dfrA5;sul2
+Sample: HUMV-244
+Contig: AA474
+Query is a PTU-I1 plasmid
+Query is part of a sHSBM cluster of size 118
+Other info:
+  Size:	85229
+  MOB:	MOBP
+  MPF:	typeI
+  Repl:	IncI1
+  AMR:	CTX-M-3
+Sample: HUMV-244
+Contig: AA521
+New (putative) PTU
+Query is part of a sHSBM cluster of size 4
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	8228
+  MOB:	-
+  MPF:	-
+  Repl:	Col440I;Col440II
+  AMR:	-
+Sample: HUMV-244
+Contig: AB060
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	3644
+  MOB:	-
+  MPF:	-
+  Repl:	Col440I
+  AMR:	-
+Sample: HUMV-245
+Contig: AA176
+Query is a PTU-FE plasmid
+Query is part of a sHSBM cluster of size 169
+Other info:
+  Size:	156511
+  MOB:	MOBF
+  MPF:	typeF
+  Repl:	IncFIB(AP001918);IncFIC(FII);IncQ1
+  AMR:	AAC(6')-Ib7;APH(3'')-Ib;APH(3')-Ia;APH(6)-Id;TEM-181;aadA5;dfrA17;sul2;tet(B)
+Sample: HUMV-245
+Contig: AA474
+Query is a PTU-I1 plasmid
+Query is part of a sHSBM cluster of size 118
+Other info:
+  Size:	117738
+  MOB:	MOBP
+  MPF:	typeI
+  Repl:	IncI1
+  AMR:	-
+Sample: HUMV-245
+Contig: AC509
+Query is a PTU-E1 plasmid
+Query is part of a sHSBM cluster of size 73
+Other info:
+  Size:	6647
+  MOB:	MOBP
+  MPF:	-
+  Repl:	ColRNAI
+  AMR:	-
+Sample: HUMV-245
+Contig: AE615
+PTU could not be assigned
+Query is part of a graph component of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	29834
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: SCT-HURS-01
+Contig: AA277
+Query is a PTU-FK plasmid
+Query is part of a sHSBM cluster of size 129
+Other info:
+  Size:	255281
+  MOB:	MOBF
+  MPF:	typeF
+  Repl:	IncFIB(K);IncFII(K)
+  AMR:	AAC(3)-IIe;AAC(6')-Ib-cr;AAC(6')-Ib7;APH(3'')-Ib;APH(3'')-Ib;APH(6)-Id;APH(6)-Id;CTX-M-15;CTX-M-15;OXA-1;QnrB6;TEM-181;TEM-181;catB3;dfrA14;sul2;sul2;tet(A)
+Sample: SCT-HURS-01
+Contig: AB049
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 2
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	9581
+  MOB:	-
+  MPF:	-
+  Repl:	Col440I
+  AMR:	-
+Sample: SCT-HURS-01
+Contig: AA113
+New (putative) PTU
+Query is part of a sHSBM cluster of size 5
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	3604
+  MOB:	-
+  MPF:	-
+  Repl:	Col440I
+  AMR:	-
+Sample: SCT-HURS-02
+Contig: AB040
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 3
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Query is related to PTU-E52 plasmids
+Other info:
+  Size:	5366
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: SCT-HURS-02
+Contig: AB112
+PTU could not be assigned
+Query is part of a graph component of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	4154
+  MOB:	MOBQ
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: SCT-HURS-02
+Contig: AC579
+Query is a PTU-E46 plasmid
+Query is part of a sHSBM cluster of size 12
+Other info:
+  Size:	77779
+  MOB:	MOBF
+  MPF:	typeF
+  Repl:	IncFII(Yp)
+  AMR:	-
+Sample: SCT-HURS-02
+Contig: AA514
+Query is a PTU-E3 plasmid
+Query is part of a sHSBM cluster of size 67
+Other info:
+  Size:	13402
+  MOB:	MOBP;MOBP
+  MPF:	-
+  Repl:	Col440I;Col440II;Col440II
+  AMR:	-
+Sample: SCT-HURS-02
+Contig: AB189
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	66169
+  MOB:	-
+  MPF:	-
+  Repl:	IncR
+  AMR:	-
+Sample: SCT-HURS-03
+Contig: AA739
+Query is a PTU-HI2 plasmid
+Query is part of a sHSBM cluster of size 32
+Other info:
+  Size:	343589
+  MOB:	MOBH
+  MPF:	-
+  Repl:	IncHI2;IncHI2A
+  AMR:	AAC(6')-Ib7;sul1
+Sample: SCT-HURS-03
+Contig: AH156
+PTU could not be assigned
+Query is part of a graph component of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	2811
+  MOB:	MOBV
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: SCT-HURS-03
+Contig: AA519
+Query is a PTU-E3 plasmid
+Query is part of a sHSBM cluster of size 56
+Other info:
+  Size:	4937
+  MOB:	MOBP
+  MPF:	-
+  Repl:	Col440II
+  AMR:	-
+Sample: SCT-HURS-03
+Contig: AG340
+PTU could not be assigned
+Query is part of a graph component of size 2
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	4626
+  MOB:	-
+  MPF:	-
+  Repl:	Col(IRGK);Col(IRGK)
+  AMR:	-
+Sample: SCT-HURS-03
+Contig: AG131
+PTU could not be assigned
+Query is part of a graph component of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	2444
+  MOB:	MOBV
+  MPF:	-
+  Repl:	Col(IMGS31)
+  AMR:	-
+Sample: SCT-HURS-04
+Contig: AA277
+Query is a PTU-FK plasmid
+Query is part of a sHSBM cluster of size 125
+Other info:
+  Size:	244790
+  MOB:	MOBF
+  MPF:	typeF
+  Repl:	IncFIB(K);IncFII(K)
+  AMR:	AAC(3)-IIe;AAC(6')-Ib-cr;AAC(6')-Ib7;APH(3'')-Ib;APH(6)-Id;CTX-M-15;OXA-1;QnrB6;TEM-181;catB3;dfrA14;sul2;tet(A)
+Sample: SCT-HURS-04
+Contig: AB049
+Query is a PTU-E52 plasmid
+Query is part of a sHSBM cluster of size 11
+Other info:
+  Size:	9581
+  MOB:	-
+  MPF:	-
+  Repl:	Col440I
+  AMR:	-
+Sample: SCT-HURS-04
+Contig: AA113
+New (putative) PTU
+Query is part of a sHSBM cluster of size 6
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	3670
+  MOB:	-
+  MPF:	-
+  Repl:	Col440I
+  AMR:	-
+Sample: SCT-HURS-06
+Contig: AA739
+Query is a PTU-HI2 plasmid
+Query is part of a sHSBM cluster of size 35
+Other info:
+  Size:	340892
+  MOB:	MOBH
+  MPF:	-
+  Repl:	IncHI2;IncHI2A
+  AMR:	AAC(6')-Ib7;AAC(6')-Ib8;ANT(3'')-IIa;IMP-8;catI;qacEdelta1;sul1
+Sample: SCT-HURS-06
+Contig: AA425
+Query is a PTU-E60 plasmid
+Query is part of a sHSBM cluster of size 9
+Other info:
+  Size:	69601
+  MOB:	-
+  MPF:	-
+  Repl:	IncFIB(pECLA);IncFII(pECLA)
+  AMR:	-
+Sample: SCT-HURS-06
+Contig: AA552
+Query is a PTU-N1 plasmid
+Query is part of a sHSBM cluster of size 62
+Other info:
+  Size:	40731
+  MOB:	MOBF
+  MPF:	-
+  Repl:	IncN
+  AMR:	AAC(6')-Ib7;QnrS1;dfrA14
+Sample: SCT-HURS-06
+Contig: AE430
+PTU could not be assigned
+Query is part of a graph component of size 2
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	61520
+  MOB:	MOBF
+  MPF:	typeT
+  Repl:	-
+  AMR:	-
+Sample: SCT-HURS-07
+Contig: AA816
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	207458
+  MOB:	-
+  MPF:	-
+  Repl:	IncFIB(K)
+  AMR:	AAC(6')-Ib7;APH(3'')-Ib;APH(6)-Id;CTX-M-15;QnrS1;aadA2;dfrA12;mphA;qacEdelta1;sul1;sul2;tet(A)
+Sample: SCT-HURS-08
+Contig: AA816
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	207458
+  MOB:	-
+  MPF:	-
+  Repl:	IncFIB(K)
+  AMR:	AAC(6')-Ib7;APH(3'')-Ib;APH(6)-Id;CTX-M-15;QnrS1;aadA2;dfrA12;mphA;qacEdelta1;sul1;sul2;tet(A)
+Sample: SCT-HURS-10
+Contig: AA474
+Query is a PTU-I1 plasmid
+Query is part of a sHSBM cluster of size 118
+Other info:
+  Size:	185666
+  MOB:	MOBP
+  MPF:	typeF;typeI
+  Repl:	IncFIA;IncFIB(AP001918);IncI1
+  AMR:	AAC(6')-Ib7;APH(3'')-Ib;APH(6)-Id;CTX-M-1;TEM-181;dfrA14;sul2;sul2;sul2;tet(A)
+Sample: SCT-HURS-10
+Contig: AA974
+Query is a PTU-E19 plasmid
+Query is part of a sHSBM cluster of size 11
+Other info:
+  Size:	6226
+  MOB:	MOBQ
+  MPF:	-
+  Repl:	Col156;Col156
+  AMR:	-
+Sample: SCT-HURS-10
+Contig: AA329
+Query is a PTU-FE plasmid
+Query is part of a sHSBM cluster of size 170
+Other info:
+  Size:	71109
+  MOB:	MOBF
+  MPF:	typeF
+  Repl:	IncFII(pSE11)
+  AMR:	-
+Sample: SCT-HURS-10
+Contig: AA147
+Query is a PTU-E22 plasmid
+Query is part of a sHSBM cluster of size 12
+Other info:
+  Size:	5631
+  MOB:	MOBP
+  MPF:	-
+  Repl:	ColRNAI
+  AMR:	-
+Sample: SCT-HURS-11
+Contig: AA176
+Query is a PTU-FE plasmid
+Query is part of a sHSBM cluster of size 170
+Other info:
+  Size:	226971
+  MOB:	MOBF
+  MPF:	typeF
+  Repl:	IncFIB(AP001918);IncFIC(FII);IncFII;IncQ1
+  AMR:	AAC(6')-Ib7;AAC(6')-Ib7;ANT(3'')-IIa;APH(3'')-Ib;APH(3')-Ia;APH(6)-Id;SHV-66;TEM-181;aadA2;aadA5;cmlA1;dfrA17;mefB;qacH;sul2;sul3;tet(A);tet(B)
+Sample: SCT-HURS-11
+Contig: AA147
+Query is a PTU-E22 plasmid
+Query is part of a sHSBM cluster of size 15
+Other info:
+  Size:	5278
+  MOB:	MOBP
+  MPF:	-
+  Repl:	ColRNAI
+  AMR:	-
+Sample: SCT-HURS-16
+Contig: AA171
+Query is a PTU-FE plasmid
+Query is part of a sHSBM cluster of size 121
+Other info:
+  Size:	143044
+  MOB:	MOBF
+  MPF:	typeF
+  Repl:	IncFIA;IncFIB(AP001918);IncFII(pRSB107)
+  AMR:	AAC(6')-Ib7;APH(3'')-Ib;APH(6)-Id;TEM-181;aadA5;dfrA17;mphA;qacEdelta1;sul1;sul2;tet(A)
+Sample: SCT-HURS-16
+Contig: AC509
+Query is a PTU-E1 plasmid
+Query is part of a sHSBM cluster of size 57
+Other info:
+  Size:	6651
+  MOB:	MOBP
+  MPF:	-
+  Repl:	ColRNAI
+  AMR:	-
+Sample: SCT-HUSAL-001
+Contig: AA579
+Query is a PTU-E10 plasmid
+Query is part of a sHSBM cluster of size 24
+Other info:
+  Size:	4073
+  MOB:	MOBQ
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: SCT-HUSAL-001
+Contig: AA474
+Query is a PTU-I1 plasmid
+Query is part of a sHSBM cluster of size 118
+Other info:
+  Size:	83544
+  MOB:	MOBP
+  MPF:	typeI
+  Repl:	IncI1
+  AMR:	-
+Sample: SCT-HUSAL-001
+Contig: AA747
+Query is a PTU-E16 plasmid
+Query is part of a sHSBM cluster of size 16
+Other info:
+  Size:	112648
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: SCT-HUSAL-001
+Contig: AA887
+Query is a PTU-E50 plasmid
+Query is part of a sHSBM cluster of size 10
+Other info:
+  Size:	154093
+  MOB:	MOBC
+  MPF:	typeT
+  Repl:	IncFIB(AP001918);IncFIB(K)
+  AMR:	AAC(6')-Ib7;APH(3'')-Ib;APH(6)-Id;CTX-M-15;QnrS1;QnrS1;QnrS1;TEM-181;TEM-181;dfrA14;evgA;evgS;mphA;sul2;tet(A)
+Sample: SCT-HUSAL-001
+Contig: AB195
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	46439
+  MOB:	-
+  MPF:	-
+  Repl:	IncR
+  AMR:	TEM-181
+Sample: SCT-HUSAL-001
+Contig: AA161
+Query is a PTU-E1 plasmid
+Query is part of a sHSBM cluster of size 75
+Other info:
+  Size:	4086
+  MOB:	MOBP
+  MPF:	-
+  Repl:	ColRNAI
+  AMR:	-
+Sample: SCT-HUSAL-002
+Contig: AA579
+Query is a PTU-E10 plasmid
+Query is part of a sHSBM cluster of size 24
+Other info:
+  Size:	4073
+  MOB:	MOBQ
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: SCT-HUSAL-002
+Contig: AA977
+Query is a PTU-E7 plasmid
+Query is part of a sHSBM cluster of size 26
+Other info:
+  Size:	14595
+  MOB:	MOBQ;MOBQ
+  MPF:	-
+  Repl:	Col156;Col156;Col156
+  AMR:	-
+Sample: SCT-HUSAL-002
+Contig: AA474
+Query is a PTU-I1 plasmid
+Query is part of a sHSBM cluster of size 118
+Other info:
+  Size:	83200
+  MOB:	MOBP
+  MPF:	typeI
+  Repl:	IncI1
+  AMR:	-
+Sample: SCT-HUSAL-002
+Contig: AA887
+Query is a PTU-E50 plasmid
+Query is part of a sHSBM cluster of size 10
+Other info:
+  Size:	135656
+  MOB:	MOBC
+  MPF:	typeT
+  Repl:	IncFIB(AP001918);IncFIB(K)
+  AMR:	AAC(6')-Ib7;APH(3'')-Ib;APH(6)-Id;CTX-M-15;ErmB;QnrS1;TEM-181;TEM-181;dfrA14;evgA;evgS;mphA;sul2;tet(A)
+Sample: SCT-HUSAL-002
+Contig: AB195
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	46294
+  MOB:	-
+  MPF:	-
+  Repl:	IncR
+  AMR:	TEM-181
+Sample: SCT-HUSAL-002
+Contig: AA161
+Query is a PTU-E1 plasmid
+Query is part of a sHSBM cluster of size 73
+Other info:
+  Size:	4476
+  MOB:	MOBP
+  MPF:	-
+  Repl:	ColRNAI
+  AMR:	-
+Sample: SCT-HUSAL-004
+Contig: AA281
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 2
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	105981
+  MOB:	MOBP
+  MPF:	typeI;typeT
+  Repl:	Col(MG828);IncB/O/K/Z
+  AMR:	AAC(6')-Ib7;ANT(3'')-IIa;SHV-66;aadA2;cmlA1;mefB;qacH;sul3
+Sample: SCT-HUSAL-004
+Contig: AB238
+Query is a PTU-E11 plasmid
+Query is part of a sHSBM cluster of size 21
+Other info:
+  Size:	1983
+  MOB:	-
+  MPF:	-
+  Repl:	ColpVC
+  AMR:	-
+Sample: SCT-HUSAL-004
+Contig: AA176
+Query is a PTU-FE plasmid
+Query is part of a sHSBM cluster of size 169
+Other info:
+  Size:	103247
+  MOB:	MOBF
+  MPF:	-
+  Repl:	IncFIB(AP001918);IncFIC(FII)
+  AMR:	AAC(6')-Ib7;APH(3'')-Ib;APH(6)-Id;aadA5;dfrA17;sul2
+Sample: SCT-HUSAL-004
+Contig: AA576
+Query is a PTU-E20 plasmid
+Query is part of a sHSBM cluster of size 10
+Other info:
+  Size:	7229
+  MOB:	MOBQ
+  MPF:	-
+  Repl:	Col156
+  AMR:	-
+Sample: SCT-HUSAL-004
+Contig: AA163
+Query is a PTU-E14 plasmid
+Query is part of a sHSBM cluster of size 11
+Other info:
+  Size:	19382
+  MOB:	MOBP
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: SCT-HUSAL-004
+Contig: AA747
+Query is a PTU-E16 plasmid
+Query is part of a sHSBM cluster of size 16
+Other info:
+  Size:	113212
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: SCT-HUSAL-004
+Contig: AA161
+Query is a PTU-E14 plasmid
+Query is part of a sHSBM cluster of size 10
+Other info:
+  Size:	6989
+  MOB:	MOBP
+  MPF:	-
+  Repl:	ColRNAI
+  AMR:	-
+Sample: SCT-HUSAL-006
+Contig: AA281
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 2
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	113631
+  MOB:	MOBP;MOBP
+  MPF:	typeI;typeT
+  Repl:	Col(MG828);IncB/O/K/Z
+  AMR:	AAC(6')-Ib7;ANT(3'')-IIa;SHV-66;aadA2;cmlA1;mefB;qacH;sul3
+Sample: SCT-HUSAL-006
+Contig: AB238
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 2
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	1983
+  MOB:	-
+  MPF:	-
+  Repl:	ColpVC
+  AMR:	-
+Sample: SCT-HUSAL-006
+Contig: AA176
+New (putative) PTU
+Query is part of a sHSBM cluster of size 37
+This plasmid could form part of a new, still unnamed, PTU
+Query is related to PTU-FE plasmids
+Other info:
+  Size:	103248
+  MOB:	MOBF
+  MPF:	-
+  Repl:	IncFIB(AP001918);IncFIC(FII)
+  AMR:	AAC(6')-Ib7;APH(3'')-Ib;APH(6)-Id;aadA5;dfrA17;sul2
+Sample: SCT-HUSAL-006
+Contig: AA163
+Query is a PTU-E14 plasmid
+Query is part of a sHSBM cluster of size 10
+Other info:
+  Size:	2705
+  MOB:	MOBP
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: SCT-HUSAL-006
+Contig: AA747
+Query is a PTU-E16 plasmid
+Query is part of a sHSBM cluster of size 16
+Other info:
+  Size:	113212
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: SCT-HUSAL-006
+Contig: AA161
+Query is a PTU-E14 plasmid
+Query is part of a sHSBM cluster of size 11
+Other info:
+  Size:	6989
+  MOB:	MOBP
+  MPF:	-
+  Repl:	ColRNAI
+  AMR:	-
+Sample: SCT-HUSAL-008
+Contig: AA281
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 2
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	121332
+  MOB:	MOBP
+  MPF:	typeI;typeT
+  Repl:	Col(MG828);IncB/O/K/Z
+  AMR:	AAC(6')-Ib7;ANT(3'')-IIa;SHV-66;aadA2;cmlA1;mefB;qacH;sul3
+Sample: SCT-HUSAL-008
+Contig: AA176
+Query is a PTU-FE plasmid
+Query is part of a sHSBM cluster of size 169
+Other info:
+  Size:	164220
+  MOB:	MOBF
+  MPF:	typeF
+  Repl:	IncFIB(AP001918);IncFII
+  AMR:	AAC(6')-Ib7;CTX-M-9;aadA2;dfrA16;qacEdelta1;sul1
+Sample: SCT-HUSAL-008
+Contig: AB685
+Query is a PTU-E9 plasmid
+Query is part of a sHSBM cluster of size 25
+Other info:
+  Size:	1552
+  MOB:	-
+  MPF:	-
+  Repl:	Col(MG828)
+  AMR:	-
+Sample: SCT-HUSAL-015
+Contig: AA277
+Query is a PTU-FK plasmid
+Query is part of a sHSBM cluster of size 129
+Other info:
+  Size:	164655
+  MOB:	MOBF
+  MPF:	typeF
+  Repl:	IncFIB(K);IncFII(K)
+  AMR:	AAC(3)-IIe;AAC(6')-Ib-cr;AAC(6')-Ib7;APH(3'')-Ib;APH(6)-Id;CTX-M-15;OXA-1;TEM-181;catB3;dfrA14;sul2
+Sample: SCT-HURS-21
+Contig: AA378
+Query is a PTU-Y plasmid
+Query is part of a sHSBM cluster of size 19
+Other info:
+  Size:	103159
+  MOB:	-
+  MPF:	-
+  Repl:	p0111
+  AMR:	TEM-181
+Sample: SCT-HURS-21
+Contig: AA579
+Query is a PTU-E10 plasmid
+Query is part of a sHSBM cluster of size 24
+Other info:
+  Size:	4072
+  MOB:	MOBQ
+  MPF:	-
+  Repl:	Col8282
+  AMR:	-
+Sample: SCT-HURS-21
+Contig: AC509
+Query is a PTU-E1 plasmid
+Query is part of a sHSBM cluster of size 57
+Other info:
+  Size:	6647
+  MOB:	MOBP
+  MPF:	-
+  Repl:	ColRNAI
+  AMR:	-
+Sample: SCT-HURS-21
+Contig: AA667
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	9325
+  MOB:	-
+  MPF:	-
+  Repl:	ColRNAI
+  AMR:	TEM-181
+Sample: SCT-HURS-21
+Contig: AC529
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	3161
+  MOB:	-
+  MPF:	-
+  Repl:	Col440I
+  AMR:	-
+Sample: SCT-HURS-21
+Contig: AB716
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 2
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	24359
+  MOB:	-
+  MPF:	-
+  Repl:	IncX1
+  AMR:	tet(A)
+Sample: SCT-HURS-21
+Contig: AA594
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	142731
+  MOB:	MOBF
+  MPF:	typeF
+  Repl:	IncFIB(AP001918);IncFIC(FII)
+  AMR:	AAC(3)-IV;AAC(6')-Ib7;ANT(3'')-IIa;ANT(3'')-IIa;APH(4)-Ia;CTX-M-32;QnrS1;TEM-181;TEM-181;aadA2;cmlA1;dfrA12;floR;linG;mefB;qacH;sul3;tet(A);tetM
+Sample: SCT-HURS-21
+Contig: AD480
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 2
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	3175
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: SCT-HURS-29
+Contig: AA378
+Query is a PTU-Y plasmid
+Query is part of a sHSBM cluster of size 19
+Other info:
+  Size:	103146
+  MOB:	-
+  MPF:	-
+  Repl:	p0111
+  AMR:	TEM-181
+Sample: SCT-HURS-29
+Contig: AA579
+Query is a PTU-E10 plasmid
+Query is part of a sHSBM cluster of size 24
+Other info:
+  Size:	4072
+  MOB:	MOBQ
+  MPF:	-
+  Repl:	Col8282
+  AMR:	-
+Sample: SCT-HURS-29
+Contig: AC509
+Query is a PTU-E1 plasmid
+Query is part of a sHSBM cluster of size 73
+Other info:
+  Size:	6647
+  MOB:	MOBP
+  MPF:	-
+  Repl:	ColRNAI
+  AMR:	-
+Sample: SCT-HURS-29
+Contig: AC529
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	3028
+  MOB:	-
+  MPF:	-
+  Repl:	Col440I
+  AMR:	-
+Sample: SCT-HURS-29
+Contig: AA594
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 3
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	111730
+  MOB:	MOBF
+  MPF:	-
+  Repl:	IncFIB(AP001918);IncFIC(FII)
+  AMR:	AAC(3)-IV;AAC(6')-Ib7;ANT(3'')-IIa;APH(4)-Ia;TEM-181;aadA2;cmlA1;dfrA12;mefB;qacH;sul3;tetM
+Sample: SCT-HURS-29
+Contig: AB192
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	47920
+  MOB:	-
+  MPF:	-
+  Repl:	IncX1
+  AMR:	ANT(3'')-IIa;CTX-M-32;QnrS1;floR;linG;tet(A)
+Sample: SCT-HURS-29
+Contig: AD480
+Query is a PTU-E58 plasmid
+Query is part of a sHSBM cluster of size 16
+Other info:
+  Size:	5981
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: SCT-HURS-30
+Contig: AA352
+Query is a PTU-FE plasmid
+Query is part of a sHSBM cluster of size 169
+Other info:
+  Size:	102991
+  MOB:	-
+  MPF:	-
+  Repl:	Col156;IncFIA;IncFIB(AP001918)
+  AMR:	AAC(6')-Ib7;APH(3'')-Ib;APH(6)-Id;CTX-M-27;ErmB;aadA5;dfrA17;mphA;qacEdelta1;sul1;sul2;tet(A)
+Sample: SCT-HURS-30
+Contig: AB238
+Query is a PTU-E11 plasmid
+Query is part of a sHSBM cluster of size 21
+Other info:
+  Size:	1975
+  MOB:	-
+  MPF:	-
+  Repl:	ColpVC
+  AMR:	-
+Sample: SCT-HURS-30
+Contig: AD466
+PTU could not be assigned
+Query is part of a graph component of size 2
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	3818
+  MOB:	MOBV
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: SCT-HURS-30
+Contig: AC748
+Query is a PTU-E47 plasmid
+Query is part of a sHSBM cluster of size 7
+Other info:
+  Size:	2113
+  MOB:	-
+  MPF:	-
+  Repl:	Col(BS512)
+  AMR:	-
+Sample: SCT-HURS-30
+Contig: AA977
+Query is a PTU-E7 plasmid
+Query is part of a sHSBM cluster of size 26
+Other info:
+  Size:	13454
+  MOB:	MOBQ;MOBQ
+  MPF:	-
+  Repl:	Col156;Col156;Col156
+  AMR:	-
+Sample: SCT-HURS-41
+Contig: AA352
+Query is a PTU-FE plasmid
+Query is part of a sHSBM cluster of size 169
+Other info:
+  Size:	108856
+  MOB:	-
+  MPF:	-
+  Repl:	Col156;IncFIA;IncFIB(AP001918)
+  AMR:	AAC(6')-Ib7;APH(3'')-Ib;APH(6)-Id;CTX-M-27;CTX-M-27;ErmB;aadA5;dfrA17;mphA;qacEdelta1;sul1;sul2;tet(A);tet(A)
+Sample: SCT-HURS-41
+Contig: AB238
+Query is a PTU-E11 plasmid
+Query is part of a sHSBM cluster of size 21
+Other info:
+  Size:	1975
+  MOB:	-
+  MPF:	-
+  Repl:	ColpVC
+  AMR:	-
+Sample: SCT-HURS-41
+Contig: AD466
+PTU could not be assigned
+Query is part of a graph component of size 2
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	2424
+  MOB:	MOBV
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: SCT-HURS-41
+Contig: AC748
+Query is a PTU-E47 plasmid
+Query is part of a sHSBM cluster of size 7
+Other info:
+  Size:	3662
+  MOB:	-
+  MPF:	-
+  Repl:	Col(BS512);Col(BS512)
+  AMR:	-
+Sample: SCT-HURS-41
+Contig: AA977
+Query is a PTU-E7 plasmid
+Query is part of a sHSBM cluster of size 26
+Other info:
+  Size:	1929
+  MOB:	-
+  MPF:	-
+  Repl:	Col156
+  AMR:	-
+Sample: SCT-HURS-42
+Contig: AA352
+Query is a PTU-FE plasmid
+Query is part of a sHSBM cluster of size 169
+Other info:
+  Size:	102986
+  MOB:	-
+  MPF:	-
+  Repl:	Col156;IncFIA;IncFIB(AP001918)
+  AMR:	AAC(6')-Ib7;APH(3'')-Ib;APH(6)-Id;CTX-M-27;ErmB;aadA5;dfrA17;mphA;qacEdelta1;sul1;sul2;tet(A)
+Sample: SCT-HURS-42
+Contig: AD466
+PTU could not be assigned
+Query is part of a graph component of size 2
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	2460
+  MOB:	MOBV
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: SCT-HURS-42
+Contig: AC748
+Query is a PTU-E47 plasmid
+Query is part of a sHSBM cluster of size 7
+Other info:
+  Size:	2113
+  MOB:	-
+  MPF:	-
+  Repl:	Col(BS512)
+  AMR:	-
+Sample: SCT-HURS-42
+Contig: AA977
+Query is a PTU-E7 plasmid
+Query is part of a sHSBM cluster of size 26
+Other info:
+  Size:	5164
+  MOB:	MOBQ
+  MPF:	-
+  Repl:	Col156
+  AMR:	-
+Sample: SCT-HURS-45
+Contig: AA352
+Query is a PTU-FE plasmid
+Query is part of a sHSBM cluster of size 169
+Other info:
+  Size:	102992
+  MOB:	-
+  MPF:	-
+  Repl:	Col156;IncFIA;IncFIB(AP001918)
+  AMR:	AAC(6')-Ib7;APH(3'')-Ib;APH(6)-Id;CTX-M-27;ErmB;aadA5;dfrA17;mphA;qacEdelta1;sul1;sul2;tet(A)
+Sample: SCT-HURS-45
+Contig: AB238
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 2
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	1406
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: SCT-HURS-45
+Contig: AD466
+PTU could not be assigned
+Query is part of a graph component of size 2
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	2469
+  MOB:	MOBV
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: SCT-HURS-45
+Contig: AC748
+Query is a PTU-E47 plasmid
+Query is part of a sHSBM cluster of size 7
+Other info:
+  Size:	2593
+  MOB:	-
+  MPF:	-
+  Repl:	Col(BS512);Col(BS512)
+  AMR:	-
+Sample: SCT-HURS-45
+Contig: AA977
+Query is a PTU-E7 plasmid
+Query is part of a sHSBM cluster of size 26
+Other info:
+  Size:	5164
+  MOB:	MOBQ
+  MPF:	-
+  Repl:	Col156
+  AMR:	-
+Sample: SCT-HURS-45
+Contig: AB687
+Query is a PTU-E9 plasmid
+Query is part of a sHSBM cluster of size 25
+Other info:
+  Size:	1506
+  MOB:	-
+  MPF:	-
+  Repl:	Col(MG828)
+  AMR:	-
+Sample: SCT-HURS-46
+Contig: AA352
+Query is a PTU-FE plasmid
+Query is part of a sHSBM cluster of size 169
+Other info:
+  Size:	102991
+  MOB:	-
+  MPF:	-
+  Repl:	Col156;IncFIA;IncFIB(AP001918)
+  AMR:	AAC(6')-Ib7;APH(3'')-Ib;APH(6)-Id;CTX-M-27;ErmB;aadA5;dfrA17;mphA;qacEdelta1;sul1;sul2;tet(A)
+Sample: SCT-HURS-46
+Contig: AB238
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 2
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	1975
+  MOB:	-
+  MPF:	-
+  Repl:	ColpVC
+  AMR:	-
+Sample: SCT-HURS-46
+Contig: AD466
+PTU could not be assigned
+Query is part of a graph component of size 2
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	3015
+  MOB:	MOBV
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: SCT-HURS-46
+Contig: AC748
+Query is a PTU-E47 plasmid
+Query is part of a sHSBM cluster of size 7
+Other info:
+  Size:	2113
+  MOB:	-
+  MPF:	-
+  Repl:	Col(BS512)
+  AMR:	-
+Sample: SCT-HURS-46
+Contig: AA977
+Query is a PTU-E7 plasmid
+Query is part of a sHSBM cluster of size 26
+Other info:
+  Size:	5164
+  MOB:	MOBQ
+  MPF:	-
+  Repl:	Col156
+  AMR:	-
+Sample: SCT-HURS-63
+Contig: AA018
+Query is a PTU-FK plasmid
+Query is part of a sHSBM cluster of size 126
+Other info:
+  Size:	63156
+  MOB:	-
+  MPF:	-
+  Repl:	IncFIB(pQil);IncFII(K)
+  AMR:	KPC-3;OXA-9;TEM-181;aadA25
+Sample: SCT-HURS-63
+Contig: AA275
+Query is a PTU-FK plasmid
+Query is part of a sHSBM cluster of size 129
+Other info:
+  Size:	220669
+  MOB:	MOBF
+  MPF:	typeF
+  Repl:	IncFIB(K);IncFII(K)
+  AMR:	AAC(6')-Ib7;SHV-182;aadA2;catI;dfrA12;qacEdelta1;sul1
+Sample: SCT-HURS-63
+Contig: AA941
+Query is a PTU-E4 plasmid
+Query is part of a sHSBM cluster of size 42
+Other info:
+  Size:	27239
+  MOB:	MOBC;MOBC
+  MPF:	-
+  Repl:	ColRNAI;ColRNAI
+  AMR:	AAC(6')-Ib10;AAC(6')-Ib10;ANT(3'')-IIa;ANT(3'')-IIa;TEM-181;TEM-181;TEM-181;TEM-181
+Sample: SCT-HURS-65
+Contig: AB040
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 2
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	2003
+  MOB:	-
+  MPF:	-
+  Repl:	-
+  AMR:	-
+Sample: SCT-HURS-65
+Contig: AD444
+PTU could not be assigned
+Query is part of a sHSBM cluster of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	43379
+  MOB:	-
+  MPF:	-
+  Repl:	IncFIB(pQil)
+  AMR:	-
+Sample: SCT-HURS-65
+Contig: AB042
+Query is a PTU-E76 plasmid
+Query is part of a sHSBM cluster of size 16
+Other info:
+  Size:	8087
+  MOB:	-
+  MPF:	-
+  Repl:	Col440I;Col440I
+  AMR:	QnrB5;QnrB5;QnrB56
+Sample: SCT-HURS-65
+Contig: c623f
+PTU could not be assigned
+Query is part of a graph component of size 1
+However, at least four members are required for PTU assignation
+This plasmid could form part of a new, still unnamed, PTU
+Other info:
+  Size:	25354
+  MOB:	-
+  MPF:	-
+  Repl:	IncFIB(K)
+  AMR:	AAC(6')-Ib7;dfrA5;qacEdelta1;sul1
+Sample: SCT-HURS-73
+Contig: AA977
+Query is a PTU-E7 plasmid
+Query is part of a sHSBM cluster of size 26
+Other info:
+  Size:	4854
+  MOB:	MOBQ
+  MPF:	-
+  Repl:	Col156
+  AMR:	-
+Sample: SCT-HURS-73
+Contig: AA578
+Query is a PTU-E10 plasmid
+Query is part of a sHSBM cluster of size 24
+Other info:
+  Size:	4067
+  MOB:	MOBQ
+  MPF:	-
+  Repl:	Col8282
+  AMR:	-
+Sample: SCT-HURS-73
+Contig: AA735
+Query is a PTU-FE plasmid
+Query is part of a sHSBM cluster of size 169
+Other info:
+  Size:	141047
+  MOB:	MOBF;MOBF
+  MPF:	typeF
+  Repl:	IncFIA;IncFII
+  AMR:	AAC(6')-Ib-cr;AAC(6')-Ib-cr;AAC(6')-Ib-cr;AAC(6')-Ib7;OXA-1;OXA-1;OXA-1;aadA5;catB3;catB3;catB3;dfrA17;mphA;qacEdelta1;sul1
+Sample: SCT-HURS-75
+Contig: AA977
+Query is a PTU-E7 plasmid
+Query is part of a sHSBM cluster of size 26
+Other info:
+  Size:	5167
+  MOB:	MOBQ
+  MPF:	-
+  Repl:	Col156
+  AMR:	-
+Sample: SCT-HURS-75
+Contig: AA578
+Query is a PTU-E10 plasmid
+Query is part of a sHSBM cluster of size 24
+Other info:
+  Size:	4091
+  MOB:	MOBQ
+  MPF:	-
+  Repl:	Col8282
+  AMR:	-
+Sample: SCT-HURS-75
+Contig: AA735
+Query is a PTU-FE plasmid
+Query is part of a sHSBM cluster of size 169
+Other info:
+  Size:	142328
+  MOB:	MOBF
+  MPF:	typeF
+  Repl:	IncFIA;IncFII
+  AMR:	AAC(6')-Ib-cr;AAC(6')-Ib7;AAC(6')-Ib7;OXA-1;aadA5;aadA5;catB3;dfrA17;dfrA17;mphA;mphA;qacEdelta1;qacEdelta1;sul1;sul1
+Sample: SCT-HURS-76
+Contig: AA179
+Traceback (most recent call last):
+  File "/usr/local/bin/copla", line 550, in <module>
+    cp = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+  File "/opt/conda/envs/copla/lib/python3.9/subprocess.py", line 503, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+  File "/opt/conda/envs/copla/lib/python3.9/subprocess.py", line 1122, in communicate
+    self.wait()
+  File "/opt/conda/envs/copla/lib/python3.9/subprocess.py", line 1185, in wait
+    return self._wait(timeout=timeout)
+  File "/opt/conda/envs/copla/lib/python3.9/subprocess.py", line 1915, in _wait
+    (pid, sts) = self._try_wait(0)
+  File "/opt/conda/envs/copla/lib/python3.9/subprocess.py", line 1873, in _try_wait
+    (pid, sts) = os.waitpid(self.pid, wait_flags)
+KeyboardInterrupt
+
+got 3 SIGTERM/SIGINTs, forcefully exiting
+Sample: SCT-HURS-76
+Contig: AA474
+Sample: SCT-HURS-76
+Contig: AA372

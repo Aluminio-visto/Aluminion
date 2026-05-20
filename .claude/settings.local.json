@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod +x \"c:/Users/Jorge/Documents/Proyectos/Aluminion/install.sh\")",
+      "Bash(wsl -e bash -c \"source /home/usuario/miniconda3/etc/profile.d/conda.sh && conda run -n nano python -c 'import pandas, numpy, openpyxl; print\\(\\\\\"OK\\\\\"\\)' 2>&1\")"
+    ]
+  }
+}
