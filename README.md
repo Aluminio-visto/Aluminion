@@ -33,7 +33,7 @@ flowchart TB
 | 2     | Kraken2, Flye, Dorado polish, deconcat, dnaapler, QUAST, Bandage | `aluminion_assembly`, `aluminion_circlator` |
 | 3     | Bakta, Abricate, MOB-suite, GAMBIT, MLST, Kleborate, ECTyper     | `aluminion_annot`, `aluminion_kleborate`    |
 | 4     | Copla, Phastest, Integron_Finder, ISfinder BLASTn                | `aluminion_annot`, `aluminion_integron`     |
-| 5     | parser.py, aluminion_reporter.py, Datos_seq_unified2.py          | `aluminion_annot`                           |
+| 5     | parser.py, aluminion_reporter.py, lab_db_updater.py              | `aluminion_annot`                           |
 
 ---
 
@@ -238,7 +238,7 @@ directly:
 conda activate aluminion_annot
 python3 scripts/parser.py -i /path/to/run/
 python3 scripts/aluminion_reporter.py /path/to/run/
-python3 scripts/Datos_seq_unified2.py --input_path /path/to/run/
+python3 scripts/lab_db_updater.py --input_path /path/to/run/
 ```
 
 `parser.py` performs a preflight check at startup and lists any missing input

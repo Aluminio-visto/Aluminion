@@ -8,6 +8,10 @@ import os
 import argparse
 import numpy as np
 
+from _log import get_logger
+
+log = get_logger(__name__)
+
 # %%
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Script to process sequencing runs and check reads and assembly QC data")
@@ -25,10 +29,18 @@ def parse_arguments():
                         help="Alert on any shared MGE regardless of clinical relevance. "
                              "Default: only alert on plasmids or integrons carrying resistance genes.")
 
+    parser.add_argument("--extraction-kit", type=str, default="DNeasy Blood & Tissue",
+                        help="DNA extraction kit recorded in the cumulative database. "
+                             "Change this to match your lab's protocol "
+                             "(default: 'DNeasy Blood & Tissue').")
+    parser.add_argument("--depth-threshold", type=float, default=30.0,
+                        help="Minimum sequencing depth (X) for a sample to be counted as "
+                             "successfully sequenced in the per-run summary (default: 30.0).")
+
     return parser.parse_args()
 
 # %%
-def parse_minion_sum(summary):
+def parse_minknow_summary(summary):
     d_sum = {}
     with open(summary, "r") as f:
         for line in f:
@@ -52,7 +64,7 @@ def parse_minion_sum(summary):
     return d_sum
 
 # %%
-def parse_minion_report(report):
+def parse_minknow_report(report):
     d_report = {}
     with open(report, "r") as rep:
         doc= rep.read()
@@ -415,8 +427,8 @@ def main():
     # Auto-detect first run: if historical files are absent, behave as --init
     init_mode = args.init or not os.path.isfile(tabla) or not os.path.isfile(anali)
     if init_mode:
-        print("[INFO] First-run mode: historical database files not found or --init passed. "
-              "Creating data_seq.tsv and data_analysis.tsv from scratch.")
+        log.info('First-run mode: historical database files not found or --init passed. '
+                 'Creating data_seq.tsv and data_analysis.tsv from scratch.')
 
     # Check that all required files exist
     required_files = [f for f in [summary, report, qc_r, qc_a, cepas, taxon] if f]
@@ -448,8 +460,8 @@ def main():
     datos_seq = pd.concat([datos_seq, nuevas_filas], ignore_index=True)
 
     # Dicts with technical run metadata (optional: only present for complete runs)
-    d_sum    = parse_minion_sum(summary)    if (summary    and os.path.isfile(summary))    else {}
-    d_report = parse_minion_report(report)  if (report     and os.path.isfile(report))     else {}
+    d_sum    = parse_minknow_summary(summary) if (summary and os.path.isfile(summary)) else {}
+    d_report = parse_minknow_report(report)   if (report  and os.path.isfile(report))  else {}
 
     # Tables with sequencing and assembly quality
     QC_reads = pd.read_csv(qc_r, sep='\t', decimal='.', thousands=',')
@@ -481,7 +493,7 @@ def main():
     # Populate table with technical metadata (NaN when MinION files are absent)
     result["Seq_date"]       = d_sum.get('fecha',          pd.NA)
     result["Barcoding_kit"]  = d_sum.get('barcoding_kit',  pd.NA)
-    result["Extraction_kit"] = "DNeasy Blood & Tissue"
+    result["Extraction_kit"] = args.extraction_kit
     result["Instrument"]     = d_sum.get('instrument',     pd.NA)
     result["Flowcell_type"]  = d_sum.get('flow_cell_type', pd.NA)
     result["Flowcell"]       = d_sum.get('flow_cell',      pd.NA)
@@ -533,7 +545,9 @@ def main():
 
     # %%
     Ncepas_inicial = lista_cepas.shape[0]
-    Ncepas_bien = (result3["Depth"] > 30.0).sum()
+    # Samples are counted as "successful" when their post-filter depth clears the
+    # configured threshold (default 30X). Anything below is flagged for repeat.
+    Ncepas_bien = (result3["Depth"] > args.depth_threshold).sum()
     Ncepas_repetir = Ncepas_inicial - Ncepas_bien
 
     result3["Samples_per_run"]      = Ncepas_inicial
@@ -588,7 +602,7 @@ def main():
     merged_df["Pct_bases_kept"] = (merged_df["Pct_bases_kept"]*100).round(1)
     seq_out_path = os.path.join(base_run, "data_seq.tsv") if init_mode else output_run
     merged_df.to_csv(seq_out_path, index=False, sep="\t")
-    print(f" -> data_seq written to: {seq_out_path}")
+    log.info('data_seq written to: %s', seq_out_path)
 
     # %%
     if not init_mode:
@@ -662,7 +676,7 @@ def main():
 
     analysis_out_path = os.path.join(base_run, "data_analysis.tsv") if init_mode else analisis_run
     analisis_final.to_csv(analysis_out_path, index=False, sep='\t')
-    print(f" -> data_analysis written to: {analysis_out_path}")
+    log.info('data_analysis written to: %s', analysis_out_path)
 
     # ── MGE cross-run comparison ──────────────────────────────────────────────
     mge_db_path = os.path.join(base_run, "data_mge.tsv")
@@ -671,7 +685,7 @@ def main():
 
     if init_mode:
         current_mge.to_csv(mge_db_path, index=False, sep='\t')
-        print(f" -> MGE database created: {mge_db_path}")
+        log.info('MGE database created: %s', mge_db_path)
     else:
         if os.path.isfile(mge_db_path):
             history_mge = pd.read_csv(mge_db_path, sep='\t')
@@ -679,15 +693,15 @@ def main():
             if not shared.empty:
                 shared_path = os.path.join(base_run, "mge_shared.tsv")
                 shared.to_csv(shared_path, index=False, sep='\t')
-                print(f" -> Shared MGEs: {len(shared)} events found → {shared_path}")
+                log.info('Shared MGEs: %d events found → %s', len(shared), shared_path)
             else:
-                print(" -> No shared MGEs found with historical runs")
+                log.info('No shared MGEs found with historical runs.')
             updated_mge = pd.concat([history_mge, current_mge], ignore_index=True)
         else:
-            print("[WARN] data_mge.tsv not found; creating from this run only (no comparison possible)")
+            log.warning('data_mge.tsv not found; creating from this run only (no comparison possible).')
             updated_mge = current_mge
         updated_mge.to_csv(mge_db_path, index=False, sep='\t')
-        print(f" -> MGE database updated: {mge_db_path}")
+        log.info('MGE database updated: %s', mge_db_path)
 
 # %%
 if __name__ == "__main__":

@@ -364,7 +364,7 @@ Aluminion/                        ← git root
 │   ├── IS_parser.py              ← BLAST vs ISfinder output → IS_chr_out.tsv per sample
 │   ├── integron_parser.py        ← IntegronFinder output → integron_summary.csv
 │   ├── phage_parser.py           ← Phastest output → phage_summary.csv
-│   ├── Datos_seq_unified2.py     ← Builds data_seq.tsv (sequencing metadata table)
+│   ├── lab_db_updater.py         ← Builds data_seq.tsv / data_analysis.tsv (cumulative lab DB)
 │   ├── aluminion_reporter.py     ← Generates Aluminion_Report.html from final tables
 │   └── deconcat.py               ← Deconcatenates reads for dorado polish step
 │

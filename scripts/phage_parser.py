@@ -9,6 +9,10 @@ import subprocess
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
 
+from _log import get_logger
+
+log = get_logger(__name__)
+
 def read_summary(infile):
     """Reads Phastest summary output.
 
@@ -79,7 +83,7 @@ def extract_fasta(df, phage_fna, output_dir, sample):
         cluster = row['Cluster']
         
         if fago not in fasta_sequences:
-            print(f" [WARNING] Phage {fago} not found in {phage_fna}.")
+            log.warning('Phage %s not found in %s.', fago, phage_fna)
             continue
         
         full_sequence = fasta_sequences[fago].seq
@@ -134,10 +138,11 @@ def run_parsing(original_path, out_folder=None):
 
     output_csv = os.path.join(out_folder, 'phage_summary.csv')
     summary_df.to_csv(output_csv, index=False)
-    print(f" -> Parsed phages saved to {output_csv}")
+    log.info('Parsed phages saved to %s', output_csv)
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         run_parsing(sys.argv[1])
     else:
-        print("Usage: python phage_parser.py <run_directory>")
+        print('Usage: python phage_parser.py <run_directory>', file=sys.stderr)
+        sys.exit(1)

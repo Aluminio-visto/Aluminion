@@ -4,6 +4,10 @@
 import os
 import pandas as pd
 
+from _log import get_logger
+
+log = get_logger(__name__)
+
 
 
 def run_parsing(input_folder, out_folder=None):
@@ -82,9 +86,9 @@ def run_parsing(input_folder, out_folder=None):
         df_copla.fillna('-', inplace=True)
         # Save to CSV so aluminion_reporter.py can find it
         df_copla.to_csv(copla_out, index=False)
-        print(f" -> Parsed plasmids saved to {copla_out}")
+        log.info('Parsed plasmids saved to %s', copla_out)
     else:
-        print(f"\033[93m[WARNING]\033[0m COPLA file not found in: {copla_in}")
+        log.warning('COPLA file not found in: %s', copla_in)
 
 if __name__ == "__main__":
     import sys

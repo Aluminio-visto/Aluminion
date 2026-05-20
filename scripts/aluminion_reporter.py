@@ -8,6 +8,10 @@ import sys
 import ast
 import re
 
+from _log import get_logger
+
+log = get_logger(__name__)
+
 def get_base64_image(image_path):
     """Reads a PNG image and converts it to a Base64 string."""
     if os.path.exists(image_path):
@@ -18,7 +22,7 @@ def get_base64_image(image_path):
 def load_and_standardize(file_path, sep=',', key_col=None):
     """Loads a file, standardizes the key column, and returns a DataFrame."""
     if not os.path.exists(file_path):
-        print(f"Warning: File not found: {file_path}")
+        log.warning('File not found: %s', file_path)
         return pd.DataFrame()
 
     try:
@@ -46,7 +50,7 @@ def load_and_standardize(file_path, sep=',', key_col=None):
 
         return df
     except Exception as e:
-        print(f"Error reading {file_path}: {e}")
+        log.error('Error reading %s: %s', file_path, e)
         return pd.DataFrame()
 
 # ==========================================
@@ -73,7 +77,7 @@ def fmt_kbp_dynamic(x):
 def main():
     work_dir = sys.argv[1] if len(sys.argv) > 1 else "."
     os.chdir(work_dir)
-    print(f"Generando informe en: {os.getcwd()}")
+    log.info('Generating report in: %s', os.getcwd())
 
     # 1. Load tables
     df_lista    = load_and_standardize("list_seq.tsv", sep='\t', key_col='ID')
@@ -350,7 +354,7 @@ def main():
     report_path = "Aluminion_Report.html"
     with open(report_path, "w", encoding="utf-8") as f:
         f.write(html_template.format(tables_html=sections_html))
-    print(f"✅ HTML report generated successfully at: {report_path}")
+    log.info('HTML report generated successfully at: %s', report_path)
 
 if __name__ == "__main__":
     main()

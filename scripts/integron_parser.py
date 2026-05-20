@@ -208,7 +208,7 @@ def run_parsing(original_path, out_folder=None):
     integron_files = glob.glob(search_pattern)
 
     if not integron_files:
-        print(f"\033[93m[WARNING]\033[0m No integron files found to parse in: 11_integrons/")
+        log.warning('No integron files found to parse in: 11_integrons/')
         return
 
     for integron_file in integron_files:
@@ -220,8 +220,8 @@ def run_parsing(original_path, out_folder=None):
         
         try:
             df_integron = pd.read_table(integron_file, comment='#')
-        except:
-            print(f'No integrons in {sample}')
+        except Exception:
+            log.info('No integrons in %s', sample)
             continue
 
         # Divide into integrons and chromosomes
@@ -238,7 +238,7 @@ def run_parsing(original_path, out_folder=None):
     # Save to the main folder (where the reporter will look for it)
     output_csv = os.path.join(out_folder, 'integron_summary.csv')
     summary_df.to_csv(output_csv, index=False)
-    print(f" -> Integrons parsed successfully to {output_csv}")
+    log.info('Integrons parsed successfully to %s', output_csv)
 
 
 if __name__ == "__main__":
@@ -246,4 +246,5 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         run_parsing(sys.argv[1])
     else:
-        print("Usage: python integron_parser.py <run_directory>")
+        print('Usage: python integron_parser.py <run_directory>', file=sys.stderr)
+        sys.exit(1)

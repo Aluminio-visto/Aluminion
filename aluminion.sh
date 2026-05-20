@@ -28,6 +28,20 @@ MINKNOW_DIR="${ALUMINION_MINKNOW_DIR:-/var/lib/minknow/data}"
 MOBSUITE_IMAGE="kbessonov/mob_suite:3.0.3"
 COPLA_IMAGE="rpalcab/copla:1.0"
 
+# ------------------------------------------------------------------------------
+# QC and filtering thresholds (overridable via CLI flags below)
+# ------------------------------------------------------------------------------
+# Minimum size in MB for a per-sample concatenated FASTQ to enter the pipeline.
+# Files below this size usually reflect a failed barcode or undersequenced sample.
+MIN_READ_MB=135
+# Chopper read-level quality filtering (Q-score, minimum length, 5' headcrop bp).
+CHOPPER_MIN_QUALITY=12
+CHOPPER_MIN_LENGTH=300
+CHOPPER_HEADCROP=20
+# Abricate AMR-gene calling thresholds (percent identity / coverage).
+ABRICATE_MIN_ID=75
+ABRICATE_MIN_COV=75
+
 show_help() {
     cat << EOF
 
@@ -65,6 +79,14 @@ Additional options:
   --polish-batchsize <N>  Override dorado polish --batchsize. Lower this (e.g. 8 or 4)
                   if the GPU runs out of memory ("CUDA out of memory" / "no kernel image"
                   errors) at the default batch size. Omit to use dorado's default.
+
+QC and filtering thresholds (override sensible defaults):
+  --min-read-mb <N>       Minimum concatenated FASTQ size in MB to enter the pipeline. (Default: ${MIN_READ_MB})
+  --chopper-q <N>         Chopper minimum read Q-score. (Default: ${CHOPPER_MIN_QUALITY})
+  --chopper-len <N>       Chopper minimum read length (bp). (Default: ${CHOPPER_MIN_LENGTH})
+  --chopper-headcrop <N>  Chopper 5' headcrop in bp. (Default: ${CHOPPER_HEADCROP})
+  --abricate-minid <N>    Abricate minimum % identity for AMR calls. (Default: ${ABRICATE_MIN_ID})
+  --abricate-mincov <N>   Abricate minimum % coverage for AMR calls. (Default: ${ABRICATE_MIN_COV})
 
 Early-stop flags (run only up to the named stage, then exit):
   --just-preprocessing  Stop after read QC and filtering. Output: filtered FASTQ in 02_filter/.
@@ -131,6 +153,13 @@ while [[ "$#" -gt 0 ]]; do
         --skip-abr) SKIP_ABR="--skip-abr" ;;
         --init-db) INIT_DB="--init" ;;
         --polish-batchsize) POLISH_BATCHSIZE="$2"; shift ;;
+        # QC threshold overrides
+        --min-read-mb)       MIN_READ_MB="$2"; shift ;;
+        --chopper-q)         CHOPPER_MIN_QUALITY="$2"; shift ;;
+        --chopper-len)       CHOPPER_MIN_LENGTH="$2"; shift ;;
+        --chopper-headcrop)  CHOPPER_HEADCROP="$2"; shift ;;
+        --abricate-minid)    ABRICATE_MIN_ID="$2"; shift ;;
+        --abricate-mincov)   ABRICATE_MIN_COV="$2"; shift ;;
         # Early-stop flags
         --just-preprocessing) STOP_AFTER="preprocessing" ;;
         --just-assembly) STOP_AFTER="assembly" ;;
@@ -283,10 +312,10 @@ if [ -z "$SKIP_PREPROCESSING" ]; then
     done
 
     cut -f3 list_seq.tsv | tail -n+2 > ../repositorio/samples
-    find 01_reads -type f -name "*.fastq.gz" -size +135M -exec basename {} .fastq.gz \; | sort | uniq > samples
+    find 01_reads -type f -name "*.fastq.gz" -size "+${MIN_READ_MB}M" -exec basename {} .fastq.gz \; | sort | uniq > samples
 
     if [ ! -s samples ]; then
-        error_log "No samples passed the 135MB filter."
+        error_log "No samples passed the ${MIN_READ_MB}MB filter."
         exit 1
     fi
 
@@ -322,7 +351,9 @@ if [ -z "$SKIP_PREPROCESSING" ]; then
     log "Filtering (Chopper)..."
     for i in $(cat samples); do
         resume_done "02_filter/${i}.fastq.gz" && { log "  [resume] Chopper: ${i} done, skipping."; continue; }
-        gunzip -c 01_reads/${i}.fastq.gz | chopper -q 12 -l 300 --headcrop 20 --threads $THREADS_TOTAL | gzip > 02_filter/${i}.fastq.gz
+        gunzip -c 01_reads/${i}.fastq.gz \
+            | chopper -q $CHOPPER_MIN_QUALITY -l $CHOPPER_MIN_LENGTH --headcrop $CHOPPER_HEADCROP --threads $THREADS_TOTAL \
+            | gzip > 02_filter/${i}.fastq.gz
     done
 
     log "Post-filtering QC..."
@@ -599,7 +630,7 @@ if [ -z "$SKIP_ABR" ]; then
     for i in $(cat samples); do
         resume_done "08_Anotacion/${i}/abricate/${i}.tab" && { log "  [resume] Abricate: ${i} done, skipping."; continue; }
         mkdir -p 08_Anotacion/${i}/abricate
-        abricate --minid 75 --mincov 75 03_assemblies/${i}.fasta > 08_Anotacion/${i}/abricate/${i}.tab
+        abricate --minid $ABRICATE_MIN_ID --mincov $ABRICATE_MIN_COV 03_assemblies/${i}.fasta > 08_Anotacion/${i}/abricate/${i}.tab
     done
     abricate --summary 08_Anotacion/*/abricate/*.tab > 08_Anotacion/AbR.tab
     cp 08_Anotacion/AbR.tab AbR_report.csv
@@ -777,7 +808,7 @@ log "Generating Interactive HTML Report..."
 python3 "$SCRIPTS_PATH/aluminion_reporter.py" "$PWD"
 
 log "Updating historical databases (data_seq.tsv / data_analysis.tsv)..."
-python3 "$SCRIPTS_PATH/Datos_seq_unified2.py" --input_path . $INIT_DB
+python3 "$SCRIPTS_PATH/lab_db_updater.py" --input_path . $INIT_DB
 
 # Print a consolidated warning summary for all non-fatal failures
 if [ ${#failed_polish[@]} -gt 0 ] || [ ${#failed_deconcat[@]} -gt 0 ] || [ ${#failed_circlator[@]} -gt 0 ] \
