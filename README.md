@@ -198,9 +198,11 @@ sudo mv dorado-*/bin/dorado /usr/local/bin/
 dorado --version
 ```
 
-> See https://github.com/nanoporetech/dorado/releases for the latest URL.  
-> GPU support requires compatible NVIDIA drivers and CUDA ≥12.0.  
-> For CPU-only polishing, add `--device cpu` to the `dorado polish` call in `aluminion.sh` (significantly slower).
+> See https://github.com/nanoporetech/dorado/releases for the latest URL.
+> GPU support requires compatible NVIDIA drivers and CUDA ≥12.0; `dorado polish`
+> auto-detects the device (no `--device` flag is passed by Aluminion).
+> If the GPU runs out of memory, lower the inference batch size with
+> `--polish-batchsize <N>` (e.g. `8` or `4`).
 
 
 #### Install Docker and Docker Compose
@@ -393,6 +395,7 @@ aluminion -r BAC_2025_NOV_25 -b /$your_database_folder -t 30 -l /path/to/list_se
 | `--skip-integrons` | Skip Integron_Finder and integron parsing | — |
 | `--skip-plasmids` | Skip Copla plasmid typing (MOB-suite always runs) | — |
 | `--skip-phages` | Skip Phastest prophage detection | — |
+| `--polish-batchsize <N>` | Override the `dorado polish --batchsize` value. Lower it (e.g. `8`, `4`) when the GPU runs out of memory. Omit to use dorado's default. | — |
 | `--just-preprocessing` | Run only Stage 1 (QC + filtering) and exit. Output: `02_filter/<sample>.fastq.gz` | — |
 | `--just-assembly` | Run Stages 1–2 (QC + filtering + assembly + polishing + QUAST) and exit. Output: `03_assemblies/<sample>/assembly.fasta` | — |
 
@@ -512,6 +515,36 @@ Flye assembly failures are handled interactively. If Flye cannot assemble a samp
 
 ---
 
+## Polishing internals (`dorado polish`)
+
+`dorado polish` enforces two requirements on its input BAM:
+
+1. The `@PG` header line must contain `PN:dorado`. This means the alignment **must**
+   be produced by `dorado aligner` — `minimap2` fails this check with
+   *"Input BAM file was not aligned using Dorado"*.
+2. The `@RG` header line must contain `DS:basecall_model=<model>`. `dorado aligner`
+   does **not** inject this from a FASTQ file, so Aluminion adds it manually with
+   `samtools addreplacerg`.
+
+To stay compatible with both the legacy and current Dorado FASTQ formats, Aluminion
+inspects the first read header and routes through one of two streaming pipes:
+
+| FASTQ has `RG:Z:` tag? | Strategy |
+|---|---|
+| Yes (newer Dorado) | `dorado aligner --add-fastq-rg \| samtools sort \| samtools addreplacerg -w` — `-w` overwrites the existing `@RG` so the `DS:basecall_model=…` field replaces whatever was already there. |
+| No (older Dorado / re-basecalled FASTQ) | `dorado aligner \| samtools sort \| samtools addreplacerg` — adds a fresh `@RG` line. |
+
+The basecaller model name is parsed from `basecall_model_version_id=…` in the FASTQ
+header, or — if that field is missing — from the legacy `dna_<model>` token in the
+read description. If neither can be detected, polishing is skipped for that sample
+and the unpolished assembly is kept (the sample is listed under
+`Unpolished (dorado polish failed)` at the end of the run).
+
+The streaming pipe avoids writing intermediate sorted BAMs to disk; only the final
+read-group-tagged BAM is materialised and indexed for `dorado polish`.
+
+---
+
 ## Intermediate files (generated during the run)
 
 These files are created by `aluminion.sh` before `parser.py` runs. They are kept in the working directory and can be used to resume or debug:
@@ -626,6 +659,27 @@ The test suite covers: clean exit, row counts, duplicate detection, key column c
 **`data_seq.tsv` not found on first run** — This is expected. Either add `--init-db` to your first run or let Aluminion auto-detect and create the databases from scratch.
 
 **taxonomy.csv has duplicate rows** — This is caused by duplicate entries in `kraken2/genus.csv` or `kraken2/species.csv`, usually from re-running the pipeline without clearing those files. The current version clears these files before re-appending (`> genus.csv`, `> species.csv`) to prevent accumulation.
+
+**`Failed to initialize NVML: Driver/library version mismatch`** — The running NVIDIA kernel module no longer matches the user-space library after an unattended driver upgrade. `dorado polish` will fall back to CPU (very slow) or fail outright. Two ways to fix:
+
+```bash
+# Quickest: reboot to load the matching kernel modules
+sudo reboot
+
+# Or, unload and reload the NVIDIA modules without rebooting (requires no GPU processes):
+sudo rmmod nvidia_uvm nvidia_drm nvidia_modeset nvidia
+sudo modprobe nvidia
+nvidia-smi   # should now report correctly
+```
+
+If the error persists, reinstall the driver matching your current kernel
+(`uname -r`) and CUDA version (`nvidia-smi`).
+
+**`CUDA out of memory` / `no kernel image available` during `dorado polish`** — The
+inference batch size is too large for the GPU's free VRAM. Lower it with
+`--polish-batchsize 8` (or `4`). Polishing is automatically skipped (non-fatal) if
+it still fails — the unpolished assembly is kept and the sample is listed in the
+final warning summary.
 
 ---
 

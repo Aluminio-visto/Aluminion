@@ -62,6 +62,9 @@ Additional options:
   --skip-integrons  Skip Integron_Finder and integron parsing.
   --skip-plasmids   Skip Copla plasmid typing (MOB-suite always runs).
   --skip-phages     Skip Phastest prophage detection.
+  --polish-batchsize <N>  Override dorado polish --batchsize. Lower this (e.g. 8 or 4)
+                  if the GPU runs out of memory ("CUDA out of memory" / "no kernel image"
+                  errors) at the default batch size. Omit to use dorado's default.
 
 Early-stop flags (run only up to the named stage, then exit):
   --just-preprocessing  Stop after read QC and filtering. Output: filtered FASTQ in 02_filter/.
@@ -104,6 +107,7 @@ SKIP_TYPING=""
 SKIP_KRAKEN=""
 SKIP_ABR=""
 INIT_DB=""
+POLISH_BATCHSIZE=""
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -124,6 +128,7 @@ while [[ "$#" -gt 0 ]]; do
         --skip-kraken) SKIP_KRAKEN="--skip-kraken" ;;
         --skip-abr) SKIP_ABR="--skip-abr" ;;
         --init-db) INIT_DB="--init" ;;
+        --polish-batchsize) POLISH_BATCHSIZE="$2"; shift ;;
         # Early-stop flags
         --just-preprocessing) STOP_AFTER="preprocessing" ;;
         --just-assembly) STOP_AFTER="assembly" ;;
@@ -290,7 +295,10 @@ if [ -z "$SKIP_PREPROCESSING" ]; then
     # the wrapper works regardless of which conda flavour the user installed.
     CHROME_REAL=""
     for conda_root in "$HOME/mambaforge" "$HOME/miniforge3" "$HOME/miniconda3"; do
-        candidate=$(ls "$conda_root/envs/aluminion_reads/lib/python"*/site-packages/choreographer/cli/browser_exe/chrome-linux64/chrome 2>/dev/null | head -1)
+        # `ls` returns 2 when the glob has no match; under `set -o pipefail` that
+        # exit code propagates through `| head -1` and kills the script via `set -e`
+        # before the loop can try the next conda root. `|| true` neutralises it.
+        candidate=$(ls "$conda_root/envs/aluminion_reads/lib/python"*/site-packages/choreographer/cli/browser_exe/chrome-linux64/chrome 2>/dev/null | head -1 || true)
         if [ -n "$candidate" ]; then
             CHROME_REAL="$candidate"
             break
@@ -441,35 +449,38 @@ for i in $(cat samples); do
     fi
     log "  Basecaller model detected for ${i}: ${model}"
 
+    # Stream aligner -> sort -> addreplacerg in a single pipe; the previous version
+    # wrote the sorted BAM to disk and re-read it through addreplacerg, doubling I/O
+    # per sample. samtools addreplacerg reads BAM from stdin with the `-` argument.
     if echo "$header" | grep -q 'RG:Z:'; then
         # Newer Dorado FASTQ format includes RG:Z: tag.
-        # Use dorado aligner --add-fastq-rg to propagate it, then overwrite DS field.
-        log "  [polish] FASTQ has RG:Z: — using dorado aligner --add-fastq-rg"
+        # Use dorado aligner --add-fastq-rg to propagate it, then overwrite DS field (-w).
+        log "  [polish] FASTQ has RG:Z: — using dorado aligner --add-fastq-rg | sort | addreplacerg"
         rg=$(echo "$header" | awk -F 'RG:Z:' '{print $2}' | awk '{print $1}')
         dorado aligner --add-fastq-rg \
                 03_assemblies/${i}/assembly.fasta 02_filter/${i}.fastq.gz \
-            | samtools sort -@ $THREADS_TOTAL -o 03_assemblies/${i}/${i}_aligned_reads.bam
-        samtools addreplacerg -w \
-            -r "@RG\tID:${rg}\tDS:basecall_model=${model}" \
-            -O bam -o 03_assemblies/${i}/${i}_aligned_reads.tmp.bam \
-            03_assemblies/${i}/${i}_aligned_reads.bam
+            | samtools sort -@ $THREADS_TOTAL \
+            | samtools addreplacerg -w \
+                -r "@RG\tID:${rg}\tDS:basecall_model=${model}" \
+                -O bam -o 03_assemblies/${i}/${i}_aligned_reads.bam -
     else
         # Standard Dorado FASTQ (no RG:Z:): dorado aligner adds PN:dorado to @PG,
         # which dorado polish verifies. minimap2 would fail this check.
-        log "  [polish] No RG:Z: tag — using dorado aligner + samtools addreplacerg"
+        log "  [polish] No RG:Z: tag — using dorado aligner | sort | addreplacerg"
         dorado aligner --threads $THREADS_TOTAL \
                 03_assemblies/${i}/assembly.fasta 02_filter/${i}.fastq.gz \
-            | samtools sort -@ $THREADS_TOTAL -o 03_assemblies/${i}/${i}_aligned_reads.bam
-        samtools addreplacerg \
-            -r "@RG\tID:1\tDS:basecall_model=${model}" \
-            -O bam -o 03_assemblies/${i}/${i}_aligned_reads.tmp.bam \
-            03_assemblies/${i}/${i}_aligned_reads.bam
+            | samtools sort -@ $THREADS_TOTAL \
+            | samtools addreplacerg \
+                -r "@RG\tID:1\tDS:basecall_model=${model}" \
+                -O bam -o 03_assemblies/${i}/${i}_aligned_reads.bam -
     fi
-    mv 03_assemblies/${i}/${i}_aligned_reads.tmp.bam 03_assemblies/${i}/${i}_aligned_reads.bam
     samtools index -@ $THREADS_TOTAL 03_assemblies/${i}/${i}_aligned_reads.bam
 
-    # --bacteria uses a move-table-free model; GPU auto-detected (remove flag for CPU-only servers)
+    # --bacteria uses a move-table-free model; GPU auto-detected (remove flag for CPU-only servers).
+    # `${POLISH_BATCHSIZE:+--batchsize $POLISH_BATCHSIZE}` expands to nothing when the user did not
+    # set the flag, so dorado falls back to its own default. Override via --polish-batchsize.
     if dorado polish --threads $THREADS_TOTAL --bacteria \
+            ${POLISH_BATCHSIZE:+--batchsize $POLISH_BATCHSIZE} \
             03_assemblies/${i}/${i}_aligned_reads.bam \
             03_assemblies/${i}/assembly.fasta \
             > 03_assemblies/${i}/polished_assembly.fasta; then
