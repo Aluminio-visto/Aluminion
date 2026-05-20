@@ -227,7 +227,15 @@ def main():
         df_taxonomy['Resistance_genes'] = df_taxonomy['Resistance_genes'].astype(str).str.replace(r'\s+\([\d\.]+\)', '', regex=True).replace('nan', '')
 
     if 'MLST' in df_taxonomy.columns:
-        df_taxonomy['MLST'] = df_taxonomy['MLST'].astype(str).apply(lambda x: x[:-2] if x.endswith('.0') else x).replace('nan', '')
+        # MLST may arrive as a mix of strings, ints, floats (after a left-merge that
+        # introduced NaN for samples with no MLST scheme). Coerce element-wise so
+        # the chain doesn't trip on a non-string slipping past `.astype(str)`.
+        def _strip_dot_zero(val):
+            if pd.isna(val):
+                return ''
+            s = str(val)
+            return s[:-2] if s.endswith('.0') else s
+        df_taxonomy['MLST'] = df_taxonomy['MLST'].apply(_strip_dot_zero)
 
     for col in ['N_AMR_genes', 'AMRscore', 'VIRscore']:
         if col in df_taxonomy.columns:
