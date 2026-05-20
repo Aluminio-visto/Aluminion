@@ -88,10 +88,12 @@ resume_done() { [ -n "$RESUME" ] && { [ -f "$1" ] || [ -d "$1" ]; }; }
 # command died, instead of leaving the user with an empty "Polishing..." trail.
 trap 'rc=$?; error_log "Aborted at line ${BASH_LINENO[0]} (exit ${rc}) — last command: ${BASH_COMMAND}"' ERR
 
-# Tracks samples that completed assembly but failed optional refinement steps
+# Tracks samples that completed assembly but failed optional refinement / visualization steps
 failed_polish=()
 failed_deconcat=()
 failed_circlator=()
+failed_bandage=()
+failed_typing=()
 
 # ==============================================================================
 # COMMAND LINE ARGUMENT PARSING
@@ -525,17 +527,21 @@ for i in $(cat samples); do
     fi
 done
 conda activate aluminion_circlator
+# Persistent log so circlator failures can be diagnosed across runs without rerunning.
+# Truncated on a fresh run; appended to during --resume so prior failures remain visible.
+[ -n "$RESUME" ] || > 03_assemblies/circlator.log
 for i in $(cat samples); do
     if resume_done "03_assemblies/${i}/.circlator_done"; then
         log "  [resume] Circlator: ${i} done, skipping."
         continue
     fi
-    if circlator fixstart 03_assemblies/${i}.fasta 03_assemblies/${i}.fix 2>/dev/null; then
+    echo "=== ${i} ===" >> 03_assemblies/circlator.log
+    if circlator fixstart 03_assemblies/${i}.fasta 03_assemblies/${i}.fix >>03_assemblies/circlator.log 2>&1; then
         mv 03_assemblies/${i}.fix.fasta 03_assemblies/${i}.fasta
         rm -f 03_assemblies/*fix* 03_assemblies/*fasta.*
         touch "03_assemblies/${i}/.circlator_done"
     else
-        warn "Circlator fixstart failed for ${i}. Assembly kept without recircularization."
+        warn "Circlator fixstart failed for ${i}. Assembly kept without recircularization. See 03_assemblies/circlator.log."
         failed_circlator+=("$i")
         rm -f 03_assemblies/${i}.fix* 2>/dev/null || true
     fi
@@ -553,9 +559,18 @@ else
     # name is no longer installed in current conda-forge / bioconda builds.
     quast -o 03_assemblies/quast -t $THREADS_TOTAL 03_assemblies/*.fasta
 fi
+# Bandage uses Qt and tries to open an X display by default — on headless servers
+# this aborts with SIGABRT (exit 134) and `set -e` kills the pipeline. Force the
+# offscreen Qt backend and wrap the call so a Bandage failure only emits a warning.
+[ -n "$RESUME" ] || > 03_assemblies/bandage.log
 for i in $(cat samples); do
     resume_done "03_assemblies/${i}.png" && continue
-    Bandage image 03_assemblies/${i}/assembly_graph.gfa 03_assemblies/${i}.png --lengths --depth --toutline 1.0
+    if ! QT_QPA_PLATFORM=offscreen Bandage image \
+            03_assemblies/${i}/assembly_graph.gfa 03_assemblies/${i}.png \
+            --lengths --depth --toutline 1.0 >>03_assemblies/bandage.log 2>&1; then
+        warn "Bandage image failed for ${i}. See 03_assemblies/bandage.log."
+        failed_bandage+=("$i")
+    fi
 done
 
 [ "$STOP_AFTER" = "assembly" ] && { log "Done — stopping after assembly (--just-assembly). Assemblies in 03_assemblies/."; exit 0; }
@@ -626,28 +641,43 @@ fi
 if [ -z "$SKIP_TYPING" ]; then
     log "Typing (GAMBIT, MLST, Kleborate, ECTyper)..."
     conda activate aluminion_annot
+    # Each typing tool is wrapped non-fatally — a failure in one (e.g. Kleborate hitting
+    # a malformed locus call) leaves the others, the parser, and the HTML report intact.
     if resume_done "04_taxonomies/gambit.csv"; then
         log "  [resume] GAMBIT: already done, skipping."
     else
-        gambit -d $GAMBIT_DB query -o 04_taxonomies/gambit.csv 03_assemblies/*.fasta
+        if ! gambit -d $GAMBIT_DB query -o 04_taxonomies/gambit.csv 03_assemblies/*.fasta; then
+            warn "GAMBIT failed. Continuing without genome-level species ID."
+            failed_typing+=("GAMBIT")
+        fi
     fi
     if resume_done "mlst.csv"; then
         log "  [resume] MLST: already done, skipping."
     else
-        mlst 03_assemblies/*.fasta -q > mlst.csv
+        if ! mlst 03_assemblies/*.fasta -q > mlst.csv; then
+            warn "MLST failed. Continuing without sequence typing."
+            failed_typing+=("MLST")
+        fi
     fi
     conda activate aluminion_kleborate
     cp 03_assemblies/*.fasta 04_taxonomies/gtdb/
     if resume_done "04_taxonomies/kleborate/enterobacterales__species_output.txt"; then
         log "  [resume] Kleborate: already done, skipping."
     else
-        kleborate -a 03_assemblies/*.fasta -o 04_taxonomies/kleborate -m enterobacterales__species,klebsiella_pneumo_complex__amr,klebsiella_pneumo_complex__kaptive,klebsiella_pneumo_complex__mlst,escherichia__mlst_achtman,klebsiella_pneumo_complex__resistance_score,klebsiella_pneumo_complex__resistance_gene_count,klebsiella__ybst,klebsiella__cbst,klebsiella__abst,klebsiella__smst,klebsiella__rmst,klebsiella__rmpa2,klebsiella_pneumo_complex__virulence_score
-        cp 04_taxonomies/kleborate/enterobacterales__species_output.txt kleborate.tsv || true
+        if kleborate -a 03_assemblies/*.fasta -o 04_taxonomies/kleborate -m enterobacterales__species,klebsiella_pneumo_complex__amr,klebsiella_pneumo_complex__kaptive,klebsiella_pneumo_complex__mlst,escherichia__mlst_achtman,klebsiella_pneumo_complex__resistance_score,klebsiella_pneumo_complex__resistance_gene_count,klebsiella__ybst,klebsiella__cbst,klebsiella__abst,klebsiella__smst,klebsiella__rmst,klebsiella__rmpa2,klebsiella_pneumo_complex__virulence_score; then
+            cp 04_taxonomies/kleborate/enterobacterales__species_output.txt kleborate.tsv || true
+        else
+            warn "Kleborate failed. Continuing without Enterobacterales typing."
+            failed_typing+=("Kleborate")
+        fi
     fi
     if resume_done "04_taxonomies/ectyper/output.tsv"; then
         log "  [resume] ECTyper: already done, skipping."
     else
-        ectyper -i 04_taxonomies/gtdb -o 04_taxonomies/ectyper
+        if ! ectyper -i 04_taxonomies/gtdb -o 04_taxonomies/ectyper; then
+            warn "ECTyper failed. Continuing without E. coli serotyping."
+            failed_typing+=("ECTyper")
+        fi
     fi
     conda activate aluminion_annot
 else
@@ -746,14 +776,17 @@ log "Updating historical databases (data_seq.tsv / data_analysis.tsv)..."
 python3 "$SCRIPTS_PATH/Datos_seq_unified2.py" --input_path . $INIT_DB
 
 # Print a consolidated warning summary for all non-fatal failures
-if [ ${#failed_polish[@]} -gt 0 ] || [ ${#failed_deconcat[@]} -gt 0 ] || [ ${#failed_circlator[@]} -gt 0 ]; then
+if [ ${#failed_polish[@]} -gt 0 ] || [ ${#failed_deconcat[@]} -gt 0 ] || [ ${#failed_circlator[@]} -gt 0 ] \
+   || [ ${#failed_bandage[@]} -gt 0 ] || [ ${#failed_typing[@]} -gt 0 ]; then
     echo ""
     warn "========================================================================"
-    warn "Pipeline finished with warnings — assemblies are valid but not fully"
-    warn "refined for the following samples:"
+    warn "Pipeline finished with warnings — the run completed but the following"
+    warn "optional steps failed (assemblies and core annotations are still valid):"
     [ ${#failed_polish[@]}    -gt 0 ] && warn "  Unpolished  (dorado polish failed): ${failed_polish[*]}"
     [ ${#failed_deconcat[@]}  -gt 0 ] && warn "  Deconcatenation failed            : ${failed_deconcat[*]}"
     [ ${#failed_circlator[@]} -gt 0 ] && warn "  Not recircularized (circlator)    : ${failed_circlator[*]}"
+    [ ${#failed_bandage[@]}   -gt 0 ] && warn "  No assembly graph image (Bandage) : ${failed_bandage[*]}"
+    [ ${#failed_typing[@]}    -gt 0 ] && warn "  Typing tools failed               : ${failed_typing[*]}"
     warn "========================================================================"
     echo ""
 fi
