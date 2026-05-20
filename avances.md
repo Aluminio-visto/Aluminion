@@ -406,3 +406,146 @@ Priority order to resume in next session, after the user verifies the deconcat +
 3. `aluminion -r <run> -b … -l … --resume` and confirm deconcat → circlator → QUAST → annotation finishes cleanly.
 4. Once green, decide whether to commit the bug-fix tranche as a single commit or split.
 5. Resume the task list with Tier A items.
+
+---
+
+## 7. Session log — 2026-05-20 (Tier A + non-fatal refactor + dnaapler migration + README rewrite)
+
+### Context
+
+Picked up from the previous session with the bug-fix tranche already committed manually
+to GitHub (the user did the commit between sessions). First verification of the previous
+fixes surfaced a Chrome-detection crash; once patched, a full run on the Mutantes
+Klebsiella dataset (`2026_04_28`, samples `plas-1..plas-4`) revealed two more blockers
+(Bandage and circlator) which were addressed in addition to the planned Tier A work.
+
+Net result: pipeline now runs end-to-end on a headless server with no display, every
+optional refinement / typing step is non-fatal, and the README has been simplified and
+formatted as a portable single-page reference. The codebase is ready to fork for the
+C6 cumulative-repository + MGE-alert architectural work.
+
+### Bugs fixed and refactors landed
+
+#### `aluminion.sh`
+
+| Tag | Fix |
+|---|---|
+| Chrome detect | `ls "$conda_root/envs/aluminion_reads/lib/python*/…/chrome" 2>/dev/null \| head -1` was crashing under `set -o pipefail` when the glob did not match (ls exit 2 propagated through the pipe). Added trailing `\|\| true`. The detect loop now falls through cleanly when Chrome isn't bundled. |
+| **E4** | Streamed `dorado aligner \| samtools sort \| samtools addreplacerg` in a single pipe. Eliminated the intermediate sorted BAM that the previous version wrote and re-read through addreplacerg. samtools addreplacerg reads BAM from stdin with the `-` argument. |
+| **E2** | Added `--polish-batchsize <N>` flag. Injected as `${POLISH_BATCHSIZE:+--batchsize $POLISH_BATCHSIZE}` so omitting the flag preserves dorado's default. Documented in `show_help` and the README. |
+| Bandage | Was crashing the pipeline with `qt.qpa.xcb: could not connect to display` (exit 134, SIGABRT) on the headless server. Fix: set `QT_QPA_PLATFORM=offscreen` to force the headless Qt backend, and wrap the call non-fatally — failures append to `failed_bandage[]` and log to `03_assemblies/bandage.log`. |
+| Circlator → dnaapler | Legacy `circlator` (Python 3.6, `libcrypto.so.1.0.0` missing on modern Ubuntu) replaced with `dnaapler all`. dnaapler does the same job — rotates circular contigs so each one starts at the appropriate anchor gene (dnaA / repA / terL based on contig length and BLAST). The env name `aluminion_circlator` is **kept** (install.sh, sentinels, CLAUDE.md refer to it) to minimise blast radius; the contents of `envs/aluminion_circlator.yml` were swapped to `dnaapler` + `python=3.12`. Sentinel `.circlator_done` is also kept. Persistent log at `03_assemblies/dnaapler.log`. |
+| Typing non-fatal | GAMBIT, MLST, Kleborate, and ECTyper each wrapped in `if ! tool; then warn; failed_typing+=(...); fi`. A failure in one leaves the others, the parser, and the HTML report intact. |
+| Circlator → dnaapler | The previous `circlator` block also had `2>/dev/null` hiding errors; replaced with `>>03_assemblies/circlator.log 2>&1` so future failures are diagnosable without rerunning. (Now `dnaapler.log` since the tool changed.) |
+| Final warning summary | Extended to include `failed_bandage` and `failed_typing`. Message updated from "assemblies are valid but not fully refined" to "the run completed but the following optional steps failed". |
+
+#### `envs/aluminion_circlator.yml`
+
+Swapped from `circlator` to `dnaapler` (Python 3.12). Comment added explaining the
+historical name. Action required on existing installs:
+
+```bash
+mamba env remove -n aluminion_circlator
+mamba env create -f envs/aluminion_circlator.yml
+rm -f 03_assemblies/plas-*/.circlator_done   # force re-run during --resume
+```
+
+#### `README.md`
+
+Full rewrite (635 → ~322 lines). Highlights:
+
+- **Mermaid pipeline diagram** replacing the giant ASCII flowchart that did not align
+  on narrow terminals.
+- Stage summary collapsed into a single 5-row table.
+- Database setup collapsed from per-database subsections into one table.
+- All flag, output, and troubleshooting tables aligned with consistent pipe spacing.
+- New: `--polish-batchsize` row in the flags table.
+- New: NVML driver/library mismatch troubleshooting block (with the rmmod/modprobe
+  one-liner).
+- New: `CUDA out of memory` troubleshooting points users at `--polish-batchsize`.
+- Updated: dnaapler in the pipeline diagram, the stage table, and the env list.
+- Removed (per user request — "menos es más"): the "Polishing internals" two-path
+  @RG injection explanation, the "Intermediate files" table, the kaleido / Chrome
+  wrapper notes, the per-line "comment out lines ~172–174" RAM optimisation
+  instructions, the per-file repository structure comments, and all references to
+  specific bug fixes / commit-level concerns.
+
+#### `CLAUDE.md`
+
+Updated to mention dnaapler in the env list, the run-time folder layout sentinel
+description, the pipeline stages table, and the key implementation note about
+`.circlator_done`.
+
+### Confirmed verified end-to-end
+
+- Bandage now produces `03_assemblies/plas-{1,2,3,4}.png` without crashing.
+- The pipeline survives all four samples through assembly + polish + deconcat +
+  QUAST + annotation despite circlator (now dnaapler) initially failing for all
+  four (the dnaapler env recreation has not been re-tested at the time of writing —
+  user will verify after creating the new env).
+- The Chrome detect fix unblocked the rest of the run on first attempt.
+
+### Outstanding from the agreed task list
+
+Tier A — **DONE**. The remaining tiers carry forward to the fork:
+
+**Tier B — refactor (more code, higher payoff):**
+
+- **C2** — Rename Spanish variables in `parser.py` (`cabecera`, `muestra`, `posibles`,
+  `genes_seguros`, `provis1/2`, `intermedio`, `resultado`, `ultimo_df`) to English.
+  Critical: must verify every caller/script that references these
+  (`aluminion_reporter.py`, `Datos_seq_unified2.py`) stays coherent. No half-renaming.
+- **C8** — Refactor the opaque names that survive C2 into descriptive ones.
+- **C5** — Migrate ANSI-coded `print()` calls in all parsers to `logging` (stdlib).
+- **C4** — Extract `safe_read_csv` to `scripts/_utils.py` and import from there.
+- **E3** — Refactor MLST processing in `parser.py` from line-by-line file I/O to a
+  single DataFrame build + `.to_csv()` (clarity, not speed — ≤200 rows).
+- **C3** — Move magic constants (`135M` filter, Chopper `-q 12 -l 300 --headcrop 20`,
+  Abricate `--minid 75 --mincov 75`) to top-of-file in `aluminion.sh` and expose as
+  CLI flags (`--min-read-mb`, `--chopper-q`, …). Add to `--help` and README.
+
+**Tier C — renames + docs (low risk, high readability):**
+
+- **C1** — Rename `Datos_seq_unified2.py` → `lab_db_updater.py`. Update import in
+  `parser.py`, call in `aluminion.sh`, references in README and `--help`. Also rename
+  the function `parse_minion_sum` if it survives.
+- README — `repositorio/` folder: explain its purpose (cross-run cumulative
+  reads/assemblies/MGEs storage). Add to the directory layout diagram and to the
+  abstract at the top of the README. Prepares ground for C6.
+- README — Datos_seq_unified2 / lab_db_updater config: surface the hard-coded
+  `Depth > 30.0` cutoff and `DNeasy Blood & Tissue` extraction kit. Either CLI args
+  or document them explicitly.
+
+**Tier D — C6 cumulative repository + MGE alert system (THE FORK TARGET):**
+
+Four sub-items, all need design discussion before code:
+
+- **C6.1** — Explain the cumulative repository idea in the README abstract.
+- **C6.2** — Locate previous `data_seq.tsv` / `data_analysis.tsv` from the last run
+  and seed the current one. Decide: lookup strategy (most recent by mtime in parent?
+  env var? CLI flag?).
+- **C6.3** — Copy assembled FASTAs / plasmids / MGEs into `repositorio/`. Reads as
+  symlinks (size). Decide: naming convention to avoid collisions across runs.
+- **C6.4** — Alert system. Triggers on PTU / MOB / MPF / Rep / AMR-gene /
+  virulence-gene matches against `data_analysis.tsv`. Decide: match criteria (exact
+  tuple? fuzzy?), output channel (`alerts.tsv`? HTML section? terminal?), what to
+  show (which prior runs/samples matched, dates).
+
+### State of the working tree at end of session
+
+- **Branch:** main
+- **Modified (uncommitted):** `aluminion.sh`, `README.md`, `CLAUDE.md`, `avances.md`,
+  `envs/aluminion_circlator.yml`.
+- **No commit was made in this session** — user has indicated they will create a fork
+  for the C6 work and may commit on either branch.
+
+### Immediate next step on resume (in the fork)
+
+1. Recreate the dnaapler env on the production server:
+   `mamba env remove -n aluminion_circlator && mamba env create -f envs/aluminion_circlator.yml`.
+2. Force re-run of the reorientation step on the `2026_04_28` Mutantes run:
+   `rm -f 03_assemblies/plas-*/.circlator_done && aluminion -r 2026_04_28 ... --resume`.
+3. Confirm `dnaapler.log` is clean (no missing-tool errors).
+4. Start the C6 design conversation: pick the lookup strategy for the prior
+   `data_seq.tsv` / `data_analysis.tsv` (C6.2 is the prerequisite for everything else
+   in C6).

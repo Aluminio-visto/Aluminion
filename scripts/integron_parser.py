@@ -14,6 +14,10 @@ import warnings
 from Bio import BiopythonDeprecationWarning
 warnings.simplefilter('ignore', BiopythonDeprecationWarning)
 
+from _log import get_logger
+
+log = get_logger(__name__)
+
 def abr_parse(abr_out):
     abr_raw = pd.read_table(abr_out)
     if len(abr_raw) > 0:
@@ -124,7 +128,7 @@ def extract_info(sample, subdf, replicon, integron, input_path, original_path):
         fna_file = input_path + f'/{replicon}_{integron}.fna'
         d_int = extract_fastas(gbk_file, cds_output_file, fna_file, integron)
     except:
-        print(f'\033[93m[WARNING]\033[0m GBK parsing error. Check the integrity of {gbk_file}')
+        log.warning('GBK parsing error. Check the integrity of %s', gbk_file)
         return None
 
     df_abr = pd.DataFrame(columns = ['pos_beg', 'pos_end', 'abr_ann'])

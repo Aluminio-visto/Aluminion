@@ -351,7 +351,7 @@ Aluminion/                        ← git root
 ├── envs/                         ← One conda environment per tool group
 │   ├── aluminion_reads.yml       ← NanoPlot, Chopper, pillow, kaleido (>=1.0.0)
 │   ├── aluminion_assembly.yml    ← Flye, QUAST, dorado (binary in PATH)
-│   ├── aluminion_circlator.yml   ← circlator
+│   ├── aluminion_circlator.yml   ← dnaapler (env name retained; legacy circlator was EOL)
 │   ├── aluminion_annot.yml       ← Bakta, ABRicate, BLAST, MOB-suite, GAMBIT, mlst, ECTyper
 │   ├── aluminion_integron.yml    ← IntegronFinder
 │   └── aluminion_kleborate.yml   ← Kleborate
@@ -431,7 +431,7 @@ parent_dir/
     │   ├── assembly.fasta               ← Final polished + circularized assembly
     │   ├── assembly_graph.gfa           ← Flye assembly graph
     │   ├── .polished                    ← Sentinel: dorado polish complete
-    │   └── .circlator_done             ← Sentinel: circlator fixstart complete
+    │   └── .circlator_done             ← Sentinel: dnaapler reorientation complete (name retained)
     │
     ├── 04_taxonomies/
     │   ├── kraken2/{sample}.report      ← Resume sentinel for Kraken2
@@ -478,7 +478,7 @@ parent_dir/
 | Stage | Folder | Tools | Conda env | Skip flag |
 |-------|--------|-------|-----------|-----------|
 | 1 — Read QC & filtering | `01_reads/`, `02_filter/` | NanoPlot, Chopper | `aluminion_reads` | `--skip-preprocessing` |
-| 2 — Assembly & polishing | `03_assemblies/` | Flye, dorado polish, circlator | `aluminion_assembly`, `aluminion_circlator` | — |
+| 2 — Assembly & polishing | `03_assemblies/` | Flye, dorado polish, dnaapler | `aluminion_assembly`, `aluminion_circlator` | — |
 | 3 — Annotation & AMR | `08_Anotacion/` | Bakta, ABRicate, MOB-suite, Copla | `aluminion_annot` | `--skip-abr` (ABRicate only) |
 | 4 — Taxonomy & typing | `04_taxonomies/` | Kraken2, GAMBIT, mlst, Kleborate, ECTyper | various | `--skip-kraken`, `--skip-typing` |
 | 4 — MGEs | `05_IS/`, `06_integrons/`, `07_phages/` | BLAST/ISfinder, IntegronFinder, Phastest | `aluminion_annot`, `aluminion_integron` | `--skip-phages` |
@@ -504,6 +504,8 @@ Docker images required: `kbessonov/mob_suite:3.0.3`, `rpalcab/copla:1.0`, phaste
   parsing, before any `cd "$WORKDIR"`, to prevent relative path breakage.
 - Resume sentinels: `.polished` and `.circlator_done` are `touch`-created files because
   both steps overwrite `assembly.fasta` (can't use the assembly as its own sentinel).
+  Note: `.circlator_done` is kept as the sentinel name even though the tool is now
+  dnaapler (legacy circlator was EOL with broken libcrypto.so.1.0.0 dep).
 - Flye failure: interactive 3-choice menu (skip sample / retry with `--meta` / stop pipeline).
   Skipped samples are removed from the `samples` file so downstream loops ignore them.
 - `copla.txt` is only truncated (`> copla.txt`) on a fresh run, not on `--resume`, to

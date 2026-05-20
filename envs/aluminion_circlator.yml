@@ -1,7 +1,14 @@
 name: aluminion_circlator
+# Environment name retained for backward compatibility with install.sh and the
+# pipeline orchestrator. The tool inside has been migrated from `circlator`
+# (EOL, Python 3.6, broken libcrypto.so.1.0.0 dependency) to `dnaapler`, which
+# performs the same job: rotates circular contigs so the chromosome starts at
+# dnaA (or repA for plasmids, terL for phages, etc.). dnaapler is actively
+# maintained, runs on modern Python, and pulls in BLAST + mmseqs2 automatically.
 channels:
   - conda-forge
   - bioconda
   - defaults
 dependencies:
-  - circlator
+  - python=3.12
+  - dnaapler

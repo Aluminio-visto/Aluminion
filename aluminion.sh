@@ -172,7 +172,7 @@ WORKDIR="${BASE_DIR}/${RUN_NAME}"
 # Databases routing
 KRAKEN_DB="${DB_DIR}/Kraken"
 GAMBIT_DB="${DB_DIR}/gambit"
-BAKTA_DB="${DB_DIR}/bakta/db"
+BAKTA_DB="${DB_DIR}/bakta"
 MEGARES_DB="${DB_DIR}/megares/sequences"
 ISFINDER_DB="${DB_DIR}/ISfinder/ISfinder-nucl.fasta"
 
@@ -526,24 +526,28 @@ for i in $(cat samples); do
         cp 03_assemblies/${i}/assembly.fasta 03_assemblies/${i}.fasta 2>/dev/null || true
     fi
 done
+# Reorient circular contigs so the chromosome starts at dnaA, plasmids at repA, etc.
+# Replaces the legacy circlator (EOL, libcrypto.so.1.0.0 dependency broken on modern
+# distros). The env name is kept for backward compatibility with install.sh.
 conda activate aluminion_circlator
-# Persistent log so circlator failures can be diagnosed across runs without rerunning.
-# Truncated on a fresh run; appended to during --resume so prior failures remain visible.
-[ -n "$RESUME" ] || > 03_assemblies/circlator.log
+[ -n "$RESUME" ] || > 03_assemblies/dnaapler.log
 for i in $(cat samples); do
     if resume_done "03_assemblies/${i}/.circlator_done"; then
-        log "  [resume] Circlator: ${i} done, skipping."
+        log "  [resume] Reorientation (dnaapler): ${i} done, skipping."
         continue
     fi
-    echo "=== ${i} ===" >> 03_assemblies/circlator.log
-    if circlator fixstart 03_assemblies/${i}.fasta 03_assemblies/${i}.fix >>03_assemblies/circlator.log 2>&1; then
-        mv 03_assemblies/${i}.fix.fasta 03_assemblies/${i}.fasta
-        rm -f 03_assemblies/*fix* 03_assemblies/*fasta.*
+    echo "=== ${i} ===" >> 03_assemblies/dnaapler.log
+    # `dnaapler all` inspects each contig and picks the appropriate anchor gene
+    # (dnaA/repA/terL) based on contig length and BLAST hits. Output file is
+    # ${prefix}_reoriented.fasta inside the output directory.
+    if dnaapler all -i 03_assemblies/${i}.fasta -o 03_assemblies/${i}/dnaapler \
+                    -p ${i} -t $THREADS_TOTAL --force >>03_assemblies/dnaapler.log 2>&1 \
+       && [ -f "03_assemblies/${i}/dnaapler/${i}_reoriented.fasta" ]; then
+        cp 03_assemblies/${i}/dnaapler/${i}_reoriented.fasta 03_assemblies/${i}.fasta
         touch "03_assemblies/${i}/.circlator_done"
     else
-        warn "Circlator fixstart failed for ${i}. Assembly kept without recircularization. See 03_assemblies/circlator.log."
+        warn "dnaapler reorientation failed for ${i}. Assembly kept as-is. See 03_assemblies/dnaapler.log."
         failed_circlator+=("$i")
-        rm -f 03_assemblies/${i}.fix* 2>/dev/null || true
     fi
 done
 
