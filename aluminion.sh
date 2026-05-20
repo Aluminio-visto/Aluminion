@@ -200,12 +200,15 @@ if [ ! -f "list_seq.tsv" ]; then
     exit 1
 fi
 
-# Copy only the barcode subfolders referenced in list_seq.tsv (col 4 = Barcode)
+# Copy only the barcode subfolders referenced in list_seq.tsv (col 4 = Barcode).
+# tr -d '\r' strips CRLF line endings that appear when list_seq.tsv is exported from
+# Excel on Windows — without it, "01\r" would not match any printf %02d output.
 mkdir -p fastq_pass
 FASTQ_SRC=$(ls -d "${MINKNOW_DIR}/${RUN_NAME}/no_sample_id/"*/fastq_pass 2>/dev/null | head -n1)
 if [ -n "$FASTQ_SRC" ]; then
     tail -n +2 list_seq.tsv \
-        | awk -F'\t' '{print $4}' \
+        | tr -d '\r' \
+        | awk -F'\t' '{gsub(/^[[:space:]]+|[[:space:]]+$/, "", $4); print $4}' \
         | grep -Ev '^[[:space:]]*$|^[xX]$' \
         | sort -u \
         | while read -r bc; do
@@ -231,8 +234,13 @@ mkdir -p 01_reads/QC 02_filter/QC 03_assemblies/quast 04_taxonomies/{kraken2,gtd
 if [ -z "$SKIP_PREPROCESSING" ]; then
     echo -e "ID\tR1\tR2\tLongFastQ\tFast5\tGenomeSize\tFasta" > samplesheet.tsv
 
-    tail -n +2 list_seq.tsv | while IFS=$'\t' read -r cult cep id bc c rep; do
+    # Strip CRLF (Excel-exported TSVs) before reading fields. Without this, the last
+    # field of each line keeps a trailing \r that breaks printf, file lookups, and grep.
+    tail -n +2 list_seq.tsv | tr -d '\r' | while IFS=$'\t' read -r cult cep id bc c rep; do
         [ -z "$id" ] && continue
+        # Trim leading/trailing whitespace from the barcode in case the TSV has padded cells.
+        bc="${bc#"${bc%%[![:space:]]*}"}"
+        bc="${bc%"${bc##*[![:space:]]}"}"
         # Zero-pad barcode to match MinKNOW's two-digit directory naming (barcode01, barcode09…).
         # The copy step above already pads with printf "%02d"; this keeps the two in sync.
         padded_bc=$(printf "%02d" "$bc")
@@ -259,8 +267,16 @@ if [ -z "$SKIP_PREPROCESSING" ]; then
     conda activate aluminion_reads
 
     # Chrome (used by NanoPlot's plot renderer) requires --no-sandbox on headless Linux servers.
-    # Use glob to find the bundled binary — more reliable than calling Python after conda activate.
-    CHROME_REAL=$(ls "$HOME/mambaforge/envs/aluminion_reads/lib/python"*/site-packages/choreographer/cli/browser_exe/chrome-linux64/chrome 2>/dev/null | head -1)
+    # Glob across the common conda installations (mambaforge / miniforge3 / miniconda3) so
+    # the wrapper works regardless of which conda flavour the user installed.
+    CHROME_REAL=""
+    for conda_root in "$HOME/mambaforge" "$HOME/miniforge3" "$HOME/miniconda3"; do
+        candidate=$(ls "$conda_root/envs/aluminion_reads/lib/python"*/site-packages/choreographer/cli/browser_exe/chrome-linux64/chrome 2>/dev/null | head -1)
+        if [ -n "$candidate" ]; then
+            CHROME_REAL="$candidate"
+            break
+        fi
+    done
     if [ -n "$CHROME_REAL" ] && [ -x "$CHROME_REAL" ]; then
         CHROME_WRAPPER="${WORKDIR}/.chrome_wrapper"
         printf '#!/bin/bash\nexec "%s" --no-sandbox --disable-gpu --disable-dev-shm-usage "$@"\n' "$CHROME_REAL" > "$CHROME_WRAPPER"
@@ -410,9 +426,10 @@ for i in $(cat samples); do
             -O bam -o 03_assemblies/${i}/${i}_aligned_reads.tmp.bam \
             03_assemblies/${i}/${i}_aligned_reads.bam
     else
-        # Standard Dorado FASTQ (no RG:Z:): align with minimap2, inject @RG manually.
-        log "  [polish] No RG:Z: tag — using minimap2 + samtools addreplacerg"
-        minimap2 -ax map-ont -t $THREADS_TOTAL \
+        # Standard Dorado FASTQ (no RG:Z:): dorado aligner adds PN:dorado to @PG,
+        # which dorado polish verifies. minimap2 would fail this check.
+        log "  [polish] No RG:Z: tag — using dorado aligner + samtools addreplacerg"
+        dorado aligner --threads $THREADS_TOTAL \
                 03_assemblies/${i}/assembly.fasta 02_filter/${i}.fastq.gz \
             | samtools sort -@ $THREADS_TOTAL -o 03_assemblies/${i}/${i}_aligned_reads.bam
         samtools addreplacerg \
@@ -607,7 +624,8 @@ fi
 # 6. Final Tables, IS, and consolidation (always aluminion_annot)
 conda activate aluminion_annot
 log "IS parsing and Final Tables..."
-> IS.tsv
+# Always rebuild IS.tsv from scratch so resumed runs include all samples — the
+# per-sample IS_chr_out.tsv files are preserved by their own resume sentinel.
 echo -e "sample\tmax\tIS_name\tTotal_IS" > IS.tsv
 for i in $(cat samples); do
     if [ -f "08_Anotacion/${i}/mob_recon/chromosome.fasta" ]; then
@@ -620,8 +638,18 @@ for i in $(cat samples); do
             log "  [resume] IS search: ${i} done, skipping."
         fi
         cat 08_Anotacion/${i}/IS_chr_out.tsv | cut -f 2 | sort | uniq -c | sort -r | awk '{print $1"\t"$2}' > 08_Anotacion/${i}/N_IS_${i}.tsv
-        MAX_IS=$(head -n 1 08_Anotacion/${i}/N_IS_${i}.tsv || echo -e "0\tNone")
-        TOTAL_IS=$(tail -n +2 08_Anotacion/${i}/IS_chr_out.tsv | wc -l || echo "0")
+        # head/tail/wc on an empty file return success with empty output, so the
+        # original `|| echo ...` fallback never fired. Guard explicitly with -s.
+        if [ -s "08_Anotacion/${i}/N_IS_${i}.tsv" ]; then
+            MAX_IS=$(head -n 1 "08_Anotacion/${i}/N_IS_${i}.tsv")
+        else
+            MAX_IS=$'0\tNone'
+        fi
+        if [ -s "08_Anotacion/${i}/IS_chr_out.tsv" ]; then
+            TOTAL_IS=$(tail -n +2 "08_Anotacion/${i}/IS_chr_out.tsv" | wc -l)
+        else
+            TOTAL_IS=0
+        fi
         echo -e "${i}\t${MAX_IS}\t${TOTAL_IS}" >> IS.tsv
     fi
 done
