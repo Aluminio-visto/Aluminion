@@ -877,8 +877,17 @@ paste QC_reads_pre.csv QC_reads_post.csv > QC_reads.csv; rm QC_reads_pre.csv QC_
 > 04_taxonomies/kraken2/genus.csv
 > 04_taxonomies/kraken2/species.csv
 for i in $(cat samples); do
-    awk '($1 >= 20 && $4 == "G")' 04_taxonomies/kraken2/${i}.report | cut -f 1,6 | tr -s '  ' | awk '{print i,"\t",$1,"\t",$2,$3,$4}' i="${i}" >> 04_taxonomies/kraken2/genus.csv || true
-    awk '($1 >= 4  && $4 == "S")' 04_taxonomies/kraken2/${i}.report | cut -f 1,6 | tr -s '  ' | awk '{print i,"\t",$1,"\t",$2,$3,$4}' i="${i}" >> 04_taxonomies/kraken2/species.csv || true
+    # Build a clean TSV row: <sample>\t<percent>\t<taxon_name>. The previous
+    # awk used commas (which insert OFS=" ") and trailing empty fields ($3, $4)
+    # that introduced stray spaces in the Sample/Genus/Species columns and
+    # broke the merge against list_seq.tsv downstream. Set OFS=tab and
+    # concatenate the taxon name words with single spaces by hand.
+    awk '($1 >= 20 && $4 == "G")' 04_taxonomies/kraken2/${i}.report | cut -f 1,6 | tr -s '  ' \
+        | awk -v OFS='\t' '{n=$2; for(j=3;j<=NF;j++) n=n" "$j; print i, $1, n}' i="${i}" \
+        >> 04_taxonomies/kraken2/genus.csv || true
+    awk '($1 >= 4  && $4 == "S")' 04_taxonomies/kraken2/${i}.report | cut -f 1,6 | tr -s '  ' \
+        | awk -v OFS='\t' '{n=$2; for(j=3;j<=NF;j++) n=n" "$j; print i, $1, n}' i="${i}" \
+        >> 04_taxonomies/kraken2/species.csv || true
 done
 awk -F"\t" 'NR==FNR{a[$1]=$0;next} ($1 in a){b=$1;$1="";print a[b] $0}' OFS="\t" 04_taxonomies/kraken2/genus.csv 04_taxonomies/kraken2/species.csv > 04_taxonomies/kraken_report.csv || true
 sed -i '1 i\Sample\tReads(%)\tGenus\tReads(%)\tSpecies' 04_taxonomies/kraken_report.csv || true

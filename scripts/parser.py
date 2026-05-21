@@ -386,8 +386,12 @@ def main():
         # Strip bracketed / parenthesised qualifiers from the GAMBIT subspecies label.
         gambit_df['Subspecies'] = gambit_df['Subspecies'].str.replace(r'\(.*?\)', '', regex=True)
         gambit_df['Subspecies'] = gambit_df['Subspecies'].str.replace(r'\[.*?\]', '', regex=True)
-        gambit_df['Sample'] = gambit_df['Sample'].astype(str)
-        gambit_df = gambit_df.apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
+        # Explicit per-column strip — DataFrame.apply with a Series.str.strip
+        # lambda was silently leaving the values unchanged in some pandas
+        # versions, which broke the downstream Sample-based merge.
+        for c in gambit_df.columns:
+            if gambit_df[c].dtype == 'object':
+                gambit_df[c] = gambit_df[c].astype(str).str.strip()
 
     if not species_df.empty:
         species_df['Majority_species'] = (
@@ -420,8 +424,15 @@ def main():
         if col not in kraken_df.columns:
             kraken_df[col] = ''
     kraken_df = kraken_df[kraken_cols]
-    kraken_df['Sample'] = kraken_df['Sample'].astype(str)
-    kraken_df = kraken_df.apply(lambda x: x.str.strip() if x.dtype == 'object' else x)
+    # Explicit per-column strip + internal-whitespace collapse — defends against
+    # stray spaces introduced upstream (Kraken report → bash awk → tab-split).
+    for c in kraken_df.columns:
+        if kraken_df[c].dtype == 'object':
+            kraken_df[c] = (
+                kraken_df[c].astype(str)
+                .str.strip()
+                .str.replace(r'\s+', ' ', regex=True)
+            )
 
     # Successive left-joins: kraken -> gambit -> mlst -> kleborate -> ectyper
     merged_taxonomy = pd.merge(kraken_df, gambit_df, how='left', on='Sample')
@@ -490,6 +501,10 @@ def main():
             final_taxonomy[col] = ''
 
     final_taxonomy = final_taxonomy[final_columns]
+    # Last-line-of-defence strip on Sample — anything that lab_db_updater merges
+    # against list_seq.tsv must be whitespace-clean or the join silently drops
+    # all per-sample columns and data_analysis.tsv comes out empty.
+    final_taxonomy['Sample'] = final_taxonomy['Sample'].astype(str).str.strip()
     final_taxonomy.to_excel(taxonomy_xlsx, index=False)
     final_taxonomy.to_csv(taxonomy_csv, index=False)
 
