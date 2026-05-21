@@ -51,6 +51,8 @@ flowchart TB
 macOS is not supported (Docker networking requirements for Phastest).
 Windows is community-tested via WSL2 but not officially supported.
 
+> With less than 128 GB of RAM, comment out the `/dev/shm` copy in
+> `aluminion.sh` and point `--db` directly to disk.
 ---
 
 ## Installation
@@ -122,8 +124,7 @@ All databases live under a single root directory (passed with `-b`).
 | Abricate         | (auto, in `aluminion_annot`)        | ~150 MB | `abricate-get_db --db {ncbi,resfinder,card,argannot,vfdb}`        |
 | MLST (PubMLST)   | (auto, on first run)                | ~10 MB  | downloaded by the `mlst` tool itself                              |
 
-> With less than 128 GB of RAM, comment out the `/dev/shm` copy in
-> `aluminion.sh` and point `--db` directly to disk.
+
 
 ---
 
@@ -181,7 +182,7 @@ are created from scratch — no manual setup needed. `--init-db` forces a rebuil
 ### Directory layout
 
 ```
-/home/user/Seqs/Servicio/      ← parent working directory (-d)
+/home/user/$project_folder/      ← parent working directory (-d)
 ├── list_seq.tsv               ← fill this before each run
 ├── data_seq.tsv               ← cumulative sequencing database
 ├── data_analysis.tsv          ← cumulative analysis database
@@ -199,7 +200,7 @@ are created from scratch — no manual setup needed. `--init-db` forces a rebuil
 ### Standard run
 
 ```bash
-cd /home/user/Seqs/Servicio
+cd /home/user/$project_folder
 aluminion -r BAC_2025_NOV_25 -b /path/to/Databases -t 30 -l list_seq.tsv
 ```
 
@@ -210,10 +211,10 @@ A timestamped log is written inside the run folder.
 | Flag                     | Description                                                                 | Default                       |
 |--------------------------|-----------------------------------------------------------------------------|-------------------------------|
 | `-r / --run`             | MinKNOW run folder name **(mandatory)**                                     | —                             |
-| `-b / --db-dir`          | Path to databases root                                                      | `/home/usuario/Databases`     |
+| `-b / --db-dir`          | Path to databases root                                                      | `/home/$user/Databases`     |
 | `-t / --threads`         | CPU threads                                                                 | `30`                          |
 | `-l / --list`            | Path to `list_seq.tsv`                                                      | —                             |
-| `-d / --dir`             | Parent working directory                                                    | `/home/usuario/Seqs/Servicio` |
+| `-d / --dir`             | Parent working directory                                                    | `/home/$user/$project_folder` |
 | `-p / --phastest-dir`    | Local Phastest docker-compose folder                                        | `~/Programs/phastest-docker`  |
 | `-m / --minknow-dir`     | MinKNOW data root                                                           | `/var/lib/minknow/data`       |
 | `--init-db`              | Create `data_seq.tsv` / `data_analysis.tsv` from scratch                    | —                             |

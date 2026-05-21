@@ -517,8 +517,11 @@ def main():
     QC_reads[["N_bases_post"]].apply(pd.to_numeric)
     result2 = pd.merge(result, QC_reads, on="ID", how='outer')
 
-    # Populate with QC_assembly.csv data
-    QC_assembly = QC_assembly.rename(columns={"Sample":"ID"})
+    # Populate with QC_assembly.csv data. aluminion.sh emits the column header
+    # as "Samples" (plural — via `sed 's/Assembly/Samples/'` on the QUAST report);
+    # aluminion_reporter.py also keys on "Samples". Be tolerant of either form
+    # so the script keeps working if the upstream label is ever harmonised.
+    QC_assembly = QC_assembly.rename(columns={"Samples": "ID", "Sample": "ID"})
     QC_assembly["ratio"] = QC_assembly["Largest contig"]/QC_assembly["Total length"]
     QC_assembly = QC_assembly.drop(columns=["GC (%)", "# predicted genes (>= 300 bp)"], errors='ignore')
 
