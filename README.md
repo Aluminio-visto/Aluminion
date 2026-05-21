@@ -17,14 +17,15 @@ also work on any bacterial species with a published MLST scheme.
 ```mermaid
 flowchart TB
     IN(["MinKNOW run<br/>list_seq.tsv"])
-    S1["<b>1 · QC and filtering</b><br/>NanoPlot · Chopper · NanoPlot"]
-    S2["<b>2 · Assembly</b><br/>Kraken2 · Flye · Dorado polish<br/>deconcat · dnaapler · QUAST · Bandage"]
-    S3["<b>3 · Annotation, typing and AMR</b><br/>Bakta · Abricate · MOB-suite<br/>GAMBIT · MLST · Kleborate · ECTyper"]
-    S4["<b>4 · Mobile genetic elements</b><br/>Copla · Phastest · Integron_Finder · ISfinder BLASTn"]
-    S5["<b>5 · Consolidation</b><br/>parser.py → aluminion_reporter.py → lab DB"]
+    S1["<b>1 · QC and filtering</b><br/>NanoPlot · Chopper"]
+    S2["<b>2 · Assembly</b><br/>Flye · dorado polish<br/>deconcat · dnaapler"]
+    S3["<b>3 · Assembly QC</b><br/>Kraken2 - QUAST · Bandage"]
+    S4["<b>4 · Annotation, typing and AMR</b><br/>Bakta · Abricate · MOB-suite<br/>GAMBIT · MLST · Kleborate · ECTyper"]
+    S5["<b>5 · Mobile genetic elements</b><br/>Copla · Phastest · Integron_Finder · ISfinder BLASTn"]
+    S6["<b>6 · Consolidation</b><br/>parser.py → aluminion_reporter.py → lab DB"]
     OUT(["Aluminion_Report.html<br/>data_seq.tsv · data_analysis.tsv"])
 
-    IN --> S1 --> S2 --> S3 --> S4 --> S5 --> OUT
+    IN --> S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> OUT
 ```
 
 | Stage | Tools                                                            | Conda env(s)                                |
