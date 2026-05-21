@@ -346,6 +346,7 @@ Aluminion/                        ← git root
 ├── CLAUDE.md                     ← AI coding context and lab conventions (this file)
 ├── README.md                     ← Full user-facing documentation
 ├── aluminion.sh                  ← Main pipeline orchestrator
+├── aluminion_batch.sh            ← Wrapper for sequential multi-run batches (--no-minknow flow)
 ├── install.sh                    ← Installation (conda envs, Docker images, databases)
 │
 ├── envs/                         ← One conda environment per tool group
@@ -510,6 +511,19 @@ Docker images required: `kbessonov/mob_suite:3.0.3`, `rpalcab/copla:1.0`, phaste
   Skipped samples are removed from the `samples` file so downstream loops ignore them.
 - `copla.txt` is only truncated (`> copla.txt`) on a fresh run, not on `--resume`, to
   allow appending results for samples that weren't done yet.
+- **Two input layouts coexist**: (a) classic single-run mode — `list_seq.tsv` in
+  `BASE_DIR`, reads pulled from `MINKNOW_DIR/$RUN_NAME`; (b) batch mode — each
+  run subfolder is self-contained (its own `fastq_pass/`, `list_seq.tsv`, and
+  optionally the MinKNOW reports), and the user passes `--no-minknow` (directly
+  or via `aluminion_batch.sh`). The lookup order for `list_seq.tsv` is
+  `-l` > run folder > parent folder; `--no-minknow` aborts hard if
+  `<run>/fastq_pass/` is missing or empty.
+- **`--unique-run` disables ALL `../repositorio/` interaction**: no `mkdir`, no
+  read deposit, no concat for `is_repeated` samples (they get a warning and use
+  the new reads only). Used for one-off projects, isolated runs that shouldn't
+  pollute a shared repository, or to protect an existing repository from a run
+  whose quality isn't yet validated. The final success message explicitly notes
+  unique-run mode so the user can confirm the isolation took effect.
 - **Polishing — two-step @RG injection**: `dorado polish` enforces two checks on the
   input BAM: (1) `@PG` must contain `PN:dorado` — meaning `dorado aligner` must be used,
   **not minimap2** (minimap2 fails this check with "Input BAM file was not aligned using

@@ -67,6 +67,19 @@ Additional options:
   --resume        Resume a previously interrupted run. Each step checks whether
                   its output already exists and skips it if so. Use after any
                   mid-run failure to avoid repeating completed work.
+  --no-minknow    Skip the MinKNOW data copy step. Assumes the run folder
+                  already contains fastq_pass/ (with per-barcode subfolders)
+                  and, optionally, final_summary_*.txt / report_*.json copied
+                  there manually or by an external import. The pipeline will
+                  abort with a clear error if fastq_pass/ is missing.
+  --unique-run    Self-contained single-run mode. Skips every interaction with
+                  the parent <BASE_DIR>/repositorio/ folder: no directory is
+                  created, no reads are copied there, and `is_repeated` samples
+                  are processed as fresh runs (the prior reads cannot be
+                  concatenated without the repository). Use it for one-off
+                  projects, when no shared repositorio exists, or to protect an
+                  existing one from being touched by a run you don't fully
+                  trust yet.
   --skip-preprocessing  Skip read QC and filtering (NanoPlot + Chopper). Requires a
                   previous run to have completed this step (01_reads/, 02_filter/,
                   and samples file must exist).
@@ -132,6 +145,8 @@ SKIP_KRAKEN=""
 SKIP_ABR=""
 INIT_DB=""
 POLISH_BATCHSIZE=""
+NO_MINKNOW=""
+UNIQUE_RUN=""
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -153,6 +168,8 @@ while [[ "$#" -gt 0 ]]; do
         --skip-abr) SKIP_ABR="--skip-abr" ;;
         --init-db) INIT_DB="--init" ;;
         --polish-batchsize) POLISH_BATCHSIZE="$2"; shift ;;
+        --no-minknow) NO_MINKNOW=true ;;
+        --unique-run) UNIQUE_RUN=true ;;
         # QC threshold overrides
         --min-read-mb)       MIN_READ_MB="$2"; shift ;;
         --chopper-q)         CHOPPER_MIN_QUALITY="$2"; shift ;;
@@ -226,13 +243,25 @@ log "Starting Aluminion for run: $RUN_NAME"
 log "Log file: $LOG_FILE"
 cd "$WORKDIR"
 
-# Copy MinKNOW metadata files (small, always needed)
-cp "${MINKNOW_DIR}/${RUN_NAME}/no_sample_id/"*/final_summary_*.txt . 2>/dev/null || true
-cp "${MINKNOW_DIR}/${RUN_NAME}/no_sample_id/"*/report_*.json      . 2>/dev/null || true
+# Copy MinKNOW metadata files (small, always needed). Skipped under --no-minknow
+# when the run folder is already a self-contained import.
+if [ -z "$NO_MINKNOW" ]; then
+    cp "${MINKNOW_DIR}/${RUN_NAME}/no_sample_id/"*/final_summary_*.txt . 2>/dev/null || true
+    cp "${MINKNOW_DIR}/${RUN_NAME}/no_sample_id/"*/report_*.json      . 2>/dev/null || true
+fi
 
-# Ensure list_seq.tsv is in place before reading barcodes from it
+# Resolve list_seq.tsv with the following precedence:
+#   1. --list <path>            (explicit override)
+#   2. <run folder>/list_seq.tsv (lives next to the reads — best for batch processing)
+#   3. <parent folder>/list_seq.tsv (legacy single-run layout — copy into the run folder)
+# Errors out with a populated template if none of the three are present.
 if [ -n "$SEQ_LIST_INPUT" ] && [ -f "$SEQ_LIST_INPUT" ]; then
     cp "$SEQ_LIST_INPUT" "list_seq.tsv"
+elif [ -f "list_seq.tsv" ]; then
+    log "Using list_seq.tsv already present in the run folder."
+elif [ -f "${BASE_DIR}/list_seq.tsv" ]; then
+    log "Using list_seq.tsv from the parent directory: ${BASE_DIR}/list_seq.tsv"
+    cp "${BASE_DIR}/list_seq.tsv" "list_seq.tsv"
 fi
 
 if [ ! -f "list_seq.tsv" ]; then
@@ -255,31 +284,48 @@ if echo "$list_header" | grep -qE '^(Cultivo|Cepa)\b'; then
     mv list_seq.tsv.translated list_seq.tsv
 fi
 
-# Copy only the barcode subfolders referenced in list_seq.tsv (col 4 = Barcode).
-# tr -d '\r' strips CRLF line endings that appear when list_seq.tsv is exported from
-# Excel on Windows — without it, "01\r" would not match any printf %02d output.
-mkdir -p fastq_pass
-FASTQ_SRC=$(ls -d "${MINKNOW_DIR}/${RUN_NAME}/no_sample_id/"*/fastq_pass 2>/dev/null | head -n1)
-if [ -n "$FASTQ_SRC" ]; then
-    tail -n +2 list_seq.tsv \
-        | tr -d '\r' \
-        | awk -F'\t' '{gsub(/^[[:space:]]+|[[:space:]]+$/, "", $4); print $4}' \
-        | grep -Ev '^[[:space:]]*$|^[xX]$' \
-        | sort -u \
-        | while read -r bc; do
-            padded=$(printf "%02d" "$bc")
-            src="${FASTQ_SRC}/barcode${padded}"
-            if [ -d "$src" ]; then
-                cp -r "$src" fastq_pass/
-            else
-                log "Warning: barcode${padded} not found in MinKNOW fastq_pass — skipping."
-            fi
-        done
+# With --no-minknow, the run folder must already contain a populated fastq_pass/.
+# Without it, copy only the barcode subfolders referenced in list_seq.tsv (col 4)
+# from the MinKNOW data tree into <run>/fastq_pass/.
+# `tr -d '\r'` strips CRLF line endings that appear when list_seq.tsv is exported
+# from Excel on Windows — without it, "01\r" would not match any printf %02d output.
+if [ -n "$NO_MINKNOW" ]; then
+    if [ ! -d "fastq_pass" ] || [ -z "$(ls -A fastq_pass 2>/dev/null)" ]; then
+        error_log "--no-minknow set but ${WORKDIR}/fastq_pass/ is missing or empty."
+        error_log "Either populate fastq_pass/ with per-barcode subfolders or drop --no-minknow."
+        exit 1
+    fi
+    log "Using existing fastq_pass/ inside the run folder (--no-minknow)."
 else
-    log "Warning: MinKNOW fastq_pass directory not found. Continuing without copying reads."
+    mkdir -p fastq_pass
+    FASTQ_SRC=$(ls -d "${MINKNOW_DIR}/${RUN_NAME}/no_sample_id/"*/fastq_pass 2>/dev/null | head -n1)
+    if [ -n "$FASTQ_SRC" ]; then
+        tail -n +2 list_seq.tsv \
+            | tr -d '\r' \
+            | awk -F'\t' '{gsub(/^[[:space:]]+|[[:space:]]+$/, "", $4); print $4}' \
+            | grep -Ev '^[[:space:]]*$|^[xX]$' \
+            | sort -u \
+            | while read -r bc; do
+                padded=$(printf "%02d" "$bc")
+                src="${FASTQ_SRC}/barcode${padded}"
+                if [ -d "$src" ]; then
+                    cp -r "$src" fastq_pass/
+                else
+                    log "Warning: barcode${padded} not found in MinKNOW fastq_pass — skipping."
+                fi
+            done
+    else
+        log "Warning: MinKNOW fastq_pass directory not found. Continuing without copying reads."
+    fi
 fi
 
-mkdir -p 01_reads/QC 02_filter/QC 03_assemblies/quast 04_taxonomies/{kraken2,gtdb} 05_plasmids 08_Anotacion 09_phages 10_ices 11_integrons ../repositorio/{01_reads,03_assemblies,05_plasmids,08_Anotacion,09_phages,10_ices,11_integrons}
+mkdir -p 01_reads/QC 02_filter/QC 03_assemblies/quast 04_taxonomies/{kraken2,gtdb} 05_plasmids 08_Anotacion 09_phages 10_ices 11_integrons
+# The cross-run shared repository lives next to the run folder. Under --unique-run
+# we leave it untouched (either it does not exist yet, or the user wants this run
+# to stay isolated from a pre-existing repositorio).
+if [ -z "$UNIQUE_RUN" ]; then
+    mkdir -p ../repositorio/{01_reads,03_assemblies,05_plasmids,08_Anotacion,09_phages,10_ices,11_integrons}
+fi
 
 # ==============================================================================
 # PIPELINE EXECUTION
@@ -302,16 +348,37 @@ if [ -z "$SKIP_PREPROCESSING" ]; then
         if resume_done "01_reads/${id}.fastq.gz"; then
             log "  [resume] Read concat: ${id} already done, skipping."
         elif [ -z "$rep" ]; then
+            # Fresh sample — concatenate the per-barcode FASTQs from this run only.
             cat fastq_pass/barcode${padded_bc}/*.fastq.gz > 01_reads/${id}.fastq.gz
-            cp 01_reads/${id}.fastq.gz ../repositorio/01_reads/${id}.fastq.gz
+            if [ -z "$UNIQUE_RUN" ]; then
+                cp 01_reads/${id}.fastq.gz ../repositorio/01_reads/${id}.fastq.gz
+            fi
         else
-            cat ../repositorio/01_reads/${id}.fastq.gz fastq_pass/barcode${padded_bc}/*.fastq.gz > 01_reads/${id}.fastq.gz
-            cp 01_reads/${id}.fastq.gz ../repositorio/01_reads/${id}.fastq.gz
+            # is_repeated sample. In repository-aware mode, prepend the prior reads
+            # stored in repositorio. Under --unique-run (or when the repository
+            # exists but lacks prior reads for this sample), fall back to the new
+            # reads alone and warn so the user knows the merge didn't happen.
+            if [ -z "$UNIQUE_RUN" ] && [ -f "../repositorio/01_reads/${id}.fastq.gz" ]; then
+                cat ../repositorio/01_reads/${id}.fastq.gz fastq_pass/barcode${padded_bc}/*.fastq.gz > 01_reads/${id}.fastq.gz
+                cp 01_reads/${id}.fastq.gz ../repositorio/01_reads/${id}.fastq.gz
+            else
+                if [ -n "$UNIQUE_RUN" ]; then
+                    warn "  Sample ${id} is marked is_repeated but --unique-run is active — using new reads only (no concat with repositorio)."
+                else
+                    warn "  Sample ${id} is marked is_repeated but no prior reads found in repositorio — using new reads only."
+                fi
+                cat fastq_pass/barcode${padded_bc}/*.fastq.gz > 01_reads/${id}.fastq.gz
+                if [ -z "$UNIQUE_RUN" ]; then
+                    cp 01_reads/${id}.fastq.gz ../repositorio/01_reads/${id}.fastq.gz
+                fi
+            fi
         fi
         echo -e "${id}\t\t\t$PWD/01_reads/${id}.fastq.gz\t\t" >> samplesheet.tsv
     done
 
-    cut -f3 list_seq.tsv | tail -n+2 > ../repositorio/samples
+    if [ -z "$UNIQUE_RUN" ]; then
+        cut -f3 list_seq.tsv | tail -n+2 > ../repositorio/samples
+    fi
     find 01_reads -type f -name "*.fastq.gz" -size "+${MIN_READ_MB}M" -exec basename {} .fastq.gz \; | sort | uniq > samples
 
     if [ ! -s samples ]; then
@@ -739,11 +806,16 @@ if [ -z "$SKIP_PHAGES" ]; then
         # /root/phastest-app/scripts/ with 700 perms. Passing --user <host_uid:gid>
         # makes them unreadable, which silently breaks prophage detection (the
         # earlier `--phage-only` flag was a workaround that masked the failure by
-        # skipping every step that needed those scripts). Output files end up
-        # root-owned on the host, but with default 644 perms they're readable for
-        # the cp below, and `rm -rf` on JOBS/$i works because the parent dir is
-        # owned by the host user.
-        docker compose -f "${PHASTEST_DIR}/docker-compose.yml" run --rm phastest -i fasta -m deep -s "$i".fasta --yes
+        # skipping every step that needed those scripts).
+        #
+        # Side effect: Phastest creates JOBS/$i as root, so the host user can't
+        # `rm -rf` it afterwards. Wrap the phastest call in `bash -c` so the same
+        # container (still root) chowns the output tree back to the host user
+        # before exiting. Phastest's exit code is preserved via $rc.
+        host_uid=$(id -u); host_gid=$(id -g)
+        docker compose -f "${PHASTEST_DIR}/docker-compose.yml" run --rm \
+            --entrypoint /bin/bash phastest \
+            -c "phastest -i fasta -m deep -s '$i'.fasta --yes; rc=\$?; chown -R ${host_uid}:${host_gid} /phastest-app/JOBS/'$i' 2>/dev/null; exit \$rc"
         cp -r "${PHASTEST_DIR}/phastest-app-docker/JOBS/$i/"* 09_phages/phastest_deep/"$i"/ || true
         rm -rf "${PHASTEST_DIR}/phastest-app-docker/JOBS/$i" "${PHASTEST_DIR}/phastest_inputs/$i.fasta"
     done
@@ -840,4 +912,8 @@ if [ ${#failed_polish[@]} -gt 0 ] || [ ${#failed_deconcat[@]} -gt 0 ] || [ ${#fa
     echo ""
 fi
 
-log "Pipeline successfully finished. Aluminion out."
+if [ -n "$UNIQUE_RUN" ]; then
+    log "Pipeline successfully finished in --unique-run mode (no repositorio interaction). Aluminion out."
+else
+    log "Pipeline successfully finished. Aluminion out."
+fi

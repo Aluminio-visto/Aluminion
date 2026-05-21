@@ -130,8 +130,17 @@ All databases live under a single root directory (passed with `-b`).
 
 ### `list_seq.tsv` — per-run sample sheet
 
-Tab-separated, six columns. Keep it in the **parent working directory** (`-d`)
-and pass it with `-l`. Aluminion copies it into the run subfolder at startup.
+Tab-separated, six columns. Aluminion searches for it in the following order:
+
+1. The path passed to `-l / --list` (explicit override, wins over anything else).
+2. `list_seq.tsv` already present **inside the run folder** — the preferred
+   layout when each run is self-contained (see *Batch processing* below).
+3. `list_seq.tsv` in the **parent working directory** (`-d`) — the legacy
+   single-run layout.
+
+The first location found is used; the file is copied into the run folder if it
+isn't already there. If none is found, Aluminion writes an empty template and
+exits with an error.
 
 | Column        | Description                                                       |
 |---------------|-------------------------------------------------------------------|
@@ -208,6 +217,8 @@ A timestamped log is written inside the run folder.
 | `-m / --minknow-dir`     | MinKNOW data root                                                           | `/var/lib/minknow/data`       |
 | `--init-db`              | Create `data_seq.tsv` / `data_analysis.tsv` from scratch                    | —                             |
 | `--resume`               | Resume an interrupted run; skip any step whose output already exists        | —                             |
+| `--no-minknow`           | Skip the MinKNOW copy step; assume the run folder already contains `fastq_pass/` (and optionally the `final_summary_*.txt` / `report_*.json`). Aborts if `fastq_pass/` is missing. | — |
+| `--unique-run`           | Self-contained single-run mode. Do not create or touch `<parent>/repositorio/`: no reads are deposited there, `is_repeated` samples are processed as fresh runs, and no cumulative artefacts are shared with other runs. | — |
 | `--polish-batchsize <N>` | Override `dorado polish --batchsize` (lower it on `CUDA out of memory`)     | dorado default                |
 | `--skip-preprocessing`   | Skip NanoPlot + Chopper (reuse existing `01_reads/`, `02_filter/`)          | —                             |
 | `--skip-kraken`          | Skip Kraken2 read-level classification                                      | —                             |
@@ -228,6 +239,53 @@ aluminion -r BAC_2025_NOV_25 -b /path/to/Databases -l list_seq.tsv --resume
 
 `--resume` checks every step's expected output and silently skips completed
 work. It can be combined with any `--skip-*` flag.
+
+### Batch processing — many runs in one go
+
+When a project already contains many pre-organised run folders (each with its
+own `fastq_pass/`, optionally the MinKNOW reports, and its own `list_seq.tsv`),
+use `aluminion_batch` to walk a list of runs sequentially:
+
+```
+/seqs/KLEBIRE/
+├── runs.tsv                 ← chronological list of run names
+├── 2025_NOV_25_BAC/
+│   ├── fastq_pass/  list_seq.tsv  final_summary_*.txt  report_*.json
+├── 2025_DEC_03_BAC/
+│   ├── fastq_pass/  list_seq.tsv  …
+└── 2026_FEB_10_BAC/
+    └── …
+```
+
+`runs.tsv` is a plain text file, one run name per line; `#` introduces a
+comment, blank lines are ignored:
+
+```text
+# Klebsiella surveillance — 2025-26 season
+2025_NOV_25_BAC
+2025_DEC_03_BAC
+2026_FEB_10_BAC
+```
+
+Then:
+
+```bash
+aluminion_batch --runlist runs.tsv -d /seqs/KLEBIRE -b /path/to/Databases -t 30 \
+    -- --resume --skip-kraken
+```
+
+Flags after `--` are forwarded verbatim to every `aluminion` invocation.
+Per-run logic:
+
+| Condition                                          | Action                                                            |
+|----------------------------------------------------|-------------------------------------------------------------------|
+| `<run>/Aluminion_Report.html` exists               | Skip (run already analysed). Override with `--force`.             |
+| `<run>/fastq_pass/` exists (non-empty)             | Invoke `aluminion -r <run> -d <parent> --no-minknow <forwarded>`. |
+| Neither report nor `fastq_pass/`                   | Skip with a warning; no fatal error so the rest of the batch can continue. |
+
+A summary table (`processed` / `already done` / `skipped` / `failed`) is
+printed at the end. The wrapper returns a non-zero exit code if any run
+failed, so it composes cleanly inside CI or a parent script.
 
 ### Running only the consolidation stage
 
@@ -292,6 +350,7 @@ overwriting the main files.
 ```
 aluminion/
 ├── aluminion.sh           # Main pipeline orchestrator
+├── aluminion_batch.sh     # Wrapper for sequential multi-run processing
 ├── install.sh             # Automated installer
 ├── scripts/               # Python parsers and reporters
 ├── envs/                  # Six conda environment YAMLs

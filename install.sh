@@ -228,10 +228,11 @@ fi
 # ==============================================================================
 # COMMAND-LINE SHORTCUT
 # ==============================================================================
-log "Installing 'aluminion' command..."
-chmod +x "${SCRIPT_DIR}/aluminion.sh"
+log "Installing 'aluminion' and 'aluminion_batch' commands..."
+chmod +x "${SCRIPT_DIR}/aluminion.sh" "${SCRIPT_DIR}/aluminion_batch.sh"
 mkdir -p "$HOME/.local/bin"
-ln -sf "${SCRIPT_DIR}/aluminion.sh" "$HOME/.local/bin/aluminion"
+ln -sf "${SCRIPT_DIR}/aluminion.sh"       "$HOME/.local/bin/aluminion"
+ln -sf "${SCRIPT_DIR}/aluminion_batch.sh" "$HOME/.local/bin/aluminion_batch"
 
 # Ensure ~/.local/bin is in PATH (add to shell rc if missing)
 if ! echo "$PATH" | grep -q "$HOME/.local/bin"; then
@@ -240,7 +241,9 @@ if ! echo "$PATH" | grep -q "$HOME/.local/bin"; then
     echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_RC"
     warn "Added ~/.local/bin to PATH in ${SHELL_RC}. Run: source ${SHELL_RC}"
 fi
-log "'aluminion' command available. You can now run: aluminion -r RUN_NAME ..."
+log "'aluminion' and 'aluminion_batch' commands available."
+log "  Single run:  aluminion -r RUN_NAME ..."
+log "  Batch mode:  aluminion_batch --runlist runs.tsv -d /path/to/project ..."
 
 # ==============================================================================
 # SUMMARY
