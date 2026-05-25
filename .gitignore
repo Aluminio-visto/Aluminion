@@ -23,9 +23,15 @@ Thumbs.db
 *.bam
 *.bai
 
-# Pipeline run artifacts (uncomment if test/ should be gitignored)
-# test/
+# Pipeline run artifacts
+test/
 # results/
+
+# Claude working files — kept local, never pushed to GitHub
+CLAUDE.md
+avances.md
+.claude/settings.json
+.claude/settings.local.json
 
 # Worktree scratch
 .claude/worktrees/
