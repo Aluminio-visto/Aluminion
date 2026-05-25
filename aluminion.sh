@@ -84,7 +84,7 @@ Additional options:
                   previous run to have completed this step (01_reads/, 02_filter/,
                   and samples file must exist).
   --skip-kraken   Skip Kraken2 read-level classification.
-  --skip-abr      Skip Abricate AMR resistance gene screen.
+  --skip-abr      Skip Abricate AMR and virulence (VFDB) gene screens.
   --skip-typing   Skip all typing tools: GAMBIT, MLST, Kleborate, ECTyper.
   --skip-integrons  Skip Integron_Finder and integron parsing.
   --skip-plasmids   Skip Copla plasmid typing (MOB-suite always runs).
@@ -100,6 +100,17 @@ QC and filtering thresholds (override sensible defaults):
   --chopper-headcrop <N>  Chopper 5' headcrop in bp. (Default: ${CHOPPER_HEADCROP})
   --abricate-minid <N>    Abricate minimum % identity for AMR calls. (Default: ${ABRICATE_MIN_ID})
   --abricate-mincov <N>   Abricate minimum % coverage for AMR calls. (Default: ${ABRICATE_MIN_COV})
+
+Cross-run MGE alerts (match this run's plasmids/integrons against a cumulative
+repository to flag epidemiologically relevant recurrences):
+  --repo PATH           Path to the MGE repository directory. If omitted, defaults
+                        to \$BASE_DIR/repository so the repository lives next to
+                        your runs. Use a shared/external path to pool across hosts.
+  --init-repo           Create the repository structure at --repo (idempotent).
+                        Safe to pass on every run; only the first call builds it.
+  --alert-new-priority  Also raise alerts for first-occurrence MGEs that carry a
+                        priority resistance/virulence gene (not just recurrences).
+  --no-alerts           Skip the cross-run MGE alerts step entirely.
 
 Early-stop flags (run only up to the named stage, then exit):
   --just-preprocessing  Stop after read QC and filtering. Output: filtered FASTQ in 02_filter/.
@@ -147,6 +158,10 @@ INIT_DB=""
 POLISH_BATCHSIZE=""
 NO_MINKNOW=""
 UNIQUE_RUN=""
+REPO=""
+INIT_REPO=""
+ALERT_NEW_PRIORITY=""
+NO_ALERTS=""
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -170,6 +185,11 @@ while [[ "$#" -gt 0 ]]; do
         --polish-batchsize) POLISH_BATCHSIZE="$2"; shift ;;
         --no-minknow) NO_MINKNOW=true ;;
         --unique-run) UNIQUE_RUN=true ;;
+        # Cross-run MGE alert flags
+        --repo) REPO="$2"; shift ;;
+        --init-repo) INIT_REPO=true ;;
+        --alert-new-priority) ALERT_NEW_PRIORITY="--alert-new-priority" ;;
+        --no-alerts) NO_ALERTS=true ;;
         # QC threshold overrides
         --min-read-mb)       MIN_READ_MB="$2"; shift ;;
         --chopper-q)         CHOPPER_MIN_QUALITY="$2"; shift ;;
@@ -194,6 +214,12 @@ fi
 # Resolve relative paths before any cd changes the working directory
 [ -n "$SEQ_LIST_INPUT" ] && SEQ_LIST_INPUT="$(readlink -f "$SEQ_LIST_INPUT")"
 [ -n "$BASE_DIR"       ] && BASE_DIR="$(readlink -f "$BASE_DIR")"
+
+# MGE repository: default to <BASE_DIR>/repository so it sits next to the runs.
+# Resolve to an absolute path too; the repo may not exist yet on a first run, so
+# fall back to the literal value if readlink can't canonicalise it.
+[ -z "$REPO" ] && REPO="${BASE_DIR}/repository"
+REPO="$(readlink -f "$REPO" 2>/dev/null || echo "$REPO")"
 
 if [ ! -d "$DB_DIR" ]; then
     error_log "Database directory not found: $DB_DIR. Please check the -b parameter."
@@ -701,8 +727,21 @@ if [ -z "$SKIP_ABR" ]; then
     done
     abricate --summary 08_Anotacion/*/abricate/*.tab > 08_Anotacion/AbR.tab
     cp 08_Anotacion/AbR.tab AbR_report.csv
+
+    # Virulence screen against VFDB. Runs on the same assemblies as the AMR
+    # screen and uses the same identity/coverage thresholds. parser.py collapses
+    # VF_report.csv into a per-sample Virulence_genes column (VF_modif.xlsx),
+    # which mge_alerts.py reads to annotate repository matches.
+    log "Virulence Screen (Abricate, VFDB)..."
+    for i in $(cat samples); do
+        resume_done "08_Anotacion/${i}/abricate_vfdb/${i}.tab" && { log "  [resume] Abricate-VFDB: ${i} done, skipping."; continue; }
+        mkdir -p 08_Anotacion/${i}/abricate_vfdb
+        abricate --db vfdb --minid $ABRICATE_MIN_ID --mincov $ABRICATE_MIN_COV 03_assemblies/${i}.fasta > 08_Anotacion/${i}/abricate_vfdb/${i}.tab
+    done
+    abricate --summary 08_Anotacion/*/abricate_vfdb/*.tab > 08_Anotacion/VF.tab
+    cp 08_Anotacion/VF.tab VF_report.csv
 else
-    log "Skipping AMR Screen (Abricate)..."
+    log "Skipping AMR + Virulence Screen (Abricate)..."
 fi
 
 # Integrons
@@ -904,6 +943,32 @@ python3 "$SCRIPTS_PATH/aluminion_reporter.py" "$PWD"
 
 log "Updating historical databases (data_seq.tsv / data_analysis.tsv)..."
 python3 "$SCRIPTS_PATH/lab_db_updater.py" --input_path . $INIT_DB
+
+# Cross-run MGE alerts: ingest this run's plasmids/integrons into the cumulative
+# repository and emit alerts.tsv + Alerts_Report.html when a recurrent or
+# priority-gene-carrying element is detected. Runs after lab_db_updater.py
+# because mge_alerts.py reads the freshly written data_analysis.tsv.
+if [ -z "$NO_ALERTS" ]; then
+    if [ -n "$INIT_REPO" ] || [ ! -f "$REPO/index_plasmids.tsv" ]; then
+        log "Initializing MGE repository at $REPO"
+        conda activate aluminion_annot
+        python3 -c "import sys; sys.path.insert(0, '$SCRIPTS_PATH'); from mge_repository import Repository; Repository.init('$REPO')"
+    fi
+    if [ -f "$REPO/index_plasmids.tsv" ]; then
+        log "Running cross-run MGE alerts (repository: $REPO)..."
+        conda activate aluminion_annot
+        python3 "$SCRIPTS_PATH/mge_alerts.py" \
+            --run-dir "$PWD" \
+            --repo "$REPO" \
+            --run-name "$RUN_NAME" \
+            $ALERT_NEW_PRIORITY \
+        || warn "MGE alerts step failed (non-fatal). See log for details."
+    else
+        warn "MGE repository was not created at $REPO. Alerts step skipped."
+    fi
+else
+    log "Skipping cross-run MGE alerts (--no-alerts)."
+fi
 
 # Print a consolidated warning summary for all non-fatal failures
 if [ ${#failed_polish[@]} -gt 0 ] || [ ${#failed_deconcat[@]} -gt 0 ] || [ ${#failed_circlator[@]} -gt 0 ] \

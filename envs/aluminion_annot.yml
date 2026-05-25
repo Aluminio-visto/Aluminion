@@ -1,3 +1,4 @@
+#aluminion_annot.yml
 name: aluminion_annot
 channels:
   - conda-forge
@@ -17,3 +18,4 @@ dependencies:
   - mlst
   - blast
   - datamash
+  - skani          # ANI-based plasmid matching for the MGE alert system (mge_alerts.py)

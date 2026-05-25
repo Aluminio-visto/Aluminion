@@ -102,6 +102,9 @@ def preflight_check(input_folder, args):
         checks.append(('AbR_report.csv',
                        os.path.join(input_folder, 'AbR_report.csv'),
                        '--skip-abr'))
+        checks.append(('VF_report.csv',
+                       os.path.join(input_folder, 'VF_report.csv'),
+                       '--skip-abr'))
     if not args.skip_kraken:
         checks.append(('kraken2/species.csv',
                        os.path.join(input_folder, '04_taxonomies/kraken2/species.csv'),
@@ -286,6 +289,8 @@ def main():
     ectyper_path     = os.path.join(input_folder, '04_taxonomies/ectyper/output.tsv')
     abricate_path    = os.path.join(input_folder, 'AbR_report.csv')
     abricate_out     = os.path.join(out_folder,   'AbR_modif.xlsx')
+    vfdb_path        = os.path.join(input_folder, 'VF_report.csv')
+    vfdb_out         = os.path.join(out_folder,   'VF_modif.xlsx')
     taxonomy_xlsx    = os.path.join(out_folder,   'taxonomy.xlsx')
     taxonomy_csv     = os.path.join(out_folder,   'taxonomy.csv')
 
@@ -341,6 +346,39 @@ def main():
                 cols = cols[:2] + cols[-1:] + cols[2:-1]
                 abricate_df = abricate_df[cols]
             abricate_df.to_excel(abricate_out, index=False)
+
+    # --- VFDB VIRULENCE (mirrors the ABRICATE/AMR block above) --------------
+    # Collapses the per-gene presence matrix into a single "Virulence_genes"
+    # column written to VF_modif.xlsx. mge_alerts.py reads that file directly
+    # to attach a per-sample virulence profile to repository matches.
+    if not args.skip_abr:
+        log.info('Processing virulence genes (Abricate, VFDB)...')
+        vfdb_df = safe_read_csv(vfdb_path, required_cols=['#FILE'], sep='\t')
+        if not vfdb_df.empty and '#FILE' in vfdb_df.columns:
+            for col in vfdb_df.columns[2:]:
+                vfdb_df[col] = vfdb_df[col].apply(
+                    lambda x, c=col: f'{c} ({x})' if x != '.' and not pd.isna(x) else ''
+                )
+
+            sample_to_vir = {}
+            for i in range(len(vfdb_df)):
+                row_values = vfdb_df.loc[i, :].values.tolist()
+                sample_id = row_values[0]
+                vir_hits = [v for v in row_values if v != ''][2:]
+                sample_to_vir[sample_id] = vir_hits
+
+            vfdb_df['Virulence_genes'] = vfdb_df['#FILE'].map(sample_to_vir)
+            vfdb_df['Virulence_genes'] = vfdb_df['Virulence_genes'].apply(
+                lambda x: ', '.join(x) if isinstance(x, list) else ''
+            )
+            vfdb_df['#FILE'] = (
+                vfdb_df['#FILE'].astype(str).str.split('/').str[-1].str.rsplit('.', n=1).str[0]
+            )
+            cols = vfdb_df.columns.tolist()
+            if len(cols) > 2:
+                cols = cols[:2] + cols[-1:] + cols[2:-1]
+                vfdb_df = vfdb_df[cols]
+            vfdb_df.to_excel(vfdb_out, index=False)
 
     # --- KRAKEN -------------------------------------------------------------
     if not args.skip_kraken:

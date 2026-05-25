@@ -549,3 +549,163 @@ Four sub-items, all need design discussion before code:
 4. Start the C6 design conversation: pick the lookup strategy for the prior
    `data_seq.tsv` / `data_analysis.tsv` (C6.2 is the prerequisite for everything else
    in C6).
+
+---
+
+## 8. Session log — 2026-05-21 (Tier B/C refactors + production bug-fix tranche)
+
+### Context
+
+This session picked up after Tier A and the dnaapler migration. A `git worktree`
+was created in parallel (`../aluminion-alerts`, branch `feature/alert-system`)
+to start designing the MGE alert system (C6) independently. On the main branch
+the agenda was Tier B/C polish + whatever production bugs surfaced on the
+`2026_04_28` Mutantes run that was the active validation target.
+
+Net result: Tier B/C complete, and a long tail of latent bugs caught during
+end-to-end validation. The pipeline now runs cleanly end-to-end with populated
+`taxonomy.csv` and `data_analysis.tsv`.
+
+### Tier B/C refactors landed
+
+| Tag | Change | Files |
+|---|---|---|
+| **C2 + C8 + E3** | Renamed every Spanish-named variable in `parser.py` to English (`cabecera` → `MLST_HEADER`, `muestra` → `sample_id`, `posibles` → `candidates`, `genes_seguros` → `safe_genes`, `provis1/2` → `genus_split/species_split`, `intermedio` → `merged_taxonomy`, `resultado` → `final_taxonomy`, `ultimo_df` → `kraken_mlst_df`, `columnas_finales` → `final_columns`, …). Refactored the MLST processing from line-by-line file I/O to a single `parse_mlst()` builder that returns a DataFrame, eliminating the `df.loc[-1] = …; df.index += 1` antipattern. Output schema is preserved (`mlst_modif.csv` columns unchanged); rows are now padded to a consistent 13 columns. | `scripts/parser.py` |
+| **C5** | Migrated all ANSI-coded `print(f"\033[…m…")` calls in `parser.py`, `integron_parser.py`, and `copla_parser.py` to a shared `_log.get_logger()` helper. Logger writes to stderr, autodetects TTY for colour, respects `NO_COLOR`. Output is now redirectable. | `scripts/_log.py` (new), `parser.py`, `integron_parser.py`, `copla_parser.py` |
+| **C3** | Lifted magic constants in `aluminion.sh` to top-of-file (`MIN_READ_MB=135`, `CHOPPER_MIN_QUALITY=12`, `CHOPPER_MIN_LENGTH=300`, `CHOPPER_HEADCROP=20`, `ABRICATE_MIN_ID=75`, `ABRICATE_MIN_COV=75`) and exposed each as a CLI flag (`--min-read-mb`, `--chopper-q`, `--chopper-len`, `--chopper-headcrop`, `--abricate-minid`, `--abricate-mincov`). Help text updated. | `aluminion.sh` |
+| **C1** | Renamed `Datos_seq_unified2.py` → `lab_db_updater.py` (via `git mv`), and the two internal helpers `parse_minion_sum` / `parse_minion_report` → `parse_minknow_summary` / `parse_minknow_report` (the legacy names confused MinION the device with MinKNOW the software). Updated the call in `aluminion.sh`, README ASCII table, and CLAUDE.md repo tree. | `scripts/lab_db_updater.py`, `aluminion.sh`, `README.md`, `CLAUDE.md` |
+| **Hard-coded cutoffs** | Surfaced the two lab-specific defaults inside `lab_db_updater.py` as CLI flags: `--extraction-kit "DNeasy Blood & Tissue"` (was a hard-coded string literal) and `--depth-threshold 30.0` (was `result3["Depth"] > 30.0`). Help text explains both. | `scripts/lab_db_updater.py` |
+
+### Production bugs caught and fixed during validation
+
+These were not on the agenda — they surfaced as the `2026_04_28` Mutantes run
+walked through each stage. Listed in roughly the order they were hit:
+
+| # | Symptom | Root cause | Fix | File(s) |
+|---|---|---|---|---|
+| 1 | Pipeline aborted at `ls ... \| head -1` under `set -o pipefail` when no Chrome binary was found in any conda root | `ls` returns 2 when its glob has no match; `pipefail` propagated that through `head -1` even though stderr was silenced | Added `\|\| true` so the detect loop can fail one path and try the next; if nothing matches, `BROWSER_PATH` simply isn't exported and NanoPlot keeps working via `MPLBACKEND=Agg` | `aluminion.sh` |
+| 2 | Bandage aborted the entire pipeline with `qt.qpa.xcb: could not connect to display` (exit 134, SIGABRT) on the headless server | Bandage's Qt initialised an X backend by default | Set `QT_QPA_PLATFORM=offscreen` and wrap the call non-fatally; failures append to `failed_bandage[]` and log to `03_assemblies/bandage.log` | `aluminion.sh` |
+| 3 | Circlator failed for all four samples with no visible reason (errors were being thrown to `2>/dev/null`) | Bioconda circlator (Python 3.6) links pysam against `libcrypto.so.1.0.0` which no longer exists on modern Ubuntu | Migrated to `dnaapler all` (already covered in session 7) | `envs/aluminion_circlator.yml`, `aluminion.sh` |
+| 4 | Typing tools (GAMBIT/MLST/Kleborate/ECTyper) failures would crash the whole run | Each tool was a bare call under `set -e` | Wrapped each in `if ! tool; then warn; failed_typing+=("Tool"); fi`. The four typing tools now fail independently; Bakta and Flye remain fatal | `aluminion.sh` |
+| 5 | `cp: cannot stat '11_integrons/integron_summary.csv'` / same for `09_phages/phage_summary.csv` on every run; `[INFO] No integrons in plas-X` appearing twice in the log | `aluminion.sh` invoked `integron_parser.py` and `phage_parser.py` directly, and later `parser.py` invoked them AGAIN internally. The bash-level `cp` targets pointed at where the parsers used to write before they were refactored to write to the run root | Removed the redundant direct bash invocations and their dead `cp` lines. Now `parser.py` does the work exactly once | `aluminion.sh` |
+| 6 | `aluminion_reporter.py` crashed with `AttributeError: 'float' object has no attribute 'endswith'` on the MLST column | Tier B refactor changed `mlst_modif.csv` writer from line-by-line to `pd.DataFrame.to_csv()`. Re-reading produces NaN floats where empty MLSTs used to be empty strings; `.astype(str).apply(lambda x: x.endswith(...))` does not reliably coerce NaN under newer pandas | Replaced with an explicit `pd.isna()` check inside a defensive lambda | `scripts/aluminion_reporter.py` |
+| 7 | Plasmids in `05_plasmids/` were named `plasmid_plas-N.fasta` instead of `<CLUSTER>_plas-N.fasta`; `chromosome.fasta` was being copied as a plasmid | MOB-suite changed its naming from `<CLUSTER>_*.fasta` to `plasmid_<CLUSTER>.fasta`, so `cut -d'_' -f1` extracted the literal word "plasmid". The find filter `-name "*.fasta"` also captured `chromosome.fasta` (it fit the size window) | Restricted the find to `plasmid_*.fasta` (excludes `chromosome.fasta` and the BLAST DB sidecars automatically) and extracted the cluster from field 2: `cut -d'_' -f2`. Also surfaced the cluster name in the Copla traceability echo (was a fragile substring slice) | `aluminion.sh` |
+| 8 | Phastest reported 0 intact prophage regions for every sample, including K. pneumoniae chromosomes that should carry several | Two layered mistakes: (a) `docker compose run --user $(id -u):$(id -g)` made `/root/phastest-app/scripts/*` unreadable to the container user, breaking `scan.pl`/`call_dmnd_parallel.pl`. (b) The earlier `--phage-only` flag *masked* this by telling Phastest "the input is a phage, skip prophage scanning entirely" | Removed both flags. Phastest now runs as root inside the container, with the full prophage pipeline | `aluminion.sh` |
+| 9 | After the Phastest fix above, the pipeline died at `rm -rf JOBS/$i` because the container had created root-owned files there | Running as root inside the container means JOBS/$i and its contents end up root-owned on the host; the user can't delete files in a directory they don't own | Wrapped the phastest call in `bash -c "phastest …; rc=\$?; chown -R <host_uid>:<host_gid> /phastest-app/JOBS/'$i' 2>/dev/null; exit \$rc"`. Same container chowns its output back to the host user before exiting; Phastest's exit code is preserved | `aluminion.sh` |
+| 10 | `lab_db_updater.py` crashed with `KeyError: 'ID'` on the QUAST QC table merge | `aluminion.sh` writes `QC_assembly.csv` with header `Samples` (plural), `aluminion_reporter.py` reads it under that name, but `lab_db_updater.py` was trying to rename `Sample` (singular) — a no-op that left the column as `Samples` while the subsequent `merge(on='ID')` expected `ID` | Accept either label: `rename(columns={"Samples": "ID", "Sample": "ID"})` | `scripts/lab_db_updater.py` |
+| 11 | `data_analysis.tsv` was almost entirely empty: Lab_id / ID / Barcode / Depth / Assembly_score / MGE counts populated, but every taxonomy/AMR column NaN — even though the per-tool outputs (mlst_modif.csv, kleborate.tsv, etc.) had data | The awk that builds `04_taxonomies/kraken2/{genus,species}.csv` used `print i,"\t",$1,...` with comma separators, which insert OFS=" " between every expression. Plus trailing empty fields `$3, $4` added more spaces. Result: `Sample = "plas-1 "` (trailing space) survived all the way to `taxonomy.csv`. `lab_db_updater.py`'s outer-then-inner merge then silently dropped the entire taxon2 side because `"plas-1 " != "plas-1"`. `parser.py` did have a `.apply(lambda x: x.str.strip())` that should have caught this, but it was silently a no-op in the current pandas version | Fix at the root: rewrote the awk to use `-v OFS='\t'` and explicit name concatenation, so the output is `<sample>\t<percent>\t<taxon_name>` with no stray spaces. Defence in depth: replaced the `.apply(str.strip)` idiom in `parser.py` with explicit per-column loops (`for c in df.columns: if df[c].dtype == 'object': df[c] = df[c].str.strip()`) and added a final defensive strip on `final_taxonomy['Sample']` before writing `taxonomy.csv` | `aluminion.sh`, `scripts/parser.py` |
+
+### Cumulative observations
+
+- The `.apply(lambda x: x.str.strip())` idiom is unreliable in this pandas
+  release for unknown reasons (it produced a DataFrame that looked correct in
+  the REPL but the values were unchanged in the to_csv output). Prefer
+  explicit per-column loops or `Series.str.strip()` on a single column.
+- Tier A's "non-fatal optional steps" pattern (failures emit warnings, the run
+  continues) caught many of the production bugs early — the run reached
+  consolidation despite Bandage / circlator / typing failing, which let us
+  enumerate every problem in one pass rather than fix-and-retry per step.
+- The Phastest two-bug onion (`--user` masking by `--phage-only`) is a clean
+  example of why removing workarounds is more valuable than adding them.
+
+### Outstanding from the agreed task list
+
+**Tier B/C — DONE** except:
+
+- **C4** — extract `safe_read_csv` to `scripts/_utils.py`. Declined for now: only
+  `parser.py` uses it, so YAGNI. Reconsider when `lab_db_updater.py` or
+  `aluminion_reporter.py` need similar defensive CSV loading.
+- README — document `repositorio/` folder purpose. Tied to C6; will land with
+  the alert-system work.
+- Migrate `print()` calls to logging in `aluminion_reporter.py` and
+  `lab_db_updater.py` (no ANSI codes there, but lots of bare prints). Low priority.
+
+**Tier D — C6 cumulative repository + MGE alert system**: being developed in
+parallel on the `feature/alert-system` worktree (`../aluminion-alerts`).
+
+### State of the working tree at end of session
+
+- **Branch:** main
+- **Modified (uncommitted on main):** `aluminion.sh`, `README.md`, `CLAUDE.md`,
+  `avances.md`, `envs/aluminion_circlator.yml`, `scripts/parser.py`,
+  `scripts/integron_parser.py`, `scripts/copla_parser.py`,
+  `scripts/aluminion_reporter.py`, `scripts/lab_db_updater.py` (renamed from
+  `Datos_seq_unified2.py`).
+- **Added:** `scripts/_log.py`.
+- **Worktree present:** `../aluminion-alerts` on branch `feature/alert-system`
+  for the C6 work, running independently.
+- **No commits made on main in this session** — user closing the window and
+  will commit/push manually before merging the worktree branch back.
+
+### Immediate next step on resume
+
+1. Commit the production-bug tranche on `main` with a single descriptive
+   commit (or split: refactor / bug-fixes / docs).
+2. Push `main` to origin.
+3. When the `feature/alert-system` worktree work is complete, merge it back
+   into `main` (see the worktree-merge workflow at the top of session 8 if
+   the user logged it separately).
+
+---
+
+## 9. Session log — 2026-05-25 (Integration of feature/alert-system into main)
+
+### Context
+
+Both branches matured: `main` carried the full refactor + production-bug tranche;
+`feature/alert-system` (worktree `../aluminion-alerts`) carried the C6 cross-run
+MGE alert system. A subagent independently verified a merge plan. Decision: do NOT
+`git merge`/`rebase` (merge-base `cbc7325` predates main's refactors, so
+`parser.py`/`aluminion.sh` are near-total textual conflicts). Instead, an
+**integration branch off main** with manual feature re-application. The user also
+asked to **retire the old in-DB MGE engine** during the merge.
+
+### Branch divergence (verified)
+
+- merge-base: `cbc7325`. Both branches ~7 commits ahead.
+- True conflict set: only 5 files — `aluminion.sh`, `parser.py`, `README.md`,
+  `CLAUDE.md`, `avances.md`. Everything else one-sided.
+- Subagent corrections to the draft: `deconcat.py` and `aluminion_circlator.yml`
+  were NOT touched by the branch (no conflict); `Virulence_genes` does NOT flow
+  into `data_analysis.tsv` (lives only in `VF_modif.xlsx`, read directly by
+  `mge_alerts.py`); the new `mge_*` modules are standalone (no import of
+  parser.py / lab_db_updater.py); `lab_db_updater.py` already carried a
+  pre-existing redundant MGE engine (`find_shared_mges`) inherited from the
+  merge-base — flagged as R5 and retired this session per user request.
+
+### What landed on branch `integration/alert-merge`
+
+| Step | Action |
+|---|---|
+| 0 | Safety: tag `premerge-main-20260525`, branch `backup/alert-system`. |
+| 1 | `git switch -c integration/alert-merge main` (carried the dirty avances.md along). |
+| 2 | Clean-add from alert-system: `mge_repository.py`, `mge_alerts.py`, `_priority_genes.py`, `alerts_reporter.py`, `tests/test_mge_repository.py`, `tests/test_mge_alerts.py`. Fixed a stale `Datos_seq_unified2.py` docstring reference in `mge_alerts.py` → `lab_db_updater.py`. |
+| 3 | Added `skani` to `envs/aluminion_annot.yml`. |
+| 4 | Ported the `Virulence_genes` column into main's refactored `parser.py` (preflight check for `VF_report.csv`, `vfdb_path`/`vfdb_out`, VFDB processing block mirroring the AMR block — in English/logging style, writes `VF_modif.xlsx`). |
+| 5 | Ported into main's `aluminion.sh`: 4 MGE flags (`--repo`/`--init-repo`/`--alert-new-priority`/`--no-alerts`) + help, `REPO` default `$BASE_DIR/repository` resolution, VFDB screen block (using `$ABRICATE_MIN_ID/COV` — NOT hardcoded 75, per R1), and the cross-run alerts block inserted AFTER the `lab_db_updater.py` call (R3 — needs `data_analysis.tsv`). |
+| R5 | Retired the old MGE engine from `lab_db_updater.py`: removed `_is_amr_gene`, `_parse_cassette_cell`, `build_mge_table`, `find_shared_mges`, the `data_mge.tsv`/`mge_shared.tsv` block in `main()`, the `--alert-all-mge` flag, and the now-unused `import ast`. `mge_alerts.py`/`mge_repository.py` are now the sole MGE comparison system. |
+| 6 | Docs: README (Stage 7 node + table row, 4 flags, `VF_modif.xlsx`/`alerts.tsv`/`Alerts_Report.html` outputs, "Cross-run MGE alerts" section, test cmd), CLAUDE.md (new scripts in tree), this avances section. |
+
+### Verified during integration
+
+- `mge_alerts.py` argparse matches the wired invocation (`--run-dir/--repo/--run-name/--alert-new-priority`); `Repository.init(root)` matches the `python3 -c` init call.
+- `bash -n aluminion.sh` passes.
+- Only the old engine referenced `data_mge.tsv`/`mge_shared.tsv`; the new system uses `repository/index_plasmids.tsv` — safe retire.
+- `df_pl`/`df_int`/`df_fagos` in `lab_db_updater.py` are still used (Plasmids/Prophages/Integrons counts) — kept.
+
+### State of the working tree
+
+- **Branch:** `integration/alert-merge` (main untouched; `premerge-main-20260525`
+  tag + `backup/alert-system` branch are the rollback anchors).
+- Pending: Step 7 verification (py_compile, both test suites, dataflow smoke,
+  one end-to-end run with `--init-repo`), then the user merges to main with
+  `git merge --no-ff` (Step 8) after review.
+
+### Open follow-ups
+
+- `--ani-threshold` / `--jaccard-threshold` / `--size-tolerance` of `mge_alerts.py`
+  are not exposed as `aluminion.sh` flags (only defaults used). Expose later if
+  the lab wants to tune matching stringency.
+- The README pipeline mermaid diagram (7 nodes) and the stage table (now 6 rows)
+  group stages slightly differently — pre-existing cosmetic mismatch, not fixed.
+- C4 (`safe_read_csv` → `_utils.py`) still declined (YAGNI).
