@@ -1,7 +1,8 @@
 # Bioinformatics Analysis Projects — Lab Context
 
 ## Antes de comenzar
-Antes de rellenar huecos de información avisa de la información faltante. 
+Antes de rellenar huecos de información avisa de la información faltante. Antes de empezar a escribir código o responder preguntas, pregúntame todo lo que no quede claro hasta que lleguemos a un punto de mutuo entendimiento.
+No me des la razón ni emplees frases como "bien pensado" o "buen punto", toma en su lugar una actitud crítica constructiva: busca los posibles errores de lógica o fallos en la construcción, como si fueras un ingeniero/bioinformático senior escrutinizando un trabajador junior.
 Lee los ficheros del entorno de trabajo. Si encuentras problemas a la hora de leer o escribir en un fichero (por ejemplo por problemas de permisos) avísame antes de continuar el razonamiento para que yo lo solucione antes de continuar. 
 Comprueba que las funciones de abrir y escribir ficheros están refiriendo a archivos que están presentes en el repo, si faltan, haz una lista de los ficheros que te hacen falta para trabajar. 
 Si hay que realizar imports o se llama a herramientas que no sean propias del sistema, genera un archivo YML que permita ejecutar el código creando un entorno conda.
@@ -11,44 +12,38 @@ Clasificación de scripts por nivel de funcionamiento: qué scripts ya funcionan
 Valoración de tareas por prioridad: Organiza el trabajo de manera que nos centremos en que la maquinaria principal funcione para que podamos añadir más adelante nuevos scripts que aporten funciones extra (como plots con R, tablas extra, o mejorar el README) cuando ya tengamos un suelo seguro sobre el que trabajar.
 Genera código comentado en inglés americano técnico porque el público destino generalmente serán otros científicos de todo el mundo y queremos que pueda ejecutarlo cualquiera. Esto aplica también para las funciones de Python que vayamos definiendo, para el README, para las cabeceras de todas las tablas y títulos/ejes de los plots de todo lo que vayamos generando, etc.
 Cuando termines de realizar cambios en el código o los READMEs genera un texto para el commit a GitHub como por ejemplo: git commit -m "Added new --resume flag to continue stopped executions" o git commit -m "Added logs and improved preprocessing steps". Puedes extenderte más si quieres. 
+Use tool-clearing consistently, to limit token waste. 
+Also, use compacting at 30% usage instead of 100% to guarantee better focus.
+All code must be written and commented in **English**. Variable names, function names, and documentation must also be in English. All plots must be publication-ready (high quality, high resolution, clean aesthetics, suitable for international peer-reviewed journals).
 
+## Session protocol
+At the end of every session, update avances.md with:
+- Last file modified and what changed
+- Next concrete action(s) to take
+- Any command left half-executed
 
 ## Overview
 
-These repositories contain pipelines and scripts for two main types of bioinformatic analyses:
-
-1. **Bacterial genomics** — primarily Oxford Nanopore long-read sequencing data
-2. **16S rRNA metataxonomy** — microbiome analysis from clinical human samples
-
-All code must be written and commented in **English**. Variable names, function names,
-and documentation must also be in English. All plots must be publication-ready (high
-resolution, clean aesthetics, suitable for international peer-reviewed journals).
-
----
-
-## Project type 1: Bacterial genomics
-
-### Overview
 
 Whole-genome sequencing analysis of bacterial isolates, primarily using **Oxford Nanopore
 Technology (ONT) long reads**, with occasional Illumina short reads for hybrid assembly.
 
-### Typical pipeline steps
+### Pipeline steps
 
 | Step | Tools (preferred → alternative) |
 |------|----------------------------------|
 | Preprocessing / QC | NanoPlot, Chopper |
 | Assembly | Flye  |
 | Assembly polishing | dorado / deconcat |
-| Assembly QC | QUAST, CheckM / Busco / Bandage |
-| Annotation | Prokka / Bakta |
-| MLST typing | mlst (Torsten Seemann) / PubMLST API |
+| Assembly QC | QUAST,  Bandage |
+| Annotation |  Bakta |
+| MLST typing | mlst (Torsten Seemann)  |
 | Species/subspecies detection | Kleborate (Klebsiella), ECTyper (E. coli) |
 | AMR detection | ABRicate, RGI (CARD) / ResFinder |
 | Virulence genes | ABRicate (VFDB), BLAST |
-| Plasmid detection | Platon, MOB-suite / copla |
+| Plasmid detection | MOB-suite / copla |
 | Integron detection | IntegronFinder |
-| Prophage detection | PHASTER/PHASTEST, PhiSpy / Vibrant |
+| Prophage detection | PHASTEST |
 | Pan-genome | Roary / Panaroo / chewbacca |
 | Phylogenetics | IQ-TREE2, FastTree / Snippy (SNP-based) |
 
@@ -57,7 +52,7 @@ Technology (ONT) long reads**, with occasional Illumina short reads for hybrid a
 - **Primary language**: Bash (shell scripts) with output parsing via Python
 - **Future direction**: Nextflow (actively migrating — add Nextflow versions when possible)
 - **Containerization**: Docker preferred over Conda for new tools; Conda still in use for legacy tools
-- **Avoid**: hardcoded absolute paths — use variables or arguments for all paths
+- **Avoid**: hardcoded absolute paths — use variables or arguments for all paths. Silent error exits.
 
 ### Bash scripting conventions
 
@@ -75,7 +70,7 @@ log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >&2; }
 log "Starting assembly pipeline for sample ${SAMPLE}"
 ```
 
-- Always use `set -euo pipefail` at the top of every script
+- Use `set -euo pipefail` at the top of every script
 - All scripts must accept input/output as positional arguments — no hardcoded paths
 - Use a `log()` function for timestamped logging to stderr
 - Validate that input files exist before processing (`[[ -f "$FILE" ]] || { log "ERROR: ..."; exit 1; }`)
@@ -92,131 +87,6 @@ log "Starting assembly pipeline for sample ${SAMPLE}"
 - Follow nf-core module structure when possible for reusability
 
 ---
-
-## Project type 2: 16S rRNA metataxonomy
-
-### Overview
-
-Microbiome analysis from clinical human samples (nasopharyngeal, intestinal, stool,
-vaginal, etc.) using amplicon sequencing of the 16S rRNA gene.
-
-### Sequencing technologies and target regions
-
-| Technology | 16S region | Typical use case |
-|------------|------------|------------------|
-| Illumina | V3-V4 | Most projects, high sample throughput |
-| PacBio | Full-length 16S | Higher taxonomic resolution projects |
-| Oxford Nanopore | Variable | Emerging, case-by-case basis |
-
-### Bioinformatics stack
-
-- **Denoising**: QIIME2 with DADA2 plugin
-- **Taxonomy database**: SILVA (weighted classifier, latest available version)
-- **Downstream analysis**: R (primary language for all statistics and visualization)
-
-#### Key R packages
-
-```r
-# Core microbiome data handling
-library(qiime2R)       # Import QIIME2 artifacts into R
-library(phyloseq)      # Core microbiome data structure and methods
-library(microbiome)    # Utilities and transformations for phyloseq objects
-
-# Diversity and community ecology
-library(vegan)         # Diversity indices, ordination, permanova
-
-# Statistics
-library(lme4)          # Linear mixed models
-library(nlme)          # Nonlinear mixed effects models
-library(emmeans)       # Marginal means and pairwise contrasts
-library(rstatix)       # Tidy-friendly statistical tests
-
-# Visualization
-library(ggplot2)       # All figures
-library(ggpubr)        # Publication-ready ggplot2 extensions
-library(patchwork)     # Combining multiple ggplot panels
-library(RColorBrewer)  # Color palettes
-library(viridis)       # Colorblind-friendly continuous palettes
-library(ggsignif)      # Significance brackets on ggplot figures
-
-# Data manipulation
-library(tidyverse)     # dplyr, tidyr, readr, stringr, purrr, forcats
-
-# Path management
-library(here)          # Reproducible relative paths (always use here::here())
-```
-
-### Interactive pipeline design — mandatory
-
-**These pipelines must interrogate the user** before running key steps. Each pipeline
-script must present interactive menus for the decisions below. Never assume defaults
-silently — always show what the default is and ask for confirmation.
-
-Decisions that require user input:
-
-- **Taxonomic level**: Genus / Family / Order / Class / Phylum (or combinations)
-- **Clinical variable selection**: show available metadata columns, let user pick which
-  to use for grouping, coloring, and statistical comparisons
-- **Filtering thresholds**: minimum read count per sample, minimum ASV prevalence
-- **Rarefaction**: apply or not, at what sequencing depth
-- **Alpha diversity metrics**: Shannon, Simpson, Chao1, Observed, Faith's PD, etc.
-- **Beta diversity metrics**: Bray-Curtis, weighted/unweighted UniFrac, Jaccard
-- **Ordination method**: PCoA, NMDS, t-SNE, UMAP
-- **Statistical framework**: parametric vs non-parametric (check normality first and
-  suggest the appropriate test)
-
-#### Standard interactive menu pattern
-
-```r
-# Present a numbered menu with clear descriptions
-prompt_menu <- function(title, options, default = 1) {
-  cat(sprintf("\n=== %s ===\n", title))
-  for (i in seq_along(options)) {
-    marker <- if (i == default) " [default]" else ""
-    cat(sprintf("  %d. %s%s\n", i, options[i], marker))
-  }
-  choice <- readline(prompt = sprintf("Enter choice [1-%d] (Enter for default): ",
-                                      length(options)))
-  if (nchar(trimws(choice)) == 0) return(default)
-  choice <- suppressWarnings(as.integer(choice))
-  if (is.na(choice) || choice < 1 || choice > length(options)) {
-    message(sprintf("Invalid input. Using default: %s", options[default]))
-    return(default)
-  }
-  return(choice)
-}
-
-# Usage example
-tax_choice <- prompt_menu(
-  title   = "Select taxonomic level for analysis",
-  options = c("Genus", "Family", "Order", "Class", "Phylum"),
-  default = 1
-)
-tax_level <- c("Genus", "Family", "Order", "Class", "Phylum")[tax_choice]
-message(sprintf("Proceeding with taxonomic level: %s", tax_level))
-```
-
-### R coding conventions
-
-- All code and all comments in **English**
-- Use `tidyverse` style: native pipe `|>`, tidy data principles, no `$` chaining
-- Never use `attach()`, `setwd()`, or `source()` with absolute paths
-- Use `here::here()` for every file path without exception
-- Each script must start with a structured header:
-
-```r
-# =============================================================================
-# Script:  alpha_diversity_analysis.R
-# Purpose: Compute and visualize alpha diversity metrics; test associations
-#          with clinical variables via linear mixed models
-# Input:   data/phyloseq_filtered.rds
-#          data/metadata/clinical_metadata.csv
-# Output:  figures/alpha_diversity_boxplots.pdf
-#          results/diversity/alpha_stats_summary.csv
-# Author:  [Lab name / PI]
-# Date:    YYYY-MM-DD
-# =============================================================================
-```
 
 ### Publication-quality plots — mandatory standards
 
@@ -278,7 +148,8 @@ save_publication_plot <- function(plot, filename, width = 7, height = 5) {
 **Critical rules:**
 - `data/raw/` is strictly read-only — never write there under any circumstance
 - All outputs go to `results/` or `figures/`
-- Never commit raw sequencing data: `.fastq.gz`, `.fast5`, `.pod5`, `.bam` are in `.gitignore`
+- Never commit raw sequencing data nor CLAUDE.md/avances.md: `.fastq.gz`, `.fast5`, `.pod5`, `.bam` are in `.gitignore`
+
 
 ---
 
@@ -296,8 +167,7 @@ When implementing a new analysis step, choosing parameters, or selecting a tool,
 
 2. **PubMed / Google Scholar** — methods validation and benchmark papers
    - Check if the chosen tool/parameter combination is validated in the literature
-   - Search for benchmarking studies (e.g., assembler comparisons for ONT data,
-     DADA2 vs Deblur for 16S, classifier benchmarks for SILVA vs GTDB)
+   - Search for benchmarking studies (e.g., assembler comparisons for ONT data)
    - Look for recent publications (last 2 years) suggesting improved approaches
 
 ### What to report after searching
@@ -313,8 +183,7 @@ After any literature/repository search, always summarize:
   could improve our results (even if we decide not to adopt them, flag them)
 
 This is especially important for: filtering thresholds for ONT reads, assembly
-parameters (Flye genome size and mode), DADA2 truncation lengths, SILVA classifier
-training parameters, rarefaction decisions, and choice of diversity metrics.
+parameters (Flye genome size and mode).
 
 ---
 
@@ -500,20 +369,6 @@ Docker images required: `kbessonov/mob_suite:3.0.3`, `rpalcab/copla:1.0`, phaste
   dependency) spawns child browser processes that become direct bash children; `wait`
   catches their non-zero exit under `set -e`, hanging the pipeline. The brackets + `& done; wait`
   pattern parallelises NanoPlot across samples while ignoring choreographer exit codes.
-- `MPLBACKEND=Agg PLOTLY_RENDERER=kaleido` on all NanoPlot calls: forces non-interactive
-  matplotlib backend and routes Plotly static exports through kaleido, bypassing
-  choreographer/Chrome entirely on headless servers.
-- `kaleido` is NOT available on conda-forge or bioconda — must be installed via pip with no
-  version pin. NanoPlot 1.46.2 requires kaleido>=1.0.0; pip installs the 1.x Go-based binary
-  (~small, fast). The old 0.2.1 bundled a full Chromium (~200 MB) and hung during install.
-- `readlink -f` is applied to `SEQ_LIST_INPUT` and `BASE_DIR` immediately after argument
-  parsing, before any `cd "$WORKDIR"`, to prevent relative path breakage.
-- Resume sentinels: `.polished` and `.circlator_done` are `touch`-created files because
-  both steps overwrite `assembly.fasta` (can't use the assembly as its own sentinel).
-  Note: `.circlator_done` is kept as the sentinel name even though the tool is now
-  dnaapler (legacy circlator was EOL with broken libcrypto.so.1.0.0 dep).
-- Flye failure: interactive 3-choice menu (skip sample / retry with `--meta` / stop pipeline).
-  Skipped samples are removed from the `samples` file so downstream loops ignore them.
 - `copla.txt` is only truncated (`> copla.txt`) on a fresh run, not on `--resume`, to
   allow appending results for samples that weren't done yet.
 - **Two input layouts coexist**: (a) classic single-run mode — `list_seq.tsv` in
