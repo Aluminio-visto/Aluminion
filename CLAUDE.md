@@ -367,7 +367,12 @@ Aluminion/                        ← git root
 │   ├── phage_parser.py           ← Phastest output → phage_summary.csv
 │   ├── lab_db_updater.py         ← Builds data_seq.tsv / data_analysis.tsv (cumulative lab DB)
 │   ├── aluminion_reporter.py     ← Generates Aluminion_Report.html from final tables
-│   └── deconcat.py               ← Deconcatenates reads for dorado polish step
+│   ├── deconcat.py               ← Deconcatenates reads for dorado polish step
+│   ├── mge_repository.py         ← Persistent cross-run MGE repository (plasmid/integron indices)
+│   ├── mge_alerts.py             ← Ingests this run's MGEs + matches vs repository → alerts.tsv
+│   ├── alerts_reporter.py        ← Generates Alerts_Report.html from alert records
+│   ├── _priority_genes.py        ← Curated priority resistance/virulence gene catalog
+│   └── _log.py                   ← Shared stderr logger (colour on TTY) for the Python parsers
 │
 ├── docs/
 │   └── Dorado Polish Documentation.html   ← Reference docs for dorado polish

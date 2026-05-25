@@ -23,9 +23,10 @@ flowchart TB
     S4["<b>4 · Annotation, typing and AMR</b><br/>Bakta · Abricate · MOB-suite<br/>GAMBIT · MLST · Kleborate · ECTyper"]
     S5["<b>5 · Mobile genetic elements</b><br/>Copla · Phastest · Integron_Finder · ISfinder BLASTn"]
     S6["<b>6 · Consolidation</b><br/>parser.py → aluminion_reporter.py → lab DB"]
-    OUT(["Aluminion_Report.html<br/>data_seq.tsv · data_analysis.tsv"])
+    S7["<b>7 · Cross-run MGE alerts</b><br/>mge_repository → mge_alerts → alerts_reporter"]
+    OUT(["Aluminion_Report.html · data_seq.tsv · data_analysis.tsv<br/>alerts.tsv · Alerts_Report.html · repository/"])
 
-    IN --> S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> OUT
+    IN --> S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> OUT
 ```
 
 | Stage | Tools                                                            | Conda env(s)                                |
@@ -33,8 +34,9 @@ flowchart TB
 | 1     | NanoPlot, Chopper                                                | `aluminion_reads`                           |
 | 2     | Kraken2, Flye, Dorado polish, deconcat, dnaapler, QUAST, Bandage | `aluminion_assembly`, `aluminion_circlator` |
 | 3     | Bakta, Abricate, MOB-suite, GAMBIT, MLST, Kleborate, ECTyper     | `aluminion_annot`, `aluminion_kleborate`    |
-| 4     | Copla, Phastest, Integron_Finder, ISfinder BLASTn                | `aluminion_annot`, `aluminion_integron`     |
+| 4     | Copla, Phastest, Integron_Finder, ISfinder BLASTn, Abricate-VFDB | `aluminion_annot`, `aluminion_integron`     |
 | 5     | parser.py, aluminion_reporter.py, lab_db_updater.py              | `aluminion_annot`                           |
+| 6     | mge_repository.py, mge_alerts.py (skani ANI matching), alerts_reporter.py | `aluminion_annot`                  |
 
 ---
 
@@ -137,8 +139,7 @@ Tab-separated, six columns. Aluminion searches for it in the following order:
 1. The path passed to `-l / --list` (explicit override, wins over anything else).
 2. `list_seq.tsv` already present **inside the run folder** — the preferred
    layout when each run is self-contained (see *Batch processing* below).
-3. `list_seq.tsv` in the **parent working directory** (`-d`) — the legacy
-   single-run layout.
+3. `list_seq.tsv` in the **parent working directory** (`-d`) — the single-run layout.
 
 The first location found is used; the file is copied into the run folder if it
 isn't already there. If none is found, Aluminion writes an empty template and
@@ -150,7 +151,7 @@ exits with an error.
 | `Strain`      | Strain collection code                                            |
 | `ID`          | **Unique sample identifier — used as the sample name throughout** |
 | `Barcode`     | Barcode number assigned by MinKNOW (`01`, `24`, …)                |
-| `DNA_conc`    | DNA concentration (ng/µL), informational                          |
+| `DNA_conc`    | DNA concentration (ng/µL), for lab QC purposes                    |
 | `is_repeated` | `x` if this is a re-sequencing of a previously failed sample      |
 
 See `examples/list_seq.tsv` for a complete example.
@@ -164,6 +165,7 @@ See `examples/list_seq.tsv` for a complete example.
 | `report_*.json`       | JSON report (pore counts, yield)                     |
 
 Override the MinKNOW data path with `-m` or `$ALUMINION_MINKNOW_DIR`.
+If already in your folder, use --
 
 ### Cumulative lab databases (auto-created on first run)
 
@@ -229,6 +231,10 @@ A timestamped log is written inside the run folder.
 | `--skip-integrons`       | Skip Integron_Finder                                                        | —                             |
 | `--skip-plasmids`        | Skip Copla plasmid typing (MOB-suite always runs)                           | —                             |
 | `--skip-phages`          | Skip Phastest prophage detection                                            | —                             |
+| `--repo PATH`            | MGE repository directory for cross-run alerts                               | `$BASE_DIR/repository`        |
+| `--init-repo`            | Create the MGE repository structure at `--repo` (idempotent)                | —                             |
+| `--alert-new-priority`   | Also alert on first-occurrence MGEs carrying a priority gene                | —                             |
+| `--no-alerts`            | Skip the cross-run MGE alerts step                                          | —                             |
 | `--just-preprocessing`   | Stop after Stage 1. Output: `02_filter/<sample>.fastq.gz`                   | —                             |
 | `--just-assembly`        | Stop after Stage 2. Output: `03_assemblies/<sample>.fasta`                  | —                             |
 | `-h / --help`            | Show help and exit                                                          | —                             |
@@ -332,6 +338,7 @@ end listing every sample / tool that failed.
 | `Aluminion_Report.html`  | **Interactive HTML report — open in any browser, no server needed** |
 | `taxonomy.csv` / `.xlsx` | Kraken2 + GAMBIT + Kleborate + ECTyper + MLST per sample            |
 | `AbR_modif.xlsx`         | Abricate AMR genes per sample                                       |
+| `VF_modif.xlsx`          | Abricate-VFDB virulence genes per sample (`Virulence_genes` column) |
 | `mlst_modif.csv`         | MLST scheme, ST, and allele calls                                   |
 | `kraken_mlst.xlsx`       | Merged Kraken2 + MLST quick-reference                               |
 | `copla_modif.csv`        | Copla plasmid typing (PTU, MOB, Rep, AMR per plasmid)               |
@@ -340,10 +347,37 @@ end listing every sample / tool that failed.
 | `kleborate.tsv`          | Full Kleborate output (Enterobacterales loci)                       |
 | `data_seq.tsv`           | Updated cumulative sequencing database                              |
 | `data_analysis.tsv`      | Updated cumulative analysis database                                |
+| `alerts.tsv`             | Cross-run MGE alerts raised this run (recurrences + priority hits)  |
+| `Alerts_Report.html`     | Interactive report of the MGE alerts                                |
 
 `data_seq_new.tsv` and `data_analysis_new.tsv` are written instead when the
 historical databases already exist, so changes can be reviewed before
 overwriting the main files.
+
+---
+
+## Cross-run MGE alerts
+
+After consolidating each run, Aluminion ingests its plasmids and integrons into a
+persistent **MGE repository** (default `$BASE_DIR/repository`, override with
+`--repo`) and compares them against everything seen in previous runs. The goal is
+to surface epidemiologically relevant recurrences — the same resistance plasmid or
+integron cassette array reappearing across isolates or over time.
+
+- **Plasmid matching** is ANI-based (via `skani`, ≥99% identity by default) with a
+  tuple-level fallback on PTU / Rep / MOB when an assembly is unavailable.
+- **Integron matching** uses the Jaccard index over cassette gene sets (≥0.8).
+- A curated priority-gene catalog (`scripts/_priority_genes.py`) flags
+  carbapenemases, *mcr*, hypervirulence loci, etc. With `--alert-new-priority`,
+  even a first-occurrence MGE carrying such a gene raises an alert.
+
+Outputs `alerts.tsv` and an interactive `Alerts_Report.html`. The step is
+non-fatal and can be skipped with `--no-alerts`. Initialize the repository
+explicitly with `--init-repo` (idempotent; also auto-created on first run).
+
+> This repository-backed system replaces the earlier in-database
+> `find_shared_mges` comparison that lived in `lab_db_updater.py`; that exact-tuple
+> engine has been retired in favour of the ANI/Jaccard matching here.
 
 ---
 
@@ -365,12 +399,15 @@ aluminion/
 ## Tests
 
 ```bash
-python -m pytest tests/test_parser.py -v
+python -m pytest tests/ -v
 ```
 
-The suite uses the example files in `examples/` and covers clean exit, row
-counts, duplicate detection, AMR gene presence (OXA-48, VIM-1, KPC-2), and HTML
-report content. No bioinformatics tools required.
+`tests/test_parser.py` uses the example files in `examples/` and covers clean
+exit, row counts, duplicate detection, AMR gene presence (OXA-48, VIM-1, KPC-2),
+and HTML report content. `tests/test_mge_repository.py` and
+`tests/test_mge_alerts.py` cover the repository ingestion and alert-matching logic
+(they tolerate `skani` being absent — ANI matching is simply skipped in dev). No
+bioinformatics tools required to run the suite.
 
 ---
 

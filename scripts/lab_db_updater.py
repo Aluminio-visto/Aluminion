@@ -3,7 +3,6 @@ import pandas as pd
 from glob import glob
 import dateutil.parser
 import re
-import ast
 import os
 import argparse
 import numpy as np
@@ -25,9 +24,6 @@ def parse_arguments():
     parser.add_argument("--init", action='store_true',
                         help="First run: create data_seq.tsv and data_analysis.tsv from scratch "
                              "(also triggered automatically when those files do not exist)")
-    parser.add_argument("--alert-all-mge", action='store_true',
-                        help="Alert on any shared MGE regardless of clinical relevance. "
-                             "Default: only alert on plasmids or integrons carrying resistance genes.")
 
     parser.add_argument("--extraction-kit", type=str, default="DNeasy Blood & Tissue",
                         help="DNA extraction kit recorded in the cumulative database. "
@@ -212,160 +208,6 @@ def get_assembly_score(lista_cepas, base_run):
         d_quality[sample] = score
     
     return d_quality
-
-# %%
-def _is_amr_gene(name):
-    """Return True if a normalised cassette gene name looks like an AMR gene.
-
-    Excludes: emrE (efflux pump without clinical AMR significance), hypothetical
-    proteins logged as 'na', and IS-element transposases.
-    Everything else (bla*, aac*, aph*, dfr*, sul*, tet*, cat*, qnr*, aad*, …)
-    is treated as an AMR gene.
-    """
-    n = name.lower()
-    return n not in ('emre', 'na', '') and not n.startswith('is')
-
-
-def _parse_cassette_cell(cell):
-    """Extract base gene names from an integron cassette cell (Python list string)."""
-    if not cell or (isinstance(cell, float) and pd.isna(cell)):
-        return []
-    try:
-        genes = ast.literal_eval(str(cell))
-        if not isinstance(genes, list):
-            genes = [str(genes)]
-    except (ValueError, SyntaxError):
-        genes = [str(cell)]
-    result = []
-    for gene in genes:
-        name = gene.split(';')[0].strip()
-        name = re.sub(r'_\d+$', '', name)
-        if name and name.upper() != 'NA':
-            result.append(name.lower())
-    return result
-
-
-def build_mge_table(df_copla, df_integron, df_phage, seq_date, alert_all=False):
-    """Build a unified long-format MGE table for one sequencing run.
-
-    Produces one row per MGE occurrence per sample. Used to detect
-    MGEs shared across sequential runs.
-
-    alert_all: if False (default), only plasmids/integrons carrying resistance
-    genes are included. If True, any mobilisable plasmid or cassette-carrying
-    integron is included regardless of resistance content.
-    """
-    rows = []
-    trivial = {'-', '', 'nan'}
-
-    # Plasmids: one row per contig, using a composite identity key.
-    # Key hierarchy: PTU (copla classification) > Rep+MOB+MPF combination.
-    # Plasmids where MOB, MPF and AbR are all trivial are always skipped —
-    # no meaningful key can be formed and there is nothing clinically relevant.
-    # Without alert_all, plasmids without resistance genes are also skipped.
-    if df_copla is not None and not df_copla.empty:
-        for _, row in df_copla.iterrows():
-            mob = str(row.get('MOB', '-')).strip()
-            mpf = str(row.get('MPF', '-')).strip()
-            abr = str(row.get('AbR', '-')).strip()
-
-            if mob in trivial and mpf in trivial and abr in trivial:
-                continue  # no key possible and no clinical signal — always skip
-            if not alert_all and abr in trivial:
-                continue  # no resistance genes — skip unless alert_all
-
-            ptu = str(row.get('PTU', '-')).strip()
-            rep = str(row.get('Rep', '-')).strip()
-
-            if ptu and ptu not in trivial:
-                mge_key = ptu
-            else:
-                parts = []
-                if rep not in trivial:
-                    rep_sorted = '|'.join(
-                        sorted(r.strip() for r in rep.split(';')
-                               if r.strip() not in trivial))
-                    if rep_sorted:
-                        parts.append(f'Rep:{rep_sorted}')
-                if mob not in trivial:
-                    parts.append(f'MOB:{mob}')
-                if mpf not in trivial:
-                    parts.append(f'MPF:{mpf}')
-                mge_key = ';'.join(parts)
-                if not mge_key:
-                    continue
-
-            rows.append({
-                'ID': row['Sample'],
-                'Seq_date': seq_date,
-                'MGE_type': 'plasmid',
-                'MGE_key': mge_key,
-                'MGE_detail': abr if abr not in trivial else '',
-            })
-
-    # Integrons: one row per complete integron with at least one cassette.
-    # Without alert_all, integrons with no AMR genes in their cassettes are skipped.
-    cassette_cols = [f'Cassette {i}' for i in range(1, 13)]
-    if df_integron is not None and not df_integron.empty:
-        for _, row in df_integron.iterrows():
-            if str(row.get('Type', '')) != 'complete':
-                continue
-            genes = []
-            for col in cassette_cols:
-                if col in row:
-                    genes.extend(_parse_cassette_cell(row[col]))
-            if not genes:
-                continue
-            if not alert_all and not any(_is_amr_gene(g) for g in genes):
-                continue  # only housekeeping genes (emrE, etc.) — skip
-            rows.append({
-                'ID': row['Sample'],
-                'Seq_date': seq_date,
-                'MGE_type': 'integron',
-                'MGE_key': '|'.join(sorted(genes)),
-                'MGE_detail': '',
-            })
-
-    # Prophages: one row per intact phage (matched by cluster accession)
-    if df_phage is not None and not df_phage.empty:
-        for _, row in df_phage.iterrows():
-            completeness = str(row.get('COMPLETENESS(score)', ''))
-            cluster = str(row.get('Cluster', ''))
-            if completeness.startswith('intact') and cluster and cluster != 'nan':
-                rows.append({
-                    'ID': row['Sample'],
-                    'Seq_date': seq_date,
-                    'MGE_type': 'prophage',
-                    'MGE_key': cluster,
-                    'MGE_detail': '',
-                })
-
-    cols = ['ID', 'Seq_date', 'MGE_type', 'MGE_key', 'MGE_detail']
-    return pd.DataFrame(rows, columns=cols) if rows else pd.DataFrame(columns=cols)
-
-
-def find_shared_mges(current_mge, history_mge):
-    """Return MGEs in the current run that also appear in historical data.
-
-    Matching is exact on (MGE_type, MGE_key). Self-matches (same sample ID
-    in both current and history, e.g. a repeated sequencing) are excluded.
-    """
-    empty = pd.DataFrame(columns=[
-        'ID_current', 'ID_historical', 'Seq_date_historical',
-        'MGE_type', 'MGE_key', 'MGE_detail',
-    ])
-    if history_mge.empty or current_mge.empty:
-        return empty
-
-    hist = history_mge[['ID', 'Seq_date', 'MGE_type', 'MGE_key']].rename(
-        columns={'ID': 'ID_historical', 'Seq_date': 'Seq_date_historical'})
-    curr = current_mge[['ID', 'MGE_type', 'MGE_key', 'MGE_detail']].rename(
-        columns={'ID': 'ID_current'})
-
-    merged = pd.merge(curr, hist, on=['MGE_type', 'MGE_key'])
-    shared = merged[merged['ID_current'] != merged['ID_historical']].drop_duplicates()
-    return shared.sort_values(['MGE_type', 'MGE_key']).reset_index(drop=True)
-
 
 # %%
 
@@ -681,30 +523,12 @@ def main():
     analisis_final.to_csv(analysis_out_path, index=False, sep='\t')
     log.info('data_analysis written to: %s', analysis_out_path)
 
-    # ── MGE cross-run comparison ──────────────────────────────────────────────
-    mge_db_path = os.path.join(base_run, "data_mge.tsv")
-    current_mge = build_mge_table(df_pl, df_int, df_fagos, d_sum.get('fecha', ''),
-                                  alert_all=args.alert_all_mge)
-
-    if init_mode:
-        current_mge.to_csv(mge_db_path, index=False, sep='\t')
-        log.info('MGE database created: %s', mge_db_path)
-    else:
-        if os.path.isfile(mge_db_path):
-            history_mge = pd.read_csv(mge_db_path, sep='\t')
-            shared = find_shared_mges(current_mge, history_mge)
-            if not shared.empty:
-                shared_path = os.path.join(base_run, "mge_shared.tsv")
-                shared.to_csv(shared_path, index=False, sep='\t')
-                log.info('Shared MGEs: %d events found → %s', len(shared), shared_path)
-            else:
-                log.info('No shared MGEs found with historical runs.')
-            updated_mge = pd.concat([history_mge, current_mge], ignore_index=True)
-        else:
-            log.warning('data_mge.tsv not found; creating from this run only (no comparison possible).')
-            updated_mge = current_mge
-        updated_mge.to_csv(mge_db_path, index=False, sep='\t')
-        log.info('MGE database updated: %s', mge_db_path)
+    # NOTE: Cross-run MGE comparison used to live here (build_mge_table /
+    # find_shared_mges writing data_mge.tsv + mge_shared.tsv). It was retired in
+    # favour of the dedicated repository-backed alert system (scripts/mge_alerts.py
+    # + scripts/mge_repository.py), which aluminion.sh runs after this script.
+    # That system does ANI-based plasmid matching and Jaccard integron matching
+    # against a persistent repository, superseding the old exact-tuple engine.
 
 # %%
 if __name__ == "__main__":
