@@ -248,6 +248,35 @@ A timestamped log is written inside the run folder.
 | `--just-assembly`        | Stop after Stage 2. Output: `03_assemblies/<sample>.fasta`                  | —                             |
 | `-h / --help`            | Show help and exit                                                          | —                             |
 
+### Parallelism and performance
+
+Several light, independent per-sample steps run as **bounded parallel pools** so they
+no longer execute one sample at a time while most cores sit idle. Heavy steps that
+already saturate every core (Flye assembly, dorado polish, Bakta, Integron_Finder)
+are left sequential on purpose; Phastest is also kept sequential. The fastq import
+copy is sequential too, since on a mechanical HDD parallel copies only cause seek
+thrashing.
+
+Pool widths are tuned via environment variables (no extra CLI flags). Defaults are
+conservative for a single mechanical HDD; raise them on SSD/NVMe or many-core hosts:
+
+| Env var                  | Step                          | Default |
+|--------------------------|-------------------------------|---------|
+| `ALUMINION_PAR_FILTER`   | Chopper read filtering        | `4`     |
+| `ALUMINION_PAR_QC`       | NanoPlot pre/post-filter QC   | `4`     |
+| `ALUMINION_PAR_ABRICATE` | Abricate AMR + virulence      | `8`     |
+| `ALUMINION_PAR_MOBSUITE` | MOB-suite plasmid recon       | `2`     |
+| `ALUMINION_PAR_COPLA`    | Copla plasmid typing          | `3`     |
+
+```bash
+# Example: faster filtering and AMR screening on an SSD/64-core host
+ALUMINION_PAR_FILTER=8 ALUMINION_PAR_ABRICATE=16 aluminion -r RUN -b /db -l list_seq.tsv
+```
+
+`pigz` (parallel gzip) is used automatically for FASTQ compression when it is
+installed in the `aluminion_reads` environment, with a transparent fallback to
+plain `gzip`.
+
 ### Resuming an interrupted run
 
 ```bash

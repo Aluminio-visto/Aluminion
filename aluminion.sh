@@ -126,6 +126,20 @@ Disk usage and input layout:
                         run to use a list_seq.tsv located inside the run folder (or -l).
                         Set automatically by aluminion_batch.sh for recurrent analyses.
 
+Parallelism (per-sample steps; set as environment variables, not flags):
+  Several light, independent per-sample steps run as bounded parallel pools to
+  avoid leaving cores idle. CPU-saturating steps (Flye, Bakta, dorado polish,
+  Integron_Finder) stay sequential on purpose. Defaults are conservative for a
+  single mechanical HDD (too many concurrent streams thrash the disk); raise them
+  on SSD/NVMe or many-core hosts. Phastest stays sequential regardless.
+    ALUMINION_PAR_FILTER    Chopper read filtering.        (Default: 4)
+    ALUMINION_PAR_QC        NanoPlot pre/post-filter QC.   (Default: 4)
+    ALUMINION_PAR_ABRICATE  Abricate AMR + virulence.      (Default: 8)
+    ALUMINION_PAR_MOBSUITE  MOB-suite plasmid recon.       (Default: 2)
+    ALUMINION_PAR_COPLA     Copla plasmid typing.          (Default: 3)
+  Example: ALUMINION_PAR_FILTER=8 ALUMINION_PAR_ABRICATE=16 aluminion -r RUN ...
+  pigz is used automatically for FASTQ compression when installed (gzip fallback).
+
 Early-stop flags (run only up to the named stage, then exit):
   --just-preprocessing  Stop after read QC and filtering. Output: filtered FASTQ in 02_filter/.
   --just-assembly       Stop after assembly, polishing, and QUAST. Output: FASTA in 03_assemblies/.
@@ -142,6 +156,41 @@ error_log() { echo -e "\n\033[1;31m[ERROR] $1\033[0m"; }
 warn()      { echo -e "\033[1;33m[WARNING] $1\033[0m"; }
 # Returns true if --resume is active and the sentinel file or directory already exists
 resume_done() { [ -n "$RESUME" ] && { [ -f "$1" ] || [ -d "$1" ]; }; }
+
+# ------------------------------------------------------------------------------
+# Bounded-concurrency helper for embarrassingly-parallel per-sample steps.
+# ------------------------------------------------------------------------------
+# Many per-sample steps (NanoPlot, Chopper, Abricate, MOB-suite, Copla) are
+# independent and light enough that running them one-by-one leaves most cores
+# idle. This helper overlaps a bounded number of them at once. CPU-saturating
+# steps that already use every core (Flye, Bakta, dorado polish, Integron_Finder)
+# are deliberately NOT parallelised — doing so would only oversubscribe the CPU.
+#
+# IMPORTANT: background jobs run in subshells, so a job body CANNOT mutate parent
+# shell state (the failed_* arrays). Only use this for steps whose job body writes
+# solely to its own per-sample output files and needs no parent bookkeeping.
+#
+# Usage:
+#     par_reset                                   # before the loop
+#     for i in ...; do { work "$i"; } & par_wait <MAX>; done
+#     par_drain                                   # after the loop (or later)
+#
+# Why a manual counter instead of `while (( $(jobs -rp|wc -l) >= MAX ))`: command
+# substitution `$(...)` forks a subshell with an EMPTY job table, so `jobs` there
+# always reports zero and the throttle never engages. We track the in-flight count
+# by hand and block on `wait -n` (wait for the next job to finish) when at cap.
+# set -e safety: a finished job's non-zero exit would abort the run under errexit,
+# so we swallow it with `|| true`; each job body is responsible for its own errors.
+_par_running=0
+par_reset() { _par_running=0; }
+par_wait()  {
+    _par_running=$((_par_running + 1))
+    if [ "$_par_running" -ge "$1" ]; then
+        wait -n 2>/dev/null || true
+        _par_running=$((_par_running - 1))
+    fi
+}
+par_drain() { wait || true; _par_running=0; }
 
 # Prune large, non-reusable intermediates after a fully completed run. Disabled by
 # --keep-everything. Only ever called at the very end of a complete run (the early
@@ -171,6 +220,7 @@ cleanup_run_artifacts() {
         # Per-sample reads — regenerable from the retained fastq_pass/ via --just-preprocessing
         rm -f "01_reads/${i}.fastq.gz" "02_filter/${i}.fastq.gz"
     done
+    rm -rf .temp_dorado_models*
 }
 
 # ERR trap: with set -e the script exits silently on any non-zero command. This
@@ -265,6 +315,24 @@ if [ -z "$RUN_NAME" ]; then
     error_log "The -r / --run parameter is mandatory."
     show_help; exit 1
 fi
+
+# ------------------------------------------------------------------------------
+# Parallelism widths for embarrassingly-parallel per-sample steps (see par_* above).
+# Defaults are deliberately conservative because the typical production storage is a
+# single mechanical HDD: too many concurrent read/write streams cause seek thrashing
+# that erases the speedup. Override any of these via environment variable if your
+# storage is SSD/NVMe or you have many more cores. CPU-saturating steps (Flye, Bakta,
+# dorado polish, Integron_Finder) are NOT listed here on purpose.
+# ------------------------------------------------------------------------------
+PAR_FILTER="${ALUMINION_PAR_FILTER:-4}"        # Chopper filtering (gunzip|chopper|gzip pipe)
+PAR_QC="${ALUMINION_PAR_QC:-4}"                # NanoPlot read QC (pre + post filter)
+PAR_ABRICATE="${ALUMINION_PAR_ABRICATE:-8}"    # Abricate AMR/VFDB (single-thread BLAST, light I/O)
+PAR_MOBSUITE="${ALUMINION_PAR_MOBSUITE:-2}"    # MOB-suite Docker (BLAST-heavy; each still multi-threaded)
+PAR_COPLA="${ALUMINION_PAR_COPLA:-3}"          # Copla Docker (per plasmid contig)
+# Per-job thread budget for steps that remain multi-threaded while parallelised, so
+# the pool as a whole does not oversubscribe the CPU. Floor at 1 thread.
+THREADS_FILTER=$(( THREADS_TOTAL / PAR_FILTER ));     [ "$THREADS_FILTER"   -lt 1 ] && THREADS_FILTER=1
+THREADS_MOBSUITE=$(( THREADS_TOTAL / PAR_MOBSUITE )); [ "$THREADS_MOBSUITE" -lt 1 ] && THREADS_MOBSUITE=1
 
 # Resolve relative paths before any cd changes the working directory
 [ -n "$SEQ_LIST_INPUT" ] && SEQ_LIST_INPUT="$(readlink -f "$SEQ_LIST_INPUT")"
@@ -498,24 +566,57 @@ if [ -z "$SKIP_PREPROCESSING" ]; then
         export BROWSER_PATH="$CHROME_WRAPPER"
     fi
 
-    log "Pre-filtering QC..."
+    # Prefer pigz for (de)compression when present — it parallelises the gzip stage
+    # that otherwise bottlenecks each Chopper pipe on a single core. Falls back to
+    # gzip/gunzip so a run on an env without pigz still works unchanged.
+    if command -v pigz >/dev/null 2>&1; then
+        DECOMP="pigz -dc"; COMP="pigz -p ${THREADS_FILTER}"
+    else
+        DECOMP="gunzip -c"; COMP="gzip"
+    fi
+
+    log "Filtering (Chopper, up to ${PAR_FILTER} samples in parallel)..."
+    par_reset
+    for i in $(cat samples); do
+        resume_done "02_filter/${i}.fastq.gz" && { log "  [resume] Chopper: ${i} done, skipping."; continue; }
+        # Each pipe writes only its own 02_filter/${i}.fastq.gz, so concurrent jobs
+        # cannot corrupt each other. Bounded by PAR_FILTER to keep the mechanical-disk
+        # read/write streams from thrashing. Per-job threads reduced (THREADS_FILTER).
+        {
+            $DECOMP 01_reads/${i}.fastq.gz \
+                | chopper -q $CHOPPER_MIN_QUALITY -l $CHOPPER_MIN_LENGTH --headcrop $CHOPPER_HEADCROP --threads $THREADS_FILTER \
+                | $COMP > 02_filter/${i}.fastq.gz
+        } &
+        par_wait "$PAR_FILTER"
+    done
+    par_drain
+    # Background pipes cannot trip set -e, so verify every expected output exists and
+    # is non-empty; a silent chopper/gzip failure would otherwise surface as an obscure
+    # truncated-gzip error deep inside Kraken2 or Flye.
+    for i in $(cat samples); do
+        [ -s "02_filter/${i}.fastq.gz" ] \
+            || { error_log "Chopper produced no output for ${i}. Check the integrity of 01_reads/${i}.fastq.gz."; exit 1; }
+    done
+
+    # Read QC (NanoPlot) for both pre- and post-filter FASTQs. These plots are only
+    # consumed at the final consolidation step, so we launch them as a bounded
+    # background pool here and let them overlap the long Kraken2 + assembly phase,
+    # then drain them before annotation. NanoPlot downsamples to 20k reads, so the
+    # extra disk pressure during assembly is negligible.
+    # (Previously both loops used bare `&` with NO wait and NO bound — a latent race
+    # that launched all samples at once and only worked because assembly happened to
+    # outlast NanoPlot. par_wait bounds it; the par_drain before annotation fixes it.)
+    log "Read QC (NanoPlot, up to ${PAR_QC} samples in parallel, overlaps assembly)..."
+    par_reset
     for i in $(cat samples); do
         resume_done "01_reads/QC/${i}/NanoStats.txt" && continue
         MPLBACKEND=Agg NanoPlot --fastq 01_reads/${i}.fastq.gz -o 01_reads/QC/${i} --downsample 20000 --threads 4 --loglength &
+        par_wait "$PAR_QC"
     done
-
-    log "Filtering (Chopper)..."
-    for i in $(cat samples); do
-        resume_done "02_filter/${i}.fastq.gz" && { log "  [resume] Chopper: ${i} done, skipping."; continue; }
-        gunzip -c 01_reads/${i}.fastq.gz \
-            | chopper -q $CHOPPER_MIN_QUALITY -l $CHOPPER_MIN_LENGTH --headcrop $CHOPPER_HEADCROP --threads $THREADS_TOTAL \
-            | gzip > 02_filter/${i}.fastq.gz
-    done
-
-    log "Post-filtering QC..."
     for i in $(cat samples); do
         resume_done "02_filter/QC/${i}/NanoStats.txt" && continue
         MPLBACKEND=Agg NanoPlot --fastq 02_filter/${i}.fastq.gz -o 02_filter/QC/${i} --downsample 20000 --threads 4 --loglength &
+        par_wait "$PAR_QC"
     done
 else
     log "Skipping preprocessing — using existing reads and QC from previous run."
@@ -539,7 +640,9 @@ else
     fi
 fi
 
-[ "$STOP_AFTER" = "preprocessing" ] && { log "Done — stopping after preprocessing (--just-preprocessing). Filtered reads in 02_filter/."; exit 0; }
+# Drain the background read-QC pool before stopping, otherwise the NanoPlot jobs
+# would be SIGHUP'd on exit with their NanoStats.txt half-written.
+[ "$STOP_AFTER" = "preprocessing" ] && { par_drain; log "Done — stopping after preprocessing (--just-preprocessing). Filtered reads in 02_filter/."; exit 0; }
 
 # 2. Taxonomy, assembly, polishing, and assembly QC
 conda activate aluminion_assembly
@@ -618,6 +721,49 @@ if [ ${#failed_assembly[@]} -gt 0 ]; then
     done
 fi
 
+# ------------------------------------------------------------------------------
+# Resolve the dorado polish model ONCE for the whole run.
+# ------------------------------------------------------------------------------
+# dorado polish auto-resolves (and, if absent, downloads) its model on EVERY
+# invocation, so a 24-sample run would fetch the same model 24 times. Every sample
+# in a run shares the same basecaller model, so we resolve a single models directory
+# up front and point every polish call at it via --models-directory. Resolution order:
+#   1. Reuse a models tree already present next to the dorado install (no download).
+#   2. Otherwise create a per-run temp dir; dorado downloads into it on the first
+#      sample and the remaining samples reuse it. The temp dir is named to match the
+#      .temp_dorado_models* pattern pruned by cleanup_run_artifacts.
+# Capability is probed from `dorado polish --help` because this flag is not in every
+# dorado build; if it is absent we leave the per-sample behaviour untouched (correct,
+# just slower) and say so once. The help output is captured first (not piped directly
+# into grep) so that pipefail can't misread dorado's own exit code as "flag absent".
+polish_models_args=()
+dorado_polish_help="$(dorado polish --help 2>&1 || true)"
+if printf '%s\n' "$dorado_polish_help" | grep -q -- '--models-directory'; then
+    POLISH_MODELS_DIR=""
+    dorado_bin="$(readlink -f "$(command -v dorado)")"
+    dorado_dir="$(dirname "$dorado_bin")"
+    # 1) A model already downloaded next to the dorado install or in the user cache.
+    #    Require the directory to be WRITABLE: dorado only downloads a model if it is
+    #    missing from the dir, but the resolved model may differ from whatever polish
+    #    model already lives there, and writing into a read-only install dir would fail.
+    #    A read-only candidate is therefore skipped in favour of the writable temp dir.
+    for cand in "${dorado_dir}/models" "$(dirname "$dorado_dir")/models" "$HOME/.cache/dorado/models"; do
+        if [ -d "$cand" ] && [ -w "$cand" ] && ls -d "$cand"/*polish* >/dev/null 2>&1; then
+            POLISH_MODELS_DIR="$cand"
+            log "  Reusing pre-installed dorado polish model directory: ${POLISH_MODELS_DIR}"
+            break
+        fi
+    done
+    # 2) Fall back to a per-run temp dir; dorado populates it on the first sample.
+    if [ -z "$POLISH_MODELS_DIR" ]; then
+        POLISH_MODELS_DIR="$(mktemp -d "${WORKDIR}/.temp_dorado_models.XXXXXX")"
+        log "  No pre-installed polish model found — dorado will download it once into ${POLISH_MODELS_DIR}"
+    fi
+    polish_models_args=(--models-directory "$POLISH_MODELS_DIR")
+else
+    warn "  This dorado build lacks --models-directory; the polish model is resolved per sample (slower, but correct)."
+fi
+
 log "Polishing (dorado polish with @RG injection)..."
 for i in $(cat samples); do
     if resume_done "03_assemblies/${i}/.polished"; then
@@ -680,9 +826,12 @@ for i in $(cat samples); do
     samtools index -@ $THREADS_TOTAL 03_assemblies/${i}/${i}_aligned_reads.bam
 
     # --bacteria uses a move-table-free model; GPU auto-detected (remove flag for CPU-only servers).
+    # `${polish_models_args[@]+...}` injects --models-directory <dir> only when it was resolved
+    # above (empty array safe under set -u), so every sample reuses the model fetched for the run.
     # `${POLISH_BATCHSIZE:+--batchsize $POLISH_BATCHSIZE}` expands to nothing when the user did not
     # set the flag, so dorado falls back to its own default. Override via --polish-batchsize.
     if dorado polish --threads $THREADS_TOTAL --bacteria \
+            ${polish_models_args[@]+"${polish_models_args[@]}"} \
             ${POLISH_BATCHSIZE:+--batchsize $POLISH_BATCHSIZE} \
             03_assemblies/${i}/${i}_aligned_reads.bam \
             03_assemblies/${i}/assembly.fasta \
@@ -778,6 +927,11 @@ for i in $(cat samples); do
     fi
 done
 
+# Drain the background read-QC pool (launched during preprocessing) before we either
+# stop here or move on to annotation: the consolidation step reads its NanoStats.txt
+# outputs, and the later annotation parallel pools must not see leftover QC jobs in
+# their concurrency accounting.
+par_drain
 [ "$STOP_AFTER" = "assembly" ] && { log "Done — stopping after assembly (--just-assembly). Assemblies in 03_assemblies/."; exit 0; }
 
 # 3. Annotation
@@ -789,19 +943,30 @@ for i in $(cat samples); do
     bakta --db $BAKTA_DB --output 08_Anotacion/${i} --threads $THREADS_TOTAL 03_assemblies/${i}.fasta --force
 done
 
-log "Plasmid Extraction (MOB-Suite Docker)..."
+log "Plasmid Extraction (MOB-Suite Docker, up to ${PAR_MOBSUITE} in parallel)..."
+par_reset
 for i in $(cat samples); do
     resume_done "08_Anotacion/${i}/mob_recon" && { log "  [resume] MOB-suite: ${i} done, skipping."; continue; }
-    docker run --rm -v $(pwd):/mnt/ --user $(id -u):$(id -g) "$MOBSUITE_IMAGE" mob_recon -i /mnt/03_assemblies/${i}.fasta -o /mnt/08_Anotacion/${i}/mob_recon -c --force -n $THREADS_TOTAL
+    # Each call is an independent --rm container writing to its own output dir, so a
+    # few can run at once. -n is reduced (THREADS_MOBSUITE) so the pool as a whole
+    # does not oversubscribe; mob_recon is BLAST-heavy and still multi-threaded.
+    docker run --rm -v $(pwd):/mnt/ --user $(id -u):$(id -g) "$MOBSUITE_IMAGE" mob_recon -i /mnt/03_assemblies/${i}.fasta -o /mnt/08_Anotacion/${i}/mob_recon -c --force -n $THREADS_MOBSUITE &
+    par_wait "$PAR_MOBSUITE"
 done
+par_drain
 
 if [ -z "$SKIP_ABR" ]; then
-    log "AMR Screen (Abricate)..."
+    log "AMR Screen (Abricate, up to ${PAR_ABRICATE} samples in parallel)..."
+    par_reset
     for i in $(cat samples); do
         resume_done "08_Anotacion/${i}/abricate/${i}.tab" && { log "  [resume] Abricate: ${i} done, skipping."; continue; }
         mkdir -p 08_Anotacion/${i}/abricate
-        abricate --minid $ABRICATE_MIN_ID --mincov $ABRICATE_MIN_COV 03_assemblies/${i}.fasta > 08_Anotacion/${i}/abricate/${i}.tab
+        # Single-threaded BLAST, tiny I/O, each writes only its own ${i}.tab → safe to
+        # parallelise widely. The --summary below runs only after the pool drains.
+        abricate --minid $ABRICATE_MIN_ID --mincov $ABRICATE_MIN_COV 03_assemblies/${i}.fasta > 08_Anotacion/${i}/abricate/${i}.tab &
+        par_wait "$PAR_ABRICATE"
     done
+    par_drain
     abricate --summary 08_Anotacion/*/abricate/*.tab > 08_Anotacion/AbR.tab
     cp 08_Anotacion/AbR.tab AbR_report.csv
 
@@ -809,12 +974,15 @@ if [ -z "$SKIP_ABR" ]; then
     # screen and uses the same identity/coverage thresholds. parser.py collapses
     # VF_report.csv into a per-sample Virulence_genes column (VF_modif.xlsx),
     # which mge_alerts.py reads to annotate repository matches.
-    log "Virulence Screen (Abricate, VFDB)..."
+    log "Virulence Screen (Abricate, VFDB, up to ${PAR_ABRICATE} samples in parallel)..."
+    par_reset
     for i in $(cat samples); do
         resume_done "08_Anotacion/${i}/abricate_vfdb/${i}.tab" && { log "  [resume] Abricate-VFDB: ${i} done, skipping."; continue; }
         mkdir -p 08_Anotacion/${i}/abricate_vfdb
-        abricate --db vfdb --minid $ABRICATE_MIN_ID --mincov $ABRICATE_MIN_COV 03_assemblies/${i}.fasta > 08_Anotacion/${i}/abricate_vfdb/${i}.tab
+        abricate --db vfdb --minid $ABRICATE_MIN_ID --mincov $ABRICATE_MIN_COV 03_assemblies/${i}.fasta > 08_Anotacion/${i}/abricate_vfdb/${i}.tab &
+        par_wait "$PAR_ABRICATE"
     done
+    par_drain
     abricate --summary 08_Anotacion/*/abricate_vfdb/*.tab > 08_Anotacion/VF.tab
     cp 08_Anotacion/VF.tab VF_report.csv
 else
@@ -839,23 +1007,41 @@ fi
 
 # Plasmid typing (Copla — Docker only)
 if [ -z "$SKIP_PLASMIDS" ]; then
-    log "Running Plasmid Typing module (Copla)..."
+    log "Running Plasmid Typing module (Copla, up to ${PAR_COPLA} samples in parallel)..."
     [ -z "$RESUME" ] && > copla.txt
+    # Each sample's Copla output goes to its OWN per-sample log file. Concurrent docker
+    # containers all redirecting straight into copla.txt would interleave their lines and
+    # break copla_parser.py; per-sample logs avoid that. After the pool drains we append
+    # the logs back into copla.txt in deterministic (sample) order so the result is
+    # reproducible and identical in layout to the old sequential output.
+    COPLA_LOGDIR="08_Anotacion/.copla_logs"
+    mkdir -p "$COPLA_LOGDIR"
+    par_reset
     for j in $(cat samples); do
         if resume_done "08_Anotacion/${j}/copla"; then
             log "  [resume] Copla: ${j} done, skipping."
             continue
         fi
-        # MOB-suite names plasmid contigs `plasmid_<CLUSTER>.fasta` (e.g. plasmid_AB949.fasta).
-        # The cluster ID lives in field 2 after splitting on `_`; field 1 is the literal
-        # word "plasmid". Restricting the glob to `plasmid_*.fasta` also excludes the
-        # `chromosome.fasta` MOB-suite emits and the BLAST DB sidecar files (*.ndb etc.).
-        find 08_Anotacion/${j}/mob_recon/ -type f -name "plasmid_*.fasta" -size -600k -size +1k | while read -r i; do
-            cluster=$(basename "$i" .fasta | cut -d'_' -f2)
-            cp "${i}" 05_plasmids/${cluster}_${j}.fasta
-            echo "Sample: ${j}" && echo "Contig: ${cluster}" && docker run --rm -v $(pwd):/tmp "$COPLA_IMAGE" copla /tmp/"${i}" /data/app/databases/Copla_RS84/RS84f_sHSBM.pickle /data/app/databases/Copla_RS84/CoplaDB.fofn /tmp/08_Anotacion/${j}/copla
-        done >> copla.txt 2>&1
+        {
+            # MOB-suite names plasmid contigs `plasmid_<CLUSTER>.fasta` (e.g. plasmid_AB949.fasta).
+            # The cluster ID lives in field 2 after splitting on `_`; field 1 is the literal
+            # word "plasmid". Restricting the glob to `plasmid_*.fasta` also excludes the
+            # `chromosome.fasta` MOB-suite emits and the BLAST DB sidecar files (*.ndb etc.).
+            find 08_Anotacion/${j}/mob_recon/ -type f -name "plasmid_*.fasta" -size -600k -size +1k | while read -r i; do
+                cluster=$(basename "$i" .fasta | cut -d'_' -f2)
+                cp "${i}" 05_plasmids/${cluster}_${j}.fasta
+                echo "Sample: ${j}" && echo "Contig: ${cluster}" && docker run --rm -v $(pwd):/tmp "$COPLA_IMAGE" copla /tmp/"${i}" /data/app/databases/Copla_RS84/RS84f_sHSBM.pickle /data/app/databases/Copla_RS84/CoplaDB.fofn /tmp/08_Anotacion/${j}/copla
+            done > "${COPLA_LOGDIR}/${j}.txt" 2>&1
+        } &
+        par_wait "$PAR_COPLA"
     done
+    par_drain
+    # Stitch per-sample logs into copla.txt in sample order (append, so --resume keeps
+    # results from samples skipped above), then drop the scratch logs.
+    for j in $(cat samples); do
+        [ -f "${COPLA_LOGDIR}/${j}.txt" ] && cat "${COPLA_LOGDIR}/${j}.txt" >> copla.txt
+    done
+    rm -rf "$COPLA_LOGDIR"
 else
     log "Skipping Plasmid module (Copla)..."
 fi
