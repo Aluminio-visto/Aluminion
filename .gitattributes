@@ -1,0 +1,24 @@
+# Enforce LF line endings in the repository AND on checkout, on every platform.
+# Without this, a Windows checkout (core.autocrlf=true) can write CRLF into the
+# shell scripts; their shebang then becomes "#!/bin/bash\r", which Linux rejects
+# with "/bin/bash^M: bad interpreter" (exit 126). eol=lf overrides autocrlf so the
+# scripts are always checked out with Unix line endings, ready to run on the server.
+
+# Default: let Git detect text vs binary, and force LF for all text files.
+* text=auto eol=lf
+
+# Be explicit for the executable scripts (their shebang must never carry a CR).
+*.sh    text eol=lf
+*.py    text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.tsv   text eol=lf
+*.csv   text eol=lf
+*.md    text eol=lf
+
+# Binary assets — never apply line-ending conversion (would corrupt them).
+*.xlsx  binary
+*.png   binary
+*.gz    binary
+*.pdf   binary
+*.bam   binary
