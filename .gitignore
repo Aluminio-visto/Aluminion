@@ -27,11 +27,45 @@ Thumbs.db
 test/
 # results/
 
-# Claude working files — kept local, never pushed to GitHub
+# Local reference docs — not needed in the public repo
+docs/
+
+# Claude working files / harness state — kept local, never pushed to GitHub
 CLAUDE.md
 avances.md
-.claude/settings.json
-.claude/settings.local.json
+.claude/
 
-# Worktree scratch
-.claude/worktrees/
+# =============================================================================
+# Secrets and credentials — NEVER commit (defensive; none currently in repo)
+# =============================================================================
+# Environment / dotenv files
+.env
+.env.*
+*.env
+# Private keys, certificates, keystores
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+*.jks
+# SSH keys
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+# Credential / token stores
+.netrc
+_netrc
+.npmrc
+.pypirc
+*.token
+*credential*
+*credentials*
+secrets.*
+*_secret*
+# API keys often dropped by tools (Anthropic, AWS, GCP, GitHub)
+.anthropic
+.aws/credentials
+gha-creds-*.json
+service-account*.json
