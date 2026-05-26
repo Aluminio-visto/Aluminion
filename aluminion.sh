@@ -67,11 +67,13 @@ Additional options:
   --resume        Resume a previously interrupted run. Each step checks whether
                   its output already exists and skips it if so. Use after any
                   mid-run failure to avoid repeating completed work.
-  --no-minknow    Skip the MinKNOW data copy step. Assumes the run folder
-                  already contains fastq_pass/ (with per-barcode subfolders)
+  --skip-import-from-minknow
+                  Skip importing data from the MinKNOW data tree. Assumes the run
+                  folder already contains fastq_pass/ (with per-barcode subfolders)
                   and, optionally, final_summary_*.txt / report_*.json copied
                   there manually or by an external import. The pipeline will
                   abort with a clear error if fastq_pass/ is missing.
+                  (--no-minknow is kept as a back-compat alias.)
   --unique-run    Self-contained single-run mode. Skips every interaction with
                   the parent <BASE_DIR>/repositorio/ folder: no directory is
                   created, no reads are copied there, and `is_repeated` samples
@@ -82,7 +84,9 @@ Additional options:
                   trust yet.
   --skip-preprocessing  Skip read QC and filtering (NanoPlot + Chopper). Requires a
                   previous run to have completed this step (01_reads/, 02_filter/,
-                  and samples file must exist).
+                  and samples file must exist). NOTE: the default end-of-run cleanup
+                  prunes those reads; if they were pruned, regenerate them with
+                  --just-preprocessing first (this flag will abort with a clear error).
   --skip-kraken   Skip Kraken2 read-level classification.
   --skip-abr      Skip Abricate AMR and virulence (VFDB) gene screens.
   --skip-typing   Skip all typing tools: GAMBIT, MLST, Kleborate, ECTyper.
@@ -112,6 +116,16 @@ repository to flag epidemiologically relevant recurrences):
                         priority resistance/virulence gene (not just recurrences).
   --no-alerts           Skip the cross-run MGE alerts step entirely.
 
+Disk usage and input layout:
+  --keep-everything     Do not prune intermediate files at the end of a complete run.
+                        By default Aluminion removes Flye staging dirs, the per-assembly
+                        BLASTn DB, Kraken2 .out streams, and the per-sample reads in
+                        01_reads/ and 02_filter/ (regenerable from the retained
+                        fastq_pass/ with --just-preprocessing).
+  --require-run-list    Disable the parent-directory list_seq.tsv fallback; force this
+                        run to use a list_seq.tsv located inside the run folder (or -l).
+                        Set automatically by aluminion_batch.sh for recurrent analyses.
+
 Early-stop flags (run only up to the named stage, then exit):
   --just-preprocessing  Stop after read QC and filtering. Output: filtered FASTQ in 02_filter/.
   --just-assembly       Stop after assembly, polishing, and QUAST. Output: FASTA in 03_assemblies/.
@@ -128,6 +142,36 @@ error_log() { echo -e "\n\033[1;31m[ERROR] $1\033[0m"; }
 warn()      { echo -e "\033[1;33m[WARNING] $1\033[0m"; }
 # Returns true if --resume is active and the sentinel file or directory already exists
 resume_done() { [ -n "$RESUME" ] && { [ -f "$1" ] || [ -d "$1" ]; }; }
+
+# Prune large, non-reusable intermediates after a fully completed run. Disabled by
+# --keep-everything. Only ever called at the very end of a complete run (the early
+# --just-* exits return before this point), so the deleted files are no longer needed
+# by any downstream step. fastq_pass/ is intentionally retained, which is what makes
+# the per-sample reads in 01_reads/ and 02_filter/ disposable: they can be regenerated
+# from fastq_pass/ with --just-preprocessing. All removals are per-sample and use -f/-rf
+# so a missing target (e.g. a sample that skipped an optional step) is a silent no-op.
+cleanup_run_artifacts() {
+    log "Pruning intermediate files to save disk (pass --keep-everything to retain them)..."
+    local i
+    for i in $(cat samples 2>/dev/null); do
+        # Flye staging directories (assembly graph + final assembly.fasta are kept)
+        rm -rf "03_assemblies/${i}/00-assembly" \
+               "03_assemblies/${i}/10-consensus" \
+               "03_assemblies/${i}/20-repeat" \
+               "03_assemblies/${i}/30-contigger" \
+               "03_assemblies/${i}/40-polishing" \
+               "03_assemblies/${i}/deconcat/multimer_mapping"
+        # BLASTn nucleotide DBs: the ISfinder screen builds one on
+        # 08_Anotacion/<s>/mob_recon/chromosome.fasta (sidecar *.n* files), and
+        # deconcat builds per-contig DBs under 03_assemblies/<s>/deconcat/blastn/.
+        rm -f "08_Anotacion/${i}/mob_recon/chromosome.fasta".n*
+        rm -rf "03_assemblies/${i}/deconcat/blastn"
+        # Kraken2 per-read classification stream (the .report summary is kept)
+        rm -f "04_taxonomies/kraken2/${i}.out"
+        # Per-sample reads — regenerable from the retained fastq_pass/ via --just-preprocessing
+        rm -f "01_reads/${i}.fastq.gz" "02_filter/${i}.fastq.gz"
+    done
+}
 
 # ERR trap: with set -e the script exits silently on any non-zero command. This
 # trap fires *before* the exit so the log records exactly which line and which
@@ -162,6 +206,13 @@ REPO=""
 INIT_REPO=""
 ALERT_NEW_PRIORITY=""
 NO_ALERTS=""
+# Keep all intermediate files instead of pruning them at the end of a complete run.
+KEEP_EVERYTHING=""
+# Forbid the parent-directory list_seq.tsv fallback. Set by aluminion_batch.sh so
+# that, in recurrent multi-folder analyses, each run is forced to carry its own
+# list_seq.tsv inside the run folder (otherwise barcodes/sample IDs would collide
+# across runs that silently share a single parent-level sheet).
+REQUIRE_RUN_LIST=""
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -183,8 +234,12 @@ while [[ "$#" -gt 0 ]]; do
         --skip-abr) SKIP_ABR="--skip-abr" ;;
         --init-db) INIT_DB="--init" ;;
         --polish-batchsize) POLISH_BATCHSIZE="$2"; shift ;;
-        --no-minknow) NO_MINKNOW=true ;;
+        # Skip importing fastq_pass/ + reports from the MinKNOW data tree (the run
+        # folder must already contain them). --no-minknow is kept as a back-compat alias.
+        --skip-import-from-minknow|--no-minknow) NO_MINKNOW=true ;;
         --unique-run) UNIQUE_RUN=true ;;
+        --keep-everything) KEEP_EVERYTHING=true ;;
+        --require-run-list) REQUIRE_RUN_LIST=true ;;
         # Cross-run MGE alert flags
         --repo) REPO="$2"; shift ;;
         --init-repo) INIT_REPO=true ;;
@@ -281,10 +336,18 @@ fi
 #   2. <run folder>/list_seq.tsv (lives next to the reads — best for batch processing)
 #   3. <parent folder>/list_seq.tsv (legacy single-run layout — copy into the run folder)
 # Errors out with a populated template if none of the three are present.
+# Under --require-run-list (set by aluminion_batch.sh for recurrent multi-folder runs)
+# step 3 is disabled: every run MUST carry its own list_seq.tsv to avoid sample/barcode
+# collisions between runs that would otherwise share one parent-level sheet.
 if [ -n "$SEQ_LIST_INPUT" ] && [ -f "$SEQ_LIST_INPUT" ]; then
     cp "$SEQ_LIST_INPUT" "list_seq.tsv"
 elif [ -f "list_seq.tsv" ]; then
     log "Using list_seq.tsv already present in the run folder."
+elif [ -n "$REQUIRE_RUN_LIST" ]; then
+    error_log "No list_seq.tsv inside the run folder ${WORKDIR}, and the parent-directory"
+    error_log "fallback is disabled (--require-run-list). In recurrent/batch analyses each"
+    error_log "run must carry its own list_seq.tsv. Place it in the run folder and re-run."
+    exit 1
 elif [ -f "${BASE_DIR}/list_seq.tsv" ]; then
     log "Using list_seq.tsv from the parent directory: ${BASE_DIR}/list_seq.tsv"
     cp "${BASE_DIR}/list_seq.tsv" "list_seq.tsv"
@@ -310,18 +373,18 @@ if echo "$list_header" | grep -qE '^(Cultivo|Cepa)\b'; then
     mv list_seq.tsv.translated list_seq.tsv
 fi
 
-# With --no-minknow, the run folder must already contain a populated fastq_pass/.
-# Without it, copy only the barcode subfolders referenced in list_seq.tsv (col 4)
-# from the MinKNOW data tree into <run>/fastq_pass/.
+# With MinKNOW import skipped, the run folder must already contain a populated
+# fastq_pass/. Otherwise, copy only the barcode subfolders referenced in
+# list_seq.tsv (col 4) from the MinKNOW data tree into <run>/fastq_pass/.
 # `tr -d '\r'` strips CRLF line endings that appear when list_seq.tsv is exported
 # from Excel on Windows — without it, "01\r" would not match any printf %02d output.
 if [ -n "$NO_MINKNOW" ]; then
     if [ ! -d "fastq_pass" ] || [ -z "$(ls -A fastq_pass 2>/dev/null)" ]; then
-        error_log "--no-minknow set but ${WORKDIR}/fastq_pass/ is missing or empty."
-        error_log "Either populate fastq_pass/ with per-barcode subfolders or drop --no-minknow."
+        error_log "--skip-import-from-minknow set but ${WORKDIR}/fastq_pass/ is missing or empty."
+        error_log "Either populate fastq_pass/ with per-barcode subfolders or drop --skip-import-from-minknow."
         exit 1
     fi
-    log "Using existing fastq_pass/ inside the run folder (--no-minknow)."
+    log "Using existing fastq_pass/ inside the run folder (MinKNOW import skipped)."
 else
     mkdir -p fastq_pass
     FASTQ_SRC=$(ls -d "${MINKNOW_DIR}/${RUN_NAME}/no_sample_id/"*/fastq_pass 2>/dev/null | head -n1)
@@ -458,6 +521,20 @@ else
     log "Skipping preprocessing — using existing reads and QC from previous run."
     if [ ! -s "samples" ]; then
         error_log "'samples' file not found. Re-run without --skip-preprocessing first."
+        exit 1
+    fi
+    # The default end-of-run cleanup prunes 01_reads/ and 02_filter/ (regenerable from
+    # fastq_pass/). If a previous complete run pruned them, --skip-preprocessing has
+    # nothing to reuse — fail early with a clear pointer instead of an obscure
+    # "file not found" deep inside Kraken2/Flye. Regenerate with --just-preprocessing.
+    missing_reads=()
+    for i in $(cat samples); do
+        [ -s "02_filter/${i}.fastq.gz" ] || missing_reads+=("$i")
+    done
+    if [ ${#missing_reads[@]} -gt 0 ]; then
+        error_log "--skip-preprocessing set but filtered reads are missing for: ${missing_reads[*]}"
+        error_log "They were likely pruned by the end-of-run cleanup (fastq_pass/ is kept on purpose)."
+        error_log "Regenerate them first with --just-preprocessing, then re-run with --skip-preprocessing."
         exit 1
     fi
 fi
@@ -984,6 +1061,20 @@ if [ ${#failed_polish[@]} -gt 0 ] || [ ${#failed_deconcat[@]} -gt 0 ] || [ ${#fa
     [ ${#failed_typing[@]}    -gt 0 ] && warn "  Typing tools failed               : ${failed_typing[*]}"
     warn "========================================================================"
     echo ""
+fi
+
+# Prune disposable intermediates now that every downstream step has consumed them.
+# Skipped under --keep-everything, and also when any optional step failed: an
+# imperfect run keeps all intermediates so the user can inspect what went wrong.
+had_warnings=$(( ${#failed_polish[@]} + ${#failed_deconcat[@]} + ${#failed_circlator[@]} \
+               + ${#failed_bandage[@]} + ${#failed_typing[@]} ))
+if [ -n "$KEEP_EVERYTHING" ]; then
+    log "Keeping all intermediate files (--keep-everything)."
+elif [ "$had_warnings" -gt 0 ]; then
+    warn "Run finished with warnings — keeping all intermediate files for inspection."
+    warn "Re-run with the issues resolved, or pass --keep-everything, to control pruning."
+else
+    cleanup_run_artifacts
 fi
 
 if [ -n "$UNIQUE_RUN" ]; then

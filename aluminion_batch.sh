@@ -4,19 +4,27 @@
 # Aluminion — Batch wrapper for sequential run processing
 # ==============================================================================
 #
-# Loops over a list of run names and invokes `aluminion` on each. Designed for
-# the workflow where many MinKNOW runs have already been organised under a
-# single parent directory, each one self-contained (its own fastq_pass/,
-# list_seq.tsv, and MinKNOW reports already in place).
+# Loops over a list of run names and invokes `aluminion` on each. Each run lives
+# in its own subfolder <parent>/<run>/ which MUST contain its own list_seq.tsv
+# (recurrent multi-folder analyses cannot share a single parent-level sheet, or
+# sample IDs / barcodes would collide). The wrapper enforces this by passing
+# --require-run-list to every invocation.
+#
+# By default the wrapper behaves exactly like a direct `aluminion` call: it lets
+# aluminion import fastq_pass/ + reports from the MinKNOW data tree
+# (/var/lib/minknow/data by default). Pass --skip-import-from-minknow if the run
+# folders are already self-contained (fastq_pass/ copied in beforehand); only then
+# is a populated fastq_pass/ required up front.
 #
 # Per-run logic:
+#   - If <parent>/<run>/ is missing or has no list_seq.tsv, the run is skipped.
 #   - If <parent>/<run>/Aluminion_Report.html exists, the run is skipped
 #     (unless --force is passed).
-#   - If <parent>/<run>/fastq_pass/ exists, aluminion is invoked with
-#     --no-minknow (no copy from /var/lib/minknow/data).
-#   - Otherwise the run is skipped with a warning.
+#   - With --skip-import-from-minknow, a populated fastq_pass/ is also required.
 #
-# Extra flags after `--` are forwarded verbatim to aluminion. Example:
+# The MGE repository (for the cross-run alert system) is created automatically on
+# the first run; pass --init-repo to force/declare it explicitly (forwarded to the
+# first launched run only). Extra flags after `--` are forwarded verbatim, e.g.
 #     aluminion_batch.sh --runlist runs.tsv -b /db -d /seqs/project -- --resume
 # ==============================================================================
 
@@ -28,6 +36,8 @@ ALUMINION="${ALUMINION_BIN:-${SCRIPT_DIR}/aluminion.sh}"
 RUNLIST=""
 PARENT_DIR=""
 FORCE=""
+SKIP_IMPORT=""        # when set, require a pre-populated fastq_pass/ and forward the skip flag
+INIT_REPO_FLAG=""     # when set, "--init-repo" is forwarded to the first launched run
 PASSTHROUGH=()
 
 show_help() {
@@ -46,14 +56,23 @@ Mandatory options:
 Additional options:
   -b, --db-dir <path>  Path to the databases root (forwarded to aluminion).
   -t, --threads <N>    Thread count (forwarded to aluminion).
+  --skip-import-from-minknow
+                       Do NOT import reads from the MinKNOW data tree; assume each
+                       run folder already contains a populated fastq_pass/. Without
+                       this flag the wrapper imports from MinKNOW just like a direct
+                       aluminion call (the default).
+  --init-repo          Force creation of the MGE repository (forwarded to the first
+                       launched run). The repository is created automatically anyway
+                       on the first run; this just declares it explicitly.
   --force              Re-run even if <run>/Aluminion_Report.html exists.
   -h, --help           Show this message.
 
+Each run folder MUST contain its own list_seq.tsv (enforced via --require-run-list).
 Any flag after `--` is forwarded verbatim to each aluminion invocation, e.g.
 `-- --resume --skip-kraken --polish-batchsize 8`.
 
 Example:
-  aluminion_batch.sh --runlist runs.tsv -d /seqs/KLEBIRE -b /db -t 30 \\
+  aluminion_batch.sh --runlist runs.tsv -d /seqs/KLEBIRE -b /db -t 30 --init-repo \\
       -- --resume --skip-kraken
 
 EOF
@@ -70,6 +89,8 @@ while [[ "$#" -gt 0 ]]; do
         -d|--dir) PARENT_DIR="$2"; shift 2 ;;
         -b|--db-dir) PASSTHROUGH+=("-b" "$2"); shift 2 ;;
         -t|--threads) PASSTHROUGH+=("-t" "$2"); shift 2 ;;
+        --skip-import-from-minknow|--no-minknow) SKIP_IMPORT=true; shift ;;
+        --init-repo) INIT_REPO_FLAG="--init-repo"; shift ;;
         --force) FORCE=true; shift ;;
         -h|--help) show_help; exit 0 ;;
         --) shift; PASSTHROUGH+=("$@"); break ;;
@@ -114,22 +135,45 @@ while IFS= read -r run_name || [ -n "$run_name" ]; do
         continue
     fi
 
+    # Each run must carry its own list_seq.tsv (no shared parent-level sheet, or
+    # sample IDs / barcodes would collide across runs).
+    if [ ! -f "${run_dir}/list_seq.tsv" ]; then
+        warn "  No list_seq.tsv inside ${run_dir} — skipping."
+        warn "  Each run folder must contain its own list_seq.tsv for recurrent analyses."
+        skipped_no_inputs+=("$run_name")
+        continue
+    fi
+
     if [ -z "$FORCE" ] && [ -f "${run_dir}/Aluminion_Report.html" ]; then
         log "  Already analysed (Aluminion_Report.html present). Skipping. Use --force to re-run."
         skipped_done+=("$run_name")
         continue
     fi
 
-    if [ ! -d "${run_dir}/fastq_pass" ] || [ -z "$(ls -A "${run_dir}/fastq_pass" 2>/dev/null)" ]; then
-        warn "  No populated fastq_pass/ in ${run_dir} — skipping."
-        warn "  Either copy MinKNOW outputs into the run folder or run aluminion directly without --no-minknow."
-        skipped_no_inputs+=("$run_name")
-        continue
+    # Per-run aluminion flags. --require-run-list forbids the parent list_seq.tsv fallback.
+    run_flags=(--require-run-list)
+
+    # By default aluminion imports fastq_pass/ from MinKNOW. Only when the user asked to
+    # skip that import do we require a pre-populated fastq_pass/ and forward the flag.
+    if [ -n "$SKIP_IMPORT" ]; then
+        if [ ! -d "${run_dir}/fastq_pass" ] || [ -z "$(ls -A "${run_dir}/fastq_pass" 2>/dev/null)" ]; then
+            warn "  --skip-import-from-minknow set but no populated fastq_pass/ in ${run_dir} — skipping."
+            skipped_no_inputs+=("$run_name")
+            continue
+        fi
+        run_flags+=(--skip-import-from-minknow)
+    fi
+
+    # Forward --init-repo to the first launched run only (Repository.init is idempotent,
+    # and aluminion auto-creates the repo on the first run regardless).
+    if [ -n "$INIT_REPO_FLAG" ]; then
+        run_flags+=("$INIT_REPO_FLAG")
+        INIT_REPO_FLAG=""
     fi
 
     log "  Launching aluminion for ${run_name}..."
     # Continue the batch even if a single run fails — record it and move on.
-    if "$ALUMINION" -r "$run_name" -d "$PARENT_DIR" --no-minknow "${PASSTHROUGH[@]}"; then
+    if "$ALUMINION" -r "$run_name" -d "$PARENT_DIR" "${run_flags[@]}" "${PASSTHROUGH[@]}"; then
         processed+=("$run_name")
     else
         rc=$?

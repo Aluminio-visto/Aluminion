@@ -2,10 +2,10 @@
 
 **Automated pipeline for bacterial whole-genome sequencing from Oxford Nanopore reads.**
 
-Aluminion takes raw `fastq_pass` reads from a MinKNOW run and produces polished
-assemblies, taxonomic classification, AMR profiles, mobile-genetic-element
-detection (plasmids, integrons, prophages, IS elements), an interactive HTML
-report, and two **cumulative lab databases** that grow across sequencing runs.
+Aluminion takes a `fastq_pass` folder containing demultiplexed Oxford Nanopore
+reads from a MinKNOW run and produces polished assemblies, taxonomic classification, 
+AMR profiles, mobile-genetic-element detection (plasmids, integrons, prophages, IS elements), 
+an interactive HTML report, and two **cumulative lab databases** that grow across sequencing runs.
 
 Target organisms: Enterobacteriaceae. The assembly, AMR, and annotation modules
 also work on any bacterial species with a published MLST scheme.
@@ -36,7 +36,7 @@ flowchart TB
 | 3     | Bakta, Abricate, MOB-suite, GAMBIT, MLST, Kleborate, ECTyper     | `aluminion_annot`, `aluminion_kleborate`    |
 | 4     | Copla, Phastest, Integron_Finder, ISfinder BLASTn, Abricate-VFDB | `aluminion_annot`, `aluminion_integron`     |
 | 5     | parser.py, aluminion_reporter.py, lab_db_updater.py              | `aluminion_annot`                           |
-| 6     | mge_repository.py, mge_alerts.py (skani ANI matching), alerts_reporter.py | `aluminion_annot`                  |
+| 6     | mge_repository.py, mge_alerts.py, alerts_reporter.py             | `aluminion_annot`                           |
 
 ---
 
@@ -145,6 +145,13 @@ The first location found is used; the file is copied into the run folder if it
 isn't already there. If none is found, Aluminion writes an empty template and
 exits with an error.
 
+> **Recurrent / batch analyses:** location 3 is **disabled**. When a single parent
+> directory holds many runs, each run **must** carry its own `list_seq.tsv` inside
+> its run folder — otherwise the sample IDs and barcodes of different runs would
+> collide on a shared parent-level sheet. `aluminion_batch` enforces this by passing
+> `--require-run-list` (which drops the parent fallback) and skips any run folder
+> that lacks its own `list_seq.tsv`.
+
 | Column        | Description                                                       |
 |---------------|-------------------------------------------------------------------|
 | `Lab_id`      | Internal lab culture ID                                           |
@@ -221,10 +228,12 @@ A timestamped log is written inside the run folder.
 | `-m / --minknow-dir`     | MinKNOW data root                                                           | `/var/lib/minknow/data`       |
 | `--init-db`              | Create `data_seq.tsv` / `data_analysis.tsv` from scratch                    | —                             |
 | `--resume`               | Resume an interrupted run; skip any step whose output already exists        | —                             |
-| `--no-minknow`           | Skip the MinKNOW copy step; assume the run folder already contains `fastq_pass/` (and optionally the `final_summary_*.txt` / `report_*.json`). Aborts if `fastq_pass/` is missing. | — |
+| `--skip-import-from-minknow` | Skip importing data from the MinKNOW data tree; assume the run folder already contains `fastq_pass/` (and optionally the `final_summary_*.txt` / `report_*.json`). Aborts if `fastq_pass/` is missing. `--no-minknow` is a back-compat alias. | — |
 | `--unique-run`           | Self-contained single-run mode. Do not create or touch `<parent>/repositorio/`: no reads are deposited there, `is_repeated` samples are processed as fresh runs, and no cumulative artefacts are shared with other runs. | — |
+| `--keep-everything`      | Keep all intermediate files. By default, after a complete run Aluminion prunes Flye staging dirs, the per-assembly BLASTn DB (`assembly.fasta.n*`), Kraken2 `.out` streams, and the per-sample reads in `01_reads/`/`02_filter/` (regenerable from the retained `fastq_pass/` with `--just-preprocessing`). | — |
+| `--require-run-list`     | Disable the parent-directory `list_seq.tsv` fallback; require a per-run sheet. Set automatically by `aluminion_batch`. | — |
 | `--polish-batchsize <N>` | Override `dorado polish --batchsize` (lower it on `CUDA out of memory`)     | dorado default                |
-| `--skip-preprocessing`   | Skip NanoPlot + Chopper (reuse existing `01_reads/`, `02_filter/`)          | —                             |
+| `--skip-preprocessing`   | Skip NanoPlot + Chopper (reuse existing `01_reads/`, `02_filter/`). If those reads were pruned by the end-of-run cleanup, regenerate them with `--just-preprocessing` first (this flag aborts with a clear error if they are missing). | — |
 | `--skip-kraken`          | Skip Kraken2 read-level classification                                      | —                             |
 | `--skip-abr`             | Skip Abricate AMR gene screen                                               | —                             |
 | `--skip-typing`          | Skip GAMBIT, MLST, Kleborate, ECTyper                                       | —                             |
@@ -250,17 +259,20 @@ work. It can be combined with any `--skip-*` flag.
 
 ### Batch processing — many runs in one go
 
-When a project already contains many pre-organised run folders (each with its
-own `fastq_pass/`, optionally the MinKNOW reports, and its own `list_seq.tsv`),
-use `aluminion_batch` to walk a list of runs sequentially:
+When a project contains many run folders under a single parent, use
+`aluminion_batch` to walk a list of runs sequentially. **Each run folder must
+contain its own `list_seq.tsv`** (the parent-level fallback is disabled in batch
+mode). By default the wrapper imports `fastq_pass/` + reports from the MinKNOW
+data tree for each run, exactly like a direct `aluminion` call; pass
+`--skip-import-from-minknow` if the run folders already hold their `fastq_pass/`.
 
 ```
 /seqs/KLEBIRE/
 ├── runs.tsv                 ← chronological list of run names
 ├── 2025_NOV_25_BAC/
-│   ├── fastq_pass/  list_seq.tsv  final_summary_*.txt  report_*.json
+│   ├── list_seq.tsv         ← mandatory; fastq_pass/ imported from MinKNOW by default
 ├── 2025_DEC_03_BAC/
-│   ├── fastq_pass/  list_seq.tsv  …
+│   ├── list_seq.tsv  [fastq_pass/  final_summary_*.txt  report_*.json if self-contained]
 └── 2026_FEB_10_BAC/
     └── …
 ```
@@ -279,17 +291,19 @@ Then:
 
 ```bash
 aluminion_batch --runlist runs.tsv -d /seqs/KLEBIRE -b /path/to/Databases -t 30 \
-    -- --resume --skip-kraken
+    --init-repo -- --resume --skip-kraken
 ```
 
-Flags after `--` are forwarded verbatim to every `aluminion` invocation.
-Per-run logic:
+`--init-repo` is recognised directly (it is forwarded to the first launched run;
+the MGE repository is created automatically on the first run regardless). Flags
+after `--` are forwarded verbatim to every `aluminion` invocation. Per-run logic:
 
 | Condition                                          | Action                                                            |
 |----------------------------------------------------|-------------------------------------------------------------------|
+| `<run>/` missing or no `list_seq.tsv`              | Skip with a warning (each run needs its own sample sheet).        |
 | `<run>/Aluminion_Report.html` exists               | Skip (run already analysed). Override with `--force`.             |
-| `<run>/fastq_pass/` exists (non-empty)             | Invoke `aluminion -r <run> -d <parent> --no-minknow <forwarded>`. |
-| Neither report nor `fastq_pass/`                   | Skip with a warning; no fatal error so the rest of the batch can continue. |
+| Default (no `--skip-import-from-minknow`)          | Invoke `aluminion -r <run> -d <parent> --require-run-list <forwarded>`; reads imported from MinKNOW. |
+| `--skip-import-from-minknow` set                   | Require a non-empty `<run>/fastq_pass/`; invoke with `--skip-import-from-minknow` added. Skip with a warning if reads are missing. |
 
 A summary table (`processed` / `already done` / `skipped` / `failed`) is
 printed at the end. The wrapper returns a non-zero exit code if any run
