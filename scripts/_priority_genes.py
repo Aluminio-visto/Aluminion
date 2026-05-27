@@ -142,6 +142,29 @@ def classify_priority(genes: Iterable[str]) -> dict:
     return {"priority": priority, "matched": matched, "categories": categories}
 
 
+def sort_amr_genes(genes: Iterable[str]) -> list[str]:
+    """Order AMR gene names by clinical priority for display.
+
+    Tiers (per lab convention): carbapenemases first, then ESBLs, then every
+    other gene; names are alphabetized (case-insensitive) within each tier so
+    the ordering is deterministic. Empty strings and the ``"-"`` placeholder
+    are dropped. Re-uses the compiled catalog above so the definition of
+    "carbapenemase" / "ESBL" stays in a single place.
+    """
+    carb = _HIGH["carbapenemase"]
+    esbl = _MEDIUM["esbl"]
+
+    def tier(gene: str) -> int:
+        if any(p.search(gene) for p in carb):
+            return 0
+        if any(p.search(gene) for p in esbl):
+            return 1
+        return 2
+
+    cleaned = [g for g in genes if g and g != "-"]
+    return sorted(cleaned, key=lambda g: (tier(g), g.lower()))
+
+
 def split_amr_field(amr_string: str) -> list[str]:
     """Split a Copla ``AbR`` cell or ABRicate gene list into individual genes.
 

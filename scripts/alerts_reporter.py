@@ -27,9 +27,16 @@ from __future__ import annotations
 import argparse
 import datetime
 import html
+import json
 from pathlib import Path
 
 import pandas as pd
+
+# At most this many prior repository hits are rendered per alert card; older
+# occurrences are summarized as a count. Prevalent plasmids (pOXA-48 et al.)
+# can match dozens of priors, so showing the most recent few keeps the card
+# readable while still flagging recurrence depth.
+_MAX_HITS_SHOWN = 5
 
 
 # -----------------------------------------------------------------------------
@@ -135,6 +142,25 @@ h1, h2, h3 { margin-top: 0; }
   font-family: ui-monospace, monospace;
   font-size: 0.85em;
 }
+.hits-header {
+  margin-top: 14px;
+  font-size: 0.82em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--c-muted);
+  border-top: 1px solid var(--c-border);
+  padding-top: 10px;
+}
+.hit {
+  background: #f8fafc;
+  border: 1px solid var(--c-border);
+  border-radius: 5px;
+  padding: 10px 12px;
+  margin-top: 8px;
+}
+.hit .row { margin-bottom: 6px; }
+.hit .row:last-child { margin-bottom: 0; }
+.hits-more { color: var(--c-muted); font-size: 0.85em; margin-top: 8px; }
 """
 
 
@@ -149,15 +175,51 @@ def _field(label: str, value: str) -> str:
     )
 
 
+def _species_mlst(species: str, mlst: str) -> str:
+    """Format a "species ST<n>" label, omitting MLST when absent."""
+    sp = _species_short(species)
+    if mlst and mlst not in ("-", "ST-"):
+        return f"{sp}  ST{mlst}"
+    return sp
+
+
+def _render_hit(hit: dict, mge_type: str) -> str:
+    """Render one prior repository occurrence as a sub-box inside an alert."""
+    rows = [
+        "<div class='row'>"
+        + _field("Prior isolate",
+                 hit.get("previous_isolate_id", "") or _isolate_from_uid(hit.get("previous_host_uid", "")))
+        + _field("Prior species / MLST",
+                 _species_mlst(hit.get("previous_species", ""), hit.get("previous_mlst", "")))
+        + "</div>"
+    ]
+    # Second row: plasmid carries a prior PTU; both MGE types carry a match level.
+    second_fields = []
+    if mge_type == "plasmid":
+        second_fields.append(_field("Prior PTU", hit.get("previous_ptu", "")))
+    second_fields.append(_field("Match level", hit.get("match_level", "")))
+    if len(second_fields) == 1:
+        second_fields.append("<div></div>")  # keep the 2-column grid balanced
+    rows.append("<div class='row'>" + "".join(second_fields) + "</div>")
+
+    if hit.get("previous_amr_genes"):
+        rows.append(
+            "<div class='row'>"
+            + _field("Prior AMR genes", hit["previous_amr_genes"])
+            + "<div></div></div>"
+        )
+    cross_badge = _badge("CROSS-SPECIES", "cross") if hit.get("cross_species") == "yes" else ""
+    return f"<div class='hit'>{''.join(rows)}{cross_badge}</div>"
+
+
 def _render_alert(row: pd.Series) -> str:
-    """Render one alerts.tsv row as an HTML card."""
+    """Render one alerts.tsv row as an HTML card (one alert == one MGE)."""
     category = row["alert_category"]
     priority = row["priority"]
     mge_type = row["mge_type"]
     cross = row["cross_species"] == "yes"
 
-    head_badges: list[str] = []
-    head_badges.append(_badge(mge_type.upper(), f"mge-{mge_type}"))
+    head_badges: list[str] = [_badge(mge_type.upper(), f"mge-{mge_type}")]
     if category == "NEW_PRIORITY":
         head_badges.append(_badge("NEW PRIORITY", "cat-new"))
     else:
@@ -170,37 +232,7 @@ def _render_alert(row: pd.Series) -> str:
         f'<span class="value">({html.escape(_species_short(row["current_species"]))})</span>'
     )
 
-    # Match information block.
-    if row["match_uid"]:
-        prev_species = _species_short(row["previous_species"])
-        prev_mlst = row["previous_mlst"]
-        if prev_mlst and prev_mlst not in ("-", "ST-"):
-            prev_species_mlst = f"{prev_species}  ST{prev_mlst}"
-        else:
-            prev_species_mlst = prev_species
-        match_block = (
-            "<div class='row'>"
-            + _field("Match UID", row["match_uid"])
-            + _field("Match level", row["match_level"])
-            + "</div>"
-            + "<div class='row'>"
-            + _field("Prior isolate", _isolate_from_uid(row["previous_host_uid"]))
-            + _field("Prior species / MLST", prev_species_mlst)
-            + "</div>"
-            + "<div class='row'>"
-            + _field("Prior occurrences", row["n_prior_occurrences"])
-            + _field("Prior AMR genes", row["previous_amr_genes"])
-            + "</div>"
-        )
-    else:
-        match_block = (
-            "<div class='row'>"
-            + _field("Match", "(new — no prior occurrence)")
-            + _field("Prior occurrences", "0")
-            + "</div>"
-        )
-
-    # MGE-specific metadata.
+    # MGE-specific metadata for the CURRENT element.
     if mge_type == "plasmid":
         rep_mob_mpf = f"{row['rep'] or '-'} / {row['mob'] or '-'} / {row['mpf'] or '-'}"
         mge_block = (
@@ -243,12 +275,34 @@ def _render_alert(row: pd.Series) -> str:
             + "</div>"
         )
 
+    # Prior repository occurrences — stacked inside this single card.
+    hits_html = ""
+    try:
+        hits = json.loads(row["match_hits_json"]) if row["match_hits_json"] else []
+    except (json.JSONDecodeError, TypeError):
+        hits = []
+    if hits:
+        shown = hits[:_MAX_HITS_SHOWN]
+        cards = "".join(_render_hit(h, mge_type) for h in shown)
+        more = ""
+        if len(hits) > _MAX_HITS_SHOWN:
+            more = (
+                f"<div class='hits-more'>&hellip; and {len(hits) - _MAX_HITS_SHOWN} "
+                f"older occurrence(s) not shown.</div>"
+            )
+        hits_html = (
+            f"<div class='hits-header'>Prior repository occurrences "
+            f"({len(hits)})</div>{cards}{more}"
+        )
+    elif category != "NEW_PRIORITY":
+        hits_html = "<div class='hits-header'>No prior repository occurrence.</div>"
+
     return (
         f'<div class="alert priority-{priority}">'
         f'  <h3 style="margin-bottom:8px">{title} {" ".join(head_badges)}</h3>'
-        f'  {match_block}'
         f'  {mge_block}'
         f'  {priority_genes_html}'
+        f'  {hits_html}'
         f'</div>'
     )
 

@@ -395,18 +395,31 @@ end listing every sample / tool that failed.
 | `VF_modif.xlsx`          | Abricate-VFDB virulence genes per sample (`Virulence_genes` column) |
 | `mlst_modif.csv`         | MLST scheme, ST, and allele calls                                   |
 | `kraken_mlst.xlsx`       | Merged Kraken2 + MLST quick-reference                               |
-| `copla_modif.csv`        | Copla plasmid typing (PTU, MOB, Rep, AMR per plasmid)               |
+| `copla_modif.csv`        | Copla plasmid typing (PTU, MOB, Rep, AMR and `Vir` per plasmid)     |
 | `integron_summary.csv`   | Integron_Finder results with cassette gene annotations              |
 | `phage_summary.csv`      | Phastest prophage regions with completeness scores                  |
 | `kleborate.tsv`          | Full Kleborate output (Enterobacterales loci)                       |
-| `data_seq.tsv`           | Updated cumulative sequencing database                              |
-| `data_analysis.tsv`      | Updated cumulative analysis database                                |
+| `data_seq.tsv`           | Per-run sequencing snapshot (this run's samples only)               |
+| `data_analysis.tsv`      | Per-run analysis snapshot (this run's samples only)                 |
 | `alerts.tsv`             | Cross-run MGE alerts raised this run (recurrences + priority hits)  |
 | `Alerts_Report.html`     | Interactive report of the MGE alerts                                |
 
-`data_seq_new.tsv` and `data_analysis_new.tsv` are written instead when the
-historical databases already exist, so changes can be reviewed before
-overwriting the main files.
+### Cumulative databases (per-run snapshot + batch summary)
+
+Each run directory always holds a **per-run snapshot** `data_seq.tsv` /
+`data_analysis.tsv` (this run's samples only — handy for isolated inspection).
+In addition, the run is folded into a **cumulative** `data_seq.tsv` /
+`data_analysis.tsv` kept in the batch parent directory (`$BASE_DIR`, next to
+`runs.tsv` and `repository/`), which accumulates across every run so you end
+up with a single table summarizing all runs. A sample re-sequenced in a later
+run keeps its original `Barcode`/`Seq_date` and records the repeat barcode/date
+in the next free `Barcode_rep1`/`Barcode_rep2` slot. `--unique-run` skips the
+cumulative database entirely (only the per-run snapshot is written).
+
+`copla_modif.csv` carries a per-plasmid `Vir` column: virulence genes are
+assigned to the specific plasmid that carries them by intersecting the
+ABRicate-VFDB hits (per contig) with the MOB-suite `contig_report.txt`, so
+chromosomal virulence operons (fim, mrk, ent) are not smeared onto plasmids.
 
 ---
 

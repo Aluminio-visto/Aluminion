@@ -32,8 +32,49 @@ def parse_arguments():
     parser.add_argument("--depth-threshold", type=float, default=30.0,
                         help="Minimum sequencing depth (X) for a sample to be counted as "
                              "successfully sequenced in the per-run summary (default: 30.0).")
+    parser.add_argument("--db-dir", type=str, default=None,
+                        help="Directory holding the CUMULATIVE database (data_seq.tsv / "
+                             "data_analysis.tsv summarizing every run). When given (and "
+                             "different from --input_path), prior runs are read from here and "
+                             "the merged cumulative tables are written back here, while a "
+                             "per-run snapshot is still written to --input_path. When omitted, "
+                             "only the per-run snapshot is written to --input_path.")
 
     return parser.parse_args()
+
+
+# -----------------------------------------------------------------------------
+# Output finalization helpers — shared by the per-run snapshot and the
+# cumulative database so column dtypes and rounding stay identical.
+# -----------------------------------------------------------------------------
+def _finalize_seq_ints(df):
+    """Round the integer/percent columns of a data_seq table (in place)."""
+    int_columns = [
+        'Depth', 'Samples_per_run', 'Samples_to_repeat', 'Median_length_pre',
+        'N_reads_pre', 'N_bases_pre', 'Median_length_post', 'N_reads_post', 'N_bases_post',
+    ]
+    for col in int_columns:
+        if col in df.columns:
+            df[col] = df[col].astype(str).str.replace(',', '', regex=False).str.strip()
+            df[col] = pd.to_numeric(df[col], errors='coerce').round().astype('Int64')
+    if 'Pct_bases_kept' in df.columns:
+        df['Pct_bases_kept'] = (pd.to_numeric(df['Pct_bases_kept'], errors='coerce') * 100).round(1)
+    return df
+
+
+def _finalize_analysis(df):
+    """Strip 'barcode' prefixes and round integer columns of a data_analysis table."""
+    if 'Barcode' in df.columns:
+        df['Barcode'] = df['Barcode'].astype(str).str.replace(r'barcode', '', regex=True)
+    int_columns = [
+        "Lab_id", 'Depth', "N_AMR_genes", "AMRscore", "VIRscore",
+        "Plasmids", "Prophages", "Integrons",
+    ]
+    for col in int_columns:
+        if col in df.columns:
+            df[col] = df[col].astype(str).str.replace(',', '', regex=False).str.strip()
+            df[col] = pd.to_numeric(df[col], errors='coerce').round().astype('Int64')
+    return df
 
 # %%
 def parse_minknow_summary(summary):
@@ -217,6 +258,13 @@ def main():
     base_run = args.input_path
     output_run = args.output_file
 
+    # The cumulative database lives in --db-dir (the batch parent directory) so
+    # it accumulates across runs; the per-run snapshot always stays in base_run.
+    # When --db-dir is omitted they coincide and only the per-run snapshot is
+    # written (standalone / --unique-run behavior).
+    db_dir = args.db_dir if args.db_dir else base_run
+    cumulative = os.path.abspath(db_dir) != os.path.abspath(base_run)
+
     # Column schemas for the two output databases
     COLS_SEQ = [
         "Lab_id", "Strain", "ID", "Barcode", "Barcode_rep1", "Barcode_rep2",
@@ -249,11 +297,12 @@ def main():
     qc_r = os.path.join(base_run, "QC_reads.csv")
     qc_a = os.path.join(base_run, "QC_assembly.csv")
 
-    # Historical sequencing database
-    tabla = os.path.join(base_run, "data_seq.tsv")
+    # Historical (cumulative) databases — read from db_dir so a batch keeps a
+    # single growing summary of every run processed so far.
+    tabla = os.path.join(db_dir, "data_seq.tsv")
 
     # Historical analysis database
-    anali = os.path.join(base_run, "data_analysis.tsv")
+    anali = os.path.join(db_dir, "data_analysis.tsv")
 
     # Per-run sample list (distinct from data_seq.tsv — see list_seq.tsv template)
     cepas = os.path.join(base_run, "list_seq.tsv")
@@ -297,6 +346,13 @@ def main():
     lista_cepas = pd.read_csv(cepas, sep='\t', usecols=["Lab_id", "Strain", "ID", "Barcode", "DNA_conc"], dtype={'Barcode': 'string'})
     lista_cepas['Barcode'] = lista_cepas['Barcode'].str.replace(r'barcode', '', regex=True)
 
+    # A sample is a genuine REPEAT only if it already exists in the cumulative
+    # database (i.e. it was sequenced in a prior run). Capture those IDs BEFORE
+    # concatenating this run's new samples, so the rep1/rep2 columns are filled
+    # only for true repeats — fresh samples keep their rep columns empty.
+    historical_ids = set() if init_mode else set(datos_seq['ID'].dropna().astype(str))
+    repeat_ids = historical_ids & set(lista_cepas['ID'].astype(str))
+
     # Add new samples
     nuevas_filas = lista_cepas[~lista_cepas['ID'].isin(datos_seq['ID'])]
     datos_seq = pd.concat([datos_seq, nuevas_filas], ignore_index=True)
@@ -313,11 +369,6 @@ def main():
     d_quality = get_assembly_score(lista_cepas, base_run)
 
     # %%
-    # Output files
-    # Sequencing data output
-    output_run = os.path.join(base_run, output_run)
-    analisis_run = os.path.join(base_run, "data_analysis_new.tsv")
-
     # Initialize the output table with the current run samples and technical metadata
     columnas = ["Lab_id", "Strain", "ID", "Seq_date", "Seq_date_rep1", "Seq_date_rep2",
                 "Extraction_kit", "Barcoding_kit", "Barcode", "Barcode_rep1", "Barcode_rep2", "Instrument",
@@ -401,60 +452,63 @@ def main():
     result3['Lab_id'] = result3['Lab_id'].astype(str)
     result3["Barcode"]    = result3["Barcode"].astype(str)
 
-    # Merge tables on 'ID'
-    merged_df = pd.merge(datos_seq, result3, on='ID', how='left', suffixes=('', '_result3'))
+    # ------------------------------------------------------------------
+    # Per-run snapshot (THIS run only). A sample appears at most once within a
+    # single run, so its rep columns stay empty here. Always written to the run
+    # directory for isolated inspection.
+    # ------------------------------------------------------------------
+    run_seq = _finalize_seq_ints(result3.copy())
+    run_seq_path = os.path.join(base_run, "data_seq.tsv")
+    run_seq.to_csv(run_seq_path, index=False, sep="\t")
+    log.info('Per-run data_seq written to: %s', run_seq_path)
 
-    # Assign values for "Seq_date_rep2" and "Barcode_rep2"
-    merged_df['Seq_date_rep2'] = merged_df['Seq_date_rep2'].combine_first(
-        merged_df.apply(lambda x: x['Seq_date_result3'] if pd.notna(x['Seq_date_rep1']) else None, axis=1))
-    merged_df['Barcode_rep2'] = merged_df['Barcode_rep2'].combine_first(
-        merged_df.apply(lambda x: x['Barcode_result3'] if pd.notna(x['Barcode_rep1']) else None, axis=1))
+    if cumulative:
+        # ------------------------------------------------------------------
+        # Cumulative database (all runs): merge this run into the prior
+        # cumulative state held in db_dir.
+        # ------------------------------------------------------------------
+        merged_df = pd.merge(datos_seq, result3, on='ID', how='left', suffixes=('', '_result3'))
 
-    # Assign values for "Seq_date" and "Barcode"
-    merged_df['Seq_date_rep1'] = merged_df['Seq_date_rep1'].combine_first(
-        merged_df.apply(lambda x: x['Seq_date_result3'] if pd.notna(x['Seq_date']) else None, axis=1))
-    merged_df['Barcode_rep1'] = merged_df['Barcode_rep1'].combine_first(
-        merged_df.apply(lambda x: x['Barcode_result3'] if pd.notna(x['Barcode']) else None, axis=1))
+        # Repeat tracking: only samples already present in the prior cumulative
+        # DB (repeat_ids) record their new barcode/date in the next free rep
+        # slot. Fresh samples keep Barcode/Seq_date only; their rep columns stay
+        # empty. (Fixes the previous logic that filled Barcode_rep1 for every
+        # sample on first sequencing.)
+        for idx in merged_df.index:
+            if str(merged_df.at[idx, 'ID']) not in repeat_ids:
+                continue
+            new_bc = merged_df.at[idx, 'Barcode_result3']
+            new_dt = merged_df.at[idx, 'Seq_date_result3']
+            if pd.isna(new_bc) and pd.isna(new_dt):
+                continue
+            if pd.isna(merged_df.at[idx, 'Barcode_rep1']) and pd.isna(merged_df.at[idx, 'Seq_date_rep1']):
+                merged_df.at[idx, 'Barcode_rep1'] = new_bc
+                merged_df.at[idx, 'Seq_date_rep1'] = new_dt
+            elif pd.isna(merged_df.at[idx, 'Barcode_rep2']) and pd.isna(merged_df.at[idx, 'Seq_date_rep2']):
+                merged_df.at[idx, 'Barcode_rep2'] = new_bc
+                merged_df.at[idx, 'Seq_date_rep2'] = new_dt
+            # else: two repeats already recorded; keep the earliest two.
 
-    # Fill any remaining missing values in the original columns
-    merged_df['Seq_date'] = merged_df['Seq_date'].combine_first(merged_df['Seq_date_result3'])
-    merged_df['Barcode'] = merged_df['Barcode'].combine_first(merged_df['Barcode_result3'])
+        # Fresh samples: take Barcode/Seq_date from this run (rep cols untouched).
+        fresh_mask = ~merged_df['ID'].astype(str).isin(repeat_ids)
+        merged_df.loc[fresh_mask, 'Seq_date'] = merged_df.loc[fresh_mask, 'Seq_date'].combine_first(
+            merged_df.loc[fresh_mask, 'Seq_date_result3'])
+        merged_df.loc[fresh_mask, 'Barcode'] = merged_df.loc[fresh_mask, 'Barcode'].combine_first(
+            merged_df.loc[fresh_mask, 'Barcode_result3'])
 
+        # Fill the remaining (non-key) columns from this run, falling back to
+        # the historical values.
+        for column in datos_seq.columns:
+            if column not in ['ID', 'Barcode', 'Barcode_rep1', 'Barcode_rep2', 'Seq_date', 'Seq_date_rep1', 'Seq_date_rep2']:
+                merged_df[column] = merged_df[column + '_result3'].combine_first(merged_df[column])
 
-
-
-
+        merged_df = merged_df[datos_seq.columns]
+        merged_df = _finalize_seq_ints(merged_df)
+        cumulative_seq_path = os.path.join(db_dir, "data_seq.tsv")
+        merged_df.to_csv(cumulative_seq_path, index=False, sep="\t")
+        log.info('Cumulative data_seq written to: %s', cumulative_seq_path)
 
     # %%
-    # Fill empty rows in datos_seq with values from result3
-    for column in datos_seq.columns:
-        if column not in ['ID', 'Barcode', 'Barcode_rep1', 'Barcode_rep2', 'Seq_date', 'Seq_date_rep1', 'Seq_date_rep2']:  # Skip join key columns
-            merged_df[column] = merged_df[column + '_result3'].combine_first(merged_df[column])
-
-    # Elimina las columnas extra de result3
-    merged_df = merged_df[datos_seq.columns]
-
-    # Round integer columns to remove the ugly ".0"
-    int_columns = [
-        'Depth','Samples_per_run','Samples_to_repeat','Median_length_pre',
-        'N_reads_pre','N_bases_pre','Median_length_post','N_reads_post','N_bases_post'
-    ]
-    for col in int_columns:
-        if col in merged_df.columns:
-            merged_df[col] = merged_df[col].astype(str).str.replace(',', '', regex=False).str.strip()
-            merged_df[col] = pd.to_numeric(merged_df[col], errors='coerce').round().astype('Int64')
-    # Round the last column to 2 decimal places:
-    merged_df["Pct_bases_kept"] = (merged_df["Pct_bases_kept"]*100).round(1)
-    seq_out_path = os.path.join(base_run, "data_seq.tsv") if init_mode else output_run
-    merged_df.to_csv(seq_out_path, index=False, sep="\t")
-    log.info('data_seq written to: %s', seq_out_path)
-
-    # %%
-    if not init_mode:
-        analisis = pd.read_csv(anali, sep='\t')
-        analisis.rename(columns={"Muestra":"Lab_id", "Serotipo": "Serotype"}, inplace=True)
-    # (in init mode analisis is built from result4 alone — see below)
-
     taxon2 = pd.read_csv(taxon, sep= ',')
     taxon2.rename(columns={"Sample":"ID"}, inplace=True)
     taxon2.drop_duplicates(subset=['ID'], keep='first', inplace=True)
@@ -483,45 +537,49 @@ def main():
 
     result4[['Plasmids', 'ICEs', 'Prophages', 'Integrons']] = result4[['Plasmids', 'ICEs', 'Prophages', 'Integrons']].fillna(0)
 
-    result4 = result4.merge(merged_df[['ID', 'Assembly_score', 'Depth']], on='ID', how='inner')
+    # Assembly score / depth come from the per-run snapshot (always available;
+    # merged_df is only built in cumulative mode).
+    result4 = result4.merge(run_seq[['ID', 'Assembly_score', 'Depth']], on='ID', how='inner')
 
     nwo = COLS_ANALYSIS
     result4 = result4.reindex(columns=nwo)
     result4['ID'] = result4['ID'].astype(str)
     result4["Barcode"]  = result4["Barcode"].astype(str)
 
-    if init_mode:
-        # First run: no historical data to merge with, result4 IS the database
-        analisis_final = result4
-    else:
-        analisis = analisis[nwo]
-        analisis['ID'] = analisis['ID'].astype(str)
-        analisis["Barcode"]  = analisis["Barcode"].astype(str)
-        analisis['Barcode']  = analisis['Barcode'].replace('nan', np.nan)
+    # ------------------------------------------------------------------
+    # Per-run analysis snapshot (this run only) — always to the run directory.
+    # ------------------------------------------------------------------
+    run_analysis = _finalize_analysis(result4.copy())
+    run_analysis_path = os.path.join(base_run, "data_analysis.tsv")
+    run_analysis.to_csv(run_analysis_path, index=False, sep='\t')
+    log.info('Per-run data_analysis written to: %s', run_analysis_path)
 
-        # Merge historical data with new data
-        analisis_final = pd.merge(analisis, result4, on='ID', how='left', suffixes=('', '_result4'))
-        for column in analisis.columns:
-            if column != 'ID':
-                analisis_final[column] = analisis_final[column + '_result4'].combine_first(analisis_final[column])
-        analisis_final = analisis_final[analisis.columns]
+    # ------------------------------------------------------------------
+    # Cumulative analysis database (all runs) — merge into db_dir state.
+    # ------------------------------------------------------------------
+    if cumulative:
+        if init_mode:
+            # First cumulative run: no historical data, this run IS the database.
+            analisis_final = result4.copy()
+        else:
+            analisis = pd.read_csv(anali, sep='\t')
+            analisis.rename(columns={"Muestra": "Lab_id", "Serotipo": "Serotype"}, inplace=True)
+            analisis = analisis[nwo]
+            analisis['ID'] = analisis['ID'].astype(str)
+            analisis["Barcode"]  = analisis["Barcode"].astype(str)
+            analisis['Barcode']  = analisis['Barcode'].replace('nan', np.nan)
 
-    # Replace "barcode13" with just "13"
-    analisis_final['Barcode'] = analisis_final['Barcode'].str.replace(r'barcode', '', regex=True)
+            # Merge historical data with new data
+            analisis_final = pd.merge(analisis, result4, on='ID', how='left', suffixes=('', '_result4'))
+            for column in analisis.columns:
+                if column != 'ID':
+                    analisis_final[column] = analisis_final[column + '_result4'].combine_first(analisis_final[column])
+            analisis_final = analisis_final[analisis.columns]
 
-    # Round integer columns to remove the ugly ".0"
-    int_columns = [
-        "Lab_id", 'Depth', "N_AMR_genes", "AMRscore", "VIRscore",
-        "Plasmids", "Prophages", "Integrons",
-    ]
-    for col in int_columns:
-        if col in analisis_final.columns:
-            analisis_final[col] = analisis_final[col].astype(str).str.replace(',', '', regex=False).str.strip()
-            analisis_final[col] = pd.to_numeric(analisis_final[col], errors='coerce').round().astype('Int64')
-
-    analysis_out_path = os.path.join(base_run, "data_analysis.tsv") if init_mode else analisis_run
-    analisis_final.to_csv(analysis_out_path, index=False, sep='\t')
-    log.info('data_analysis written to: %s', analysis_out_path)
+        analisis_final = _finalize_analysis(analisis_final)
+        cumulative_analysis_path = os.path.join(db_dir, "data_analysis.tsv")
+        analisis_final.to_csv(cumulative_analysis_path, index=False, sep='\t')
+        log.info('Cumulative data_analysis written to: %s', cumulative_analysis_path)
 
     # NOTE: Cross-run MGE comparison used to live here (build_mge_table /
     # find_shared_mges writing data_mge.tsv + mge_shared.tsv). It was retired in

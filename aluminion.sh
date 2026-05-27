@@ -718,7 +718,16 @@ for i in $(cat samples); do
         echo "  │    2) Retry with --meta (for high-copy or fragmented assemblies)     │"
         echo "  │    3) Stop pipeline for manual inspection                            │"
         echo "  └──────────────────────────────────────────────────────────────────────┘"
-        read -rp "  Choose [1/2/3]: " flye_choice
+        # Only prompt when stdin is an interactive terminal. In batch / piped /
+        # nohup runs stdin is NOT a TTY (and would otherwise swallow whatever is
+        # piped in — e.g. the batch wrapper's run list), so default to option 1
+        # (skip the sample and continue) and record it for the warnings summary.
+        if [ -t 0 ]; then
+            read -rp "  Choose [1/2/3]: " flye_choice
+        else
+            flye_choice=1
+            warn "  Non-interactive run: defaulting to option 1 (skip ${i} and continue)."
+        fi
         case "$flye_choice" in
             1)
                 error_log "Skipping sample ${i} — it will be excluded from all downstream steps."
@@ -1237,7 +1246,12 @@ log "Generating Interactive HTML Report..."
 python3 "$SCRIPTS_PATH/aluminion_reporter.py" "$PWD"
 
 log "Updating historical databases (data_seq.tsv / data_analysis.tsv)..."
-python3 "$SCRIPTS_PATH/lab_db_updater.py" --input_path . $INIT_DB
+# The cumulative DB lives in the batch parent ($BASE_DIR) so it summarizes every
+# run; a per-run snapshot is always written to the run folder. --unique-run keeps
+# the run isolated: it skips --db-dir so the shared cumulative DB is left untouched.
+DB_DIR_ARG=""
+[ -z "$UNIQUE_RUN" ] && DB_DIR_ARG="--db-dir $BASE_DIR"
+python3 "$SCRIPTS_PATH/lab_db_updater.py" --input_path . $DB_DIR_ARG $INIT_DB
 
 # Cross-run MGE alerts: ingest this run's plasmids/integrons into the cumulative
 # repository and emit alerts.tsv + Alerts_Report.html when a recurrent or

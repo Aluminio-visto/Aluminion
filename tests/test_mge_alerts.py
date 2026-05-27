@@ -11,6 +11,7 @@ Usage:
     python -m pytest tests/test_mge_alerts.py -v
 """
 import argparse
+import json
 import os
 import sys
 import shutil
@@ -158,7 +159,11 @@ class TestRecurrentCrossSpecies(unittest.TestCase):
         self.assertEqual(row["cross_species"], "yes")
         self.assertIn("OXA-48", row["priority_genes_detected"])
         self.assertIn("Enterobacter", row["current_species"])
-        self.assertIn("Klebsiella", row["previous_species"])
+        # Prior occurrences now live in the grouped match_hits_json column.
+        self.assertEqual(row["n_hits"], "1")
+        hits = json.loads(row["match_hits_json"])
+        self.assertEqual(len(hits), 1)
+        self.assertIn("Klebsiella", hits[0]["previous_species"])
 
 
 class TestRecurrentSameSpeciesMedium(unittest.TestCase):
@@ -265,7 +270,8 @@ class TestNewPriorityFlag(unittest.TestCase):
         row = df.iloc[0]
         self.assertEqual(row["alert_category"], "NEW_PRIORITY")
         self.assertEqual(row["priority"], "high")
-        self.assertEqual(row["match_uid"], "")
+        self.assertEqual(row["n_hits"], "0")  # no prior repository occurrence
+        self.assertEqual(json.loads(row["match_hits_json"]), [])
         self.assertIn("NDM-1", row["priority_genes_detected"])
 
 
@@ -320,6 +326,75 @@ class TestRecurrenceWithoutRelevanceSilenced(unittest.TestCase):
                          dtype=str).fillna("")
         self.assertEqual(len(df), 0,
                          "Matched plasmid without AMR/VIR should not alert")
+
+
+class TestGroupedHits(unittest.TestCase):
+    """A current plasmid matching several prior repository plasmids must
+    produce ONE grouped alert (n_hits == number of priors), not one row per
+    match (regression test for the per-hit card explosion)."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="aluminion_alerts_grp_"))
+        repo = Repository.init(self.tmp / "repo")
+        # Three prior K. pneumoniae sharing the SAME PTU-FK plasmid tuple/size,
+        # so a current plasmid matches all three at tuple level (no skani needed).
+        for i, mlst in enumerate(["307", "11307", "584"]):
+            host = make_host_uid(f"run-PRIOR{i}", f"Kpne_OLD{i}")
+            repo.ingest_host({
+                "host_uid": host, "run_name": f"run-PRIOR{i}",
+                "lab_id": str(i), "isolate_id": f"Kpne_OLD{i}", "strain": "x",
+                "genus": "Klebsiella", "species": "Klebsiella pneumoniae",
+                "subspecies": "-", "mlst": mlst, "serotype": "-",
+                "ko_locus": "-", "amr_score": "3", "vir_score": "1",
+                "ingested_at": f"2026-03-0{i+1}T00:00:00+00:00",
+            })
+            p = self.tmp / f"prior{i}.fasta"
+            p.write_text(">p\n" + ("ACGT" * 60000)[:240000] + "\n")
+            repo.ingest_plasmid(
+                host_uid=host, contig="AA277", fasta_src=p,
+                metadata={"run_name": f"run-PRIOR{i}", "sample_id": f"Kpne_OLD{i}",
+                          "ptu": "PTU-FK", "rep": "IncFIB(K)", "mob": "MOBF",
+                          "mpf": "-", "size": 240000,
+                          "amr_genes": "NDM-1;CTX-M-15", "vir_genes": ""},
+            )
+        builder = _SyntheticRunBuilder(self.tmp, "run-CURR")
+        builder.write_data_analysis([{"Lab_id": "9", "ID": "Kpne_NEW"}])
+        builder.write_taxonomy([{
+            "Sample": "Kpne_NEW", "Majority_genus": "Klebsiella",
+            "Majority_species": "Klebsiella pneumoniae", "MLST": "11307",
+        }])
+        builder.write_copla([{
+            "Sample": "Kpne_NEW", "Contig": "AA277", "PTU": "PTU-FK",
+            "Size": "240000", "MOB": "MOBF", "Rep": "IncFIB(K)",
+            "AbR": "NDM-1;CTX-M-15",
+        }])
+        builder.add_plasmid_fasta("Kpne_NEW", "AA277", 240000)
+        self.run_dir = builder.run_dir
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_three_priors_collapse_to_one_alert(self):
+        args = _default_args(self.run_dir, "run-CURR")
+        repo = Repository.open(self.tmp / "repo")
+        matches = run_matching(args, repo)
+        self.assertEqual(len(matches), 3, "expected 3 tuple-level match records")
+        emit_alerts(matches, args, repo)
+        df = pd.read_csv(self.run_dir / "alerts.tsv", sep="\t",
+                         dtype=str).fillna("")
+        self.assertEqual(len(df), 1, "3 matches must collapse into 1 grouped card")
+        row = df.iloc[0]
+        self.assertEqual(row["n_hits"], "3")
+        hits = json.loads(row["match_hits_json"])
+        self.assertEqual(len(hits), 3)
+        # All three priors are listed (ingested in one batch here, so their
+        # ingested_at timestamps tie; cross-run ordering is exercised in prod).
+        self.assertEqual({h["previous_isolate_id"] for h in hits},
+                         {"Kpne_OLD0", "Kpne_OLD1", "Kpne_OLD2"})
+        # Prior PTU surfaced for plasmid hits (detalle 1).
+        self.assertTrue(all(h["previous_ptu"] == "PTU-FK" for h in hits))
+        # AMR genes priority-sorted: carbapenemase (NDM-1) before ESBL (CTX-M-15).
+        self.assertTrue(row["amr_genes"].index("NDM-1") < row["amr_genes"].index("CTX-M-15"))
 
 
 class TestTaxonomyMerge(unittest.TestCase):

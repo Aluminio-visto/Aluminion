@@ -182,7 +182,11 @@ while IFS= read -r run_name || [ -n "$run_name" ]; do
 
     log "  Launching aluminion for ${run_name}..."
     # Continue the batch even if a single run fails — record it and move on.
-    if "$ALUMINION" -r "$run_name" -d "$PARENT_DIR" "${run_flags[@]}" "${PASSTHROUGH[@]}"; then
+    # stdin is redirected from /dev/null: this loop reads the run list on stdin
+    # (`done < "$RUNLIST"`), and any child of aluminion that reads stdin would
+    # otherwise consume the remaining run names, silently truncating the batch
+    # after the first processed run.
+    if "$ALUMINION" -r "$run_name" -d "$PARENT_DIR" "${run_flags[@]}" "${PASSTHROUGH[@]}" < /dev/null; then
         processed+=("$run_name")
     else
         rc=$?

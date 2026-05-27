@@ -38,14 +38,15 @@ from __future__ import annotations
 
 import argparse
 import ast
+import json
 import re
 import sys
-from collections import Counter
+from collections import defaultdict
 from pathlib import Path
 
 import pandas as pd
 
-from _priority_genes import classify_priority
+from _priority_genes import classify_priority, sort_amr_genes
 from mge_repository import (
     MIN_PLASMID_SIZE,
     Repository,
@@ -68,24 +69,20 @@ ALERTS_COLUMNS: list[str] = [
     "current_isolate_id",
     "current_species",
     "current_mlst",
-    "match_uid",               # repository UID matched (empty for NEW_PRIORITY)
-    "match_level",             # type | identity (plasmid) or jaccard:0.85 (integron)
-    "previous_host_uid",
-    "previous_species",
-    "previous_mlst",
-    "previous_amr_genes",
-    "cross_species",           # yes | no
-    "ptu",
+    "n_hits",                  # number of repository hits grouped into this alert
+    "match_level",             # best level across hits (identity > type / max jaccard)
+    "cross_species",           # yes if ANY grouped hit crosses a species boundary
+    "ptu",                     # current plasmid PTU
     "mob",
     "mpf",
     "rep",
     "size",
     "gene_set",                # integron cassette gene set (JSON)
-    "amr_genes",
-    "vir_genes",
+    "amr_genes",               # current MGE AMR genes (priority-sorted)
+    "vir_genes",               # current MGE virulence genes (per-plasmid)
     "priority_genes_detected", # subset of amr_genes/vir_genes that hit HIGH
     "priority_categories",     # comma-joined: carbapenemase,mcr,hv_klebsiella,esbl
-    "n_prior_occurrences",
+    "match_hits_json",         # JSON list of prior repository hits (see _build_alert_row)
 ]
 
 
@@ -194,33 +191,15 @@ def _parse_cassette_gene_set(row: pd.Series) -> set[str]:
     return genes
 
 
-def _load_virulence_by_sample(run_dir: Path) -> dict[str, str]:
-    """Build ``{sample_id -> virulence_genes_string}`` from VF_modif.xlsx.
-
-    Returns an empty dict if the file does not exist. The ``#FILE`` column
-    in VF_modif.xlsx already contains the bare sample ID after parser.py
-    processes it (e.g., ``"Kpne_VC_175-1"``), so no extra path stripping is
-    needed.
-    """
-    vf_path = run_dir / "VF_modif.xlsx"
-    if not vf_path.exists():
-        return {}
-    try:
-        df = pd.read_excel(vf_path, keep_default_na=False)
-    except Exception as exc:  # broad: openpyxl can raise many exotic errors
-        print(f"[mge_alerts] could not read {vf_path}: {exc}", file=sys.stderr)
-        return {}
-    if "#FILE" not in df.columns or "Virulence_genes" not in df.columns:
-        return {}
-    return dict(zip(df["#FILE"].astype(str), df["Virulence_genes"].astype(str)))
-
-
 def _load_run_inputs(run_dir: Path) -> dict:
     """Load the run-level inputs that both matching and ingestion need.
 
-    Returns a dict ``{data_analysis, copla, integrons, vir_by_sample}``.
-    Missing optional inputs (copla, integron_summary, VF_modif) yield empty
-    frames / dicts; only ``data_analysis.tsv`` is required.
+    Returns a dict ``{data_analysis, copla, integrons}``. Missing optional
+    inputs (copla, integron_summary) yield empty frames; only
+    ``data_analysis.tsv`` is required. Per-plasmid virulence genes are read
+    straight from the ``Vir`` column of copla_modif.csv (added by parser.py),
+    so virulence is attributed to the specific plasmid carrying it rather than
+    smeared from the whole-genome VFDB profile.
 
     Host metadata is merged from two sources:
       * ``data_analysis.tsv`` provides ``Lab_id``, ``ID``, ``Barcode`` and
@@ -285,7 +264,6 @@ def _load_run_inputs(run_dir: Path) -> dict:
         "data_analysis": data_analysis,
         "copla": copla,
         "integrons": integrons,
-        "vir_by_sample": _load_virulence_by_sample(run_dir),
     }
 
 
@@ -304,7 +282,6 @@ def run_ingestion(args: argparse.Namespace, repo: Repository) -> dict:
     data_analysis = inputs["data_analysis"]
     copla = inputs["copla"]
     integrons = inputs["integrons"]
-    vir_by_sample = inputs["vir_by_sample"]
 
     n_hosts = n_plasmids = n_integrons = 0
     n_plasmids_skipped_size = 0
@@ -368,7 +345,7 @@ def run_ingestion(args: argparse.Namespace, repo: Repository) -> dict:
                 "mpf": row.get("MPF", ""),
                 "size": size,
                 "amr_genes": row.get("AbR", ""),
-                "vir_genes": vir_by_sample.get(isolate_id, ""),
+                "vir_genes": row.get("Vir", ""),
             },
         )
         if uid is None:
@@ -449,7 +426,6 @@ def run_matching(args: argparse.Namespace, repo: Repository) -> list[dict]:
     data_analysis = inputs["data_analysis"]
     copla = inputs["copla"]
     integrons = inputs["integrons"]
-    vir_by_sample = inputs["vir_by_sample"]
 
     # Current-run host metadata indexed by isolate ID for quick lookup when
     # building match records. Same shape as hosts.tsv but in memory and
@@ -498,7 +474,7 @@ def run_matching(args: argparse.Namespace, repo: Repository) -> list[dict]:
             "mpf": row.get("MPF", ""),
             "size": size,
             "amr_genes": row.get("AbR", ""),
-            "vir_genes": vir_by_sample.get(isolate_id, ""),
+            "vir_genes": row.get("Vir", ""),
         }
 
         # Tuple-level matches.
@@ -612,25 +588,29 @@ def run_matching(args: argparse.Namespace, repo: Repository) -> list[dict]:
 # -----------------------------------------------------------------------------
 # Alert emission (P4)
 # -----------------------------------------------------------------------------
-# Regex that strips trailing identity/coverage annotations like " (99.50)" or
-# " (100.00;98.95)" that VF_modif.xlsx attaches to each gene name. Applied
-# before classify_priority() so the regex catalog operates on bare gene names.
-_SCORE_SUFFIX_RE = re.compile(r"\s*\([^)]*\)\s*$")
+# Regex that strips parenthetical identity/coverage annotations such as
+# " (99.50)" or " (100.00;98.95)". It is applied BEFORE splitting on [;,]
+# because the annotation itself can contain those separators — splitting first
+# shatters "acrB (98.19;100.00)" into the orphan fragments "acrB (98.19" and
+# "100.00)". Stripping every "( ... )" group first avoids that.
+_SCORE_ANNOT_RE = re.compile(r"\([^)]*\)")
 
 
 def _split_gene_string(s: str) -> set[str]:
     """Normalize an AMR/VIR gene field into a set of bare gene names.
 
-    Handles both Copla's semicolon list (``"OXA-48;CTX-M-15"``) and the
-    comma-separated list with score annotations emitted by parser.py for
-    VFDB (``"fimH (98.50), rmpA (100.00)"``).
+    Handles Copla's semicolon list (``"OXA-48;CTX-M-15"``), the per-plasmid
+    ``Vir`` column (bare semicolon list), and the comma-separated list with
+    score annotations emitted by parser.py for VFDB
+    (``"fimH (98.50), acrB (98.19;100.00)"``).
     """
     if not s or s == "-":
         return set()
+    s = _SCORE_ANNOT_RE.sub("", s)  # drop "(...)" groups (may contain ; or ,)
     parts = re.split(r"[;,]", s)
     out: set[str] = set()
     for p in parts:
-        p = _SCORE_SUFFIX_RE.sub("", p).strip()
+        p = p.strip()
         if p and p != "-":
             out.add(p)
     return out
@@ -683,7 +663,6 @@ def _build_alert_row(
     *,
     category: str,
     priority: str,
-    match: dict | None,
     current_isolate_id: str,
     current_meta: dict,
     current_host: dict,
@@ -692,12 +671,15 @@ def _build_alert_row(
     priority_info: dict,
     amr_genes: set[str],
     vir_genes: set[str],
-    n_prior_occurrences: int,
+    hits: list[dict],
 ) -> dict:
-    """Assemble a single alerts.tsv row matching :data:`ALERTS_COLUMNS`."""
-    repo_row = (match or {}).get("repo_row", {}) or {}
-    repo_host = (match or {}).get("repo_host", {}) or {}
+    """Assemble a single alerts.tsv row — one alert == one current MGE.
 
+    ``hits`` is the list of prior repository matches grouped under this MGE
+    (each a dict produced in :func:`emit_alerts`). It is serialized to JSON in
+    ``match_hits_json``; the HTML reporter renders the hits stacked inside one
+    card instead of emitting a separate card per repository match.
+    """
     if mge_type == "plasmid":
         ptu = current_meta.get("ptu", "")
         mob = current_meta.get("mob", "")
@@ -710,6 +692,16 @@ def _build_alert_row(
         size = current_meta.get("size", "")
         gene_set = current_meta.get("gene_set_json", "[]")
 
+    # Best match level across the grouped hits (identity beats type for
+    # plasmids; integrons carry a "jaccard:NN" string we surface verbatim).
+    levels = [h.get("match_level", "") for h in hits]
+    if any(lv == "identity" for lv in levels):
+        best_level = "identity"
+    elif any(lv == "type" for lv in levels):
+        best_level = "type"
+    else:
+        best_level = levels[0] if levels else ""
+
     return {
         "alert_category": category,
         "priority": priority,
@@ -719,12 +711,8 @@ def _build_alert_row(
         "current_isolate_id": current_isolate_id,
         "current_species": current_host.get("species", ""),
         "current_mlst": current_host.get("mlst", ""),
-        "match_uid": (match or {}).get("match_uid", ""),
-        "match_level": (match or {}).get("match_level", ""),
-        "previous_host_uid": repo_row.get("host_uid", ""),
-        "previous_species": repo_host.get("species", ""),
-        "previous_mlst": repo_host.get("mlst", ""),
-        "previous_amr_genes": repo_row.get("amr_genes", ""),
+        "n_hits": str(len(hits)),
+        "match_level": best_level,
         "cross_species": "yes" if cross_species else "no",
         "ptu": ptu,
         "mob": mob,
@@ -732,11 +720,29 @@ def _build_alert_row(
         "rep": rep,
         "size": str(size) if size != "" else "",
         "gene_set": gene_set,
-        "amr_genes": _format_genes(amr_genes),
+        "amr_genes": ";".join(sort_amr_genes(amr_genes)),
         "vir_genes": _format_genes(vir_genes),
         "priority_genes_detected": ";".join(sorted(set(priority_info.get("matched", [])))),
         "priority_categories": ",".join(priority_info.get("categories", [])),
-        "n_prior_occurrences": str(n_prior_occurrences),
+        "match_hits_json": json.dumps(hits, ensure_ascii=False),
+    }
+
+
+def _build_hit(match: dict) -> dict:
+    """Project one match record into the compact per-hit dict stored in JSON."""
+    repo_row = match.get("repo_row", {}) or {}
+    repo_host = match.get("repo_host", {}) or {}
+    return {
+        "match_uid": match.get("match_uid", ""),
+        "match_level": match.get("match_level", ""),
+        "previous_host_uid": repo_row.get("host_uid", ""),
+        "previous_isolate_id": repo_host.get("isolate_id", "") or repo_row.get("sample_id", ""),
+        "previous_species": repo_host.get("species", ""),
+        "previous_mlst": repo_host.get("mlst", ""),
+        "previous_ptu": repo_row.get("ptu", ""),
+        "previous_amr_genes": ";".join(sort_amr_genes(_split_gene_string(repo_row.get("amr_genes", "")))),
+        "cross_species": "yes" if _is_cross_species(match) else "no",
+        "ingested_at": repo_row.get("ingested_at", ""),
     }
 
 
@@ -754,40 +760,49 @@ def emit_alerts(
     rows: list[dict] = []
 
     # ----- RECURRENT_RELEVANT ----------------------------------------------
-    # Count how many prior repo entries each current MGE matched. The same
-    # number is replicated across every row sharing the (isolate, contig)
-    # key so the analyst can see "this plasmid has been seen N times".
-    prior_counts: Counter[tuple[str, str]] = Counter(
-        (m["current_isolate_id"], m["current_contig"]) for m in matches
-    )
-
+    # Group every (current_MGE -> repo_hit) match record by the current MGE so
+    # the analyst sees ONE alert per recurrent element, listing all prior
+    # repository occurrences. A prevalent plasmid such as pOXA-48 can match
+    # dozens of priors; collapsing them into a single card (with the hits
+    # stacked) keeps the report readable.
+    groups: dict[tuple, list[dict]] = defaultdict(list)
     for m in matches:
-        amr = _split_gene_string(m["current_meta"].get("amr_genes", ""))
-        vir = _split_gene_string(m["current_meta"].get("vir_genes", ""))
+        key = (m["current_isolate_id"], m["current_contig"], m["mge_type"])
+        groups[key].append(m)
+
+    for (isolate_id, _contig, mge_type), ms in groups.items():
+        ref = ms[0]  # current-MGE fields are identical across the group
+        amr = _split_gene_string(ref["current_meta"].get("amr_genes", ""))
+        vir = _split_gene_string(ref["current_meta"].get("vir_genes", ""))
         if not amr and not vir:
-            # Match exists but the MGE is not epidemiologically relevant
-            # (no AMR / no virulence). Skip per the agreed trigger rule.
+            # The MGE is not epidemiologically relevant (no AMR / no virulence).
             continue
 
         info = classify_priority(amr | vir)
-        cross = _is_cross_species(m)
-        # Priority escalation: HIGH if either a HIGH-priority gene fires
-        # or the match crosses a species boundary.
-        priority = "high" if (info["priority"] == "high" or cross) else "medium"
+        any_cross = any(_is_cross_species(m) for m in ms)
+        # Priority escalation: HIGH if a HIGH-priority gene fires or ANY of the
+        # grouped hits crosses a species boundary.
+        priority = "high" if (info["priority"] == "high" or any_cross) else "medium"
+
+        # One hit entry per matched repository UID, newest first (by ingestion).
+        hits = sorted(
+            (_build_hit(m) for m in ms),
+            key=lambda h: h["ingested_at"],
+            reverse=True,
+        )
 
         rows.append(_build_alert_row(
             category="RECURRENT_RELEVANT",
             priority=priority,
-            match=m,
-            current_isolate_id=m["current_isolate_id"],
-            current_meta=m["current_meta"],
-            current_host=m["current_host"],
-            mge_type=m["mge_type"],
-            cross_species=cross,
+            current_isolate_id=isolate_id,
+            current_meta=ref["current_meta"],
+            current_host=ref["current_host"],
+            mge_type=mge_type,
+            cross_species=any_cross,
             priority_info=info,
             amr_genes=amr,
             vir_genes=vir,
-            n_prior_occurrences=prior_counts[(m["current_isolate_id"], m["current_contig"])],
+            hits=hits,
         ))
 
     # ----- NEW_PRIORITY ----------------------------------------------------
@@ -814,7 +829,7 @@ def emit_alerts(
                 continue
 
             amr = _split_gene_string(row.get("AbR", ""))
-            vir = _split_gene_string(inputs["vir_by_sample"].get(isolate_id, ""))
+            vir = _split_gene_string(row.get("Vir", ""))
             info = classify_priority(amr | vir)
             if info["priority"] != "high":
                 continue
@@ -839,7 +854,6 @@ def emit_alerts(
             rows.append(_build_alert_row(
                 category="NEW_PRIORITY",
                 priority="high",
-                match=None,
                 current_isolate_id=isolate_id,
                 current_meta={
                     "ptu": row.get("PTU", ""),
@@ -854,7 +868,7 @@ def emit_alerts(
                 priority_info=info,
                 amr_genes=amr,
                 vir_genes=vir,
-                n_prior_occurrences=0,
+                hits=[],
             ))
 
         # Integrons: any current integron not matched in repo whose cassette
@@ -899,7 +913,6 @@ def emit_alerts(
             rows.append(_build_alert_row(
                 category="NEW_PRIORITY",
                 priority="high",
-                match=None,
                 current_isolate_id=isolate_id,
                 current_meta={
                     "size": end - start + 1 if start and end else "",
@@ -911,7 +924,7 @@ def emit_alerts(
                 priority_info=info,
                 amr_genes=gene_set,
                 vir_genes=set(),
-                n_prior_occurrences=0,
+                hits=[],
             ))
 
     # ----- Write TSV --------------------------------------------------------

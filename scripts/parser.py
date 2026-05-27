@@ -58,6 +58,84 @@ def safe_read_csv(filepath, required_cols, sep=',', **kwargs):
         return pd.DataFrame(columns=required_cols)
 
 
+def add_plasmid_virulence(input_folder, out_folder=None):
+    """Attach a per-plasmid virulence gene list to copla_modif.csv.
+
+    Virulence genes (ABRicate vs VFDB) are screened on the whole assembly, so
+    the raw per-sample tab (08_Anotacion/<s>/abricate_vfdb/<s>.tab) keeps a
+    ``SEQUENCE`` column naming the assembly contig each gene sits on.
+    MOB-suite's mob_recon/contig_report.txt maps every assembly contig to a
+    plasmid cluster (``primary_cluster_id``) or to the chromosome. Joining the
+    two lets us assign each virulence gene to the specific plasmid that carries
+    it, instead of smearing the whole-genome virulence repertoire (most of it
+    chromosomal: fim, mrk, ent operons) onto every plasmid of the sample.
+
+    The cluster key is derived exactly as aluminion.sh derives Copla's
+    ``Contig`` field (second '_'-field of ``plasmid_<cluster>.fasta``, i.e.
+    ``primary_cluster_id.split('_')[0]``), so the result joins cleanly onto
+    copla_modif.csv on (Sample, Contig). Chromosomal and unbinned hits are
+    dropped. The augmented copla_modif.csv is rewritten in place with a new
+    ';'-joined ``Vir`` column holding bare gene names.
+    """
+    if out_folder is None:
+        out_folder = input_folder
+    copla_path = os.path.join(out_folder, 'copla_modif.csv')
+    if not os.path.isfile(copla_path):
+        return
+    copla_df = pd.read_csv(copla_path)
+    if copla_df.empty or 'Sample' not in copla_df.columns or 'Contig' not in copla_df.columns:
+        return
+
+    annot_root = os.path.join(input_folder, '08_Anotacion')
+    vir_by_plasmid = {}  # {(sample, cluster_key) -> set(genes)}
+
+    for sample in copla_df['Sample'].astype(str).unique():
+        vf_tab = os.path.join(annot_root, sample, 'abricate_vfdb', f'{sample}.tab')
+        report = os.path.join(annot_root, sample, 'mob_recon', 'contig_report.txt')
+        if not (os.path.isfile(vf_tab) and os.path.isfile(report)):
+            continue
+
+        # Map each assembly contig to its plasmid cluster (plasmid molecules
+        # only — chromosome/unbinned contigs are intentionally excluded).
+        try:
+            rep_df = pd.read_csv(report, sep='\t', dtype=str).fillna('')
+        except Exception as e:
+            log.warning('Could not read %s: %s', report, e)
+            continue
+        if 'contig_id' not in rep_df.columns or 'primary_cluster_id' not in rep_df.columns:
+            continue
+        contig_to_cluster = {}
+        for _, r in rep_df.iterrows():
+            if str(r.get('molecule_type', '')).lower() != 'plasmid':
+                continue
+            cluster_key = str(r['primary_cluster_id']).split('_')[0]
+            contig_to_cluster[str(r['contig_id'])] = cluster_key
+        if not contig_to_cluster:
+            continue
+
+        try:
+            vf_df = pd.read_csv(vf_tab, sep='\t', dtype=str).fillna('')
+        except Exception as e:
+            log.warning('Could not read %s: %s', vf_tab, e)
+            continue
+        if 'SEQUENCE' not in vf_df.columns or 'GENE' not in vf_df.columns:
+            continue
+        for _, r in vf_df.iterrows():
+            cluster_key = contig_to_cluster.get(str(r['SEQUENCE']))
+            if not cluster_key:
+                continue  # gene lives on the chromosome or an unbinned contig
+            gene = str(r['GENE']).strip()
+            if gene and gene != '.':
+                vir_by_plasmid.setdefault((sample, cluster_key), set()).add(gene)
+
+    copla_df['Vir'] = [
+        ';'.join(sorted(vir_by_plasmid.get((str(s), str(c)), set())))
+        for s, c in zip(copla_df['Sample'], copla_df['Contig'])
+    ]
+    copla_df.to_csv(copla_path, index=False)
+    log.info("Per-plasmid virulence attached to %s (column 'Vir')", copla_path)
+
+
 def get_arguments():
     parser = argparse.ArgumentParser(
         prog='parser.py',
@@ -276,6 +354,10 @@ def main():
         log.info('Parsing plasmids...')
         if hasattr(copla_parser, 'run_parsing'):
             copla_parser.run_parsing(input_folder, out_folder)
+        # Attach per-plasmid virulence (needs the VFDB screen + MOB-suite
+        # contig report); skipped when ABRicate was not run.
+        if not args.skip_abr:
+            add_plasmid_virulence(input_folder, out_folder)
 
     # -------------------------------------------------------------------------
     # 2. File paths and column schemas
