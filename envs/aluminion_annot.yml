@@ -14,6 +14,9 @@ dependencies:
   - bcbio-gff
   - gambit
   - bakta
+  - prokka         # Lightweight CDS annotation of integron cassettes (integron_parser.py);
+                   # kept alongside bakta because base env proves they co-solve. Bakta is
+                   # overkill (large DB, slow per tiny cassette) for this micro-annotation step.
   - abricate
   - mlst
   - blast
