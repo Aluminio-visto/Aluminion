@@ -118,6 +118,7 @@ INTEGRON_INDEX_COLUMNS: list[str] = [
 HOSTS_COLUMNS: list[str] = [
     "host_uid",
     "run_name",
+    "seq_date",
     "lab_id",
     "isolate_id",
     "strain",

@@ -185,31 +185,43 @@ def _species_mlst(species: str, mlst: str) -> str:
 
 def _render_hit(hit: dict, mge_type: str) -> str:
     """Render one prior repository occurrence as a sub-box inside an alert."""
-    rows = [
-        "<div class='row'>"
-        + _field("Prior isolate",
-                 hit.get("previous_isolate_id", "") or _isolate_from_uid(hit.get("previous_host_uid", "")))
-        + _field("Prior species / MLST",
-                 _species_mlst(hit.get("previous_species", ""), hit.get("previous_mlst", "")))
-        + "</div>"
-    ]
-    # Second row: plasmid carries a prior PTU; both MGE types carry a match level.
-    second_fields = []
-    if mge_type == "plasmid":
-        second_fields.append(_field("Prior PTU", hit.get("previous_ptu", "")))
-    second_fields.append(_field("Match level", hit.get("match_level", "")))
-    if len(second_fields) == 1:
-        second_fields.append("<div></div>")  # keep the 2-column grid balanced
-    rows.append("<div class='row'>" + "".join(second_fields) + "</div>")
+    # Prior isolate, annotated with its sequencing date (or run name) in parens.
+    isolate = hit.get("previous_isolate_id", "") or _isolate_from_uid(hit.get("previous_host_uid", ""))
+    when = hit.get("previous_seq_date", "")
+    isolate_label = f"{isolate} ({when})" if (isolate and when) else isolate
 
-    if hit.get("previous_amr_genes"):
-        rows.append(
-            "<div class='row'>"
-            + _field("Prior AMR genes", hit["previous_amr_genes"])
-            + "<div></div></div>"
+    fields = [
+        _field("Prior isolate", isolate_label),
+        _field("Prior species / MLST",
+               _species_mlst(hit.get("previous_species", ""), hit.get("previous_mlst", ""))),
+    ]
+    if mge_type == "plasmid":
+        rep_mob_mpf = (
+            f"{hit.get('previous_rep') or '-'} / "
+            f"{hit.get('previous_mob') or '-'} / "
+            f"{hit.get('previous_mpf') or '-'}"
         )
+        fields += [
+            _field("Prior PTU", hit.get("previous_ptu", "")),
+            _field("Prior Rep / MOB / MPF", rep_mob_mpf),
+        ]
+    fields += [
+        _field("Prior size (bp)", hit.get("previous_size", "")),
+        _field("Match level", hit.get("match_level", "")),
+    ]
+    if hit.get("previous_amr_genes"):
+        fields.append(_field("Prior AMR genes", hit["previous_amr_genes"]))
+
+    # Lay the fields out two-per-row, padding the last row when odd.
+    rows_html = ""
+    for i in range(0, len(fields), 2):
+        pair = fields[i:i + 2]
+        if len(pair) == 1:
+            pair.append("<div></div>")
+        rows_html += "<div class='row'>" + "".join(pair) + "</div>"
+
     cross_badge = _badge("CROSS-SPECIES", "cross") if hit.get("cross_species") == "yes" else ""
-    return f"<div class='hit'>{''.join(rows)}{cross_badge}</div>"
+    return f"<div class='hit'>{rows_html}{cross_badge}</div>"
 
 
 def _render_alert(row: pd.Series) -> str:
@@ -229,7 +241,7 @@ def _render_alert(row: pd.Series) -> str:
 
     title = (
         f'{html.escape(row["current_isolate_id"])} '
-        f'<span class="value">({html.escape(_species_short(row["current_species"]))})</span>'
+        f'<span class="value">({html.escape(_species_mlst(row["current_species"], row["current_mlst"]))})</span>'
     )
 
     # MGE-specific metadata for the CURRENT element.

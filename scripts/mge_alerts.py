@@ -191,6 +191,24 @@ def _parse_cassette_gene_set(row: pd.Series) -> set[str]:
     return genes
 
 
+def _load_seq_dates(run_dir: Path) -> dict[str, str]:
+    """Map ``isolate_id -> sequencing date`` from the per-run data_seq.tsv
+    snapshot (written by lab_db_updater.py just before this step). Empty when
+    the file or its columns are absent (older runs / --skip paths); callers
+    fall back to the run name, which is itself a date in the lab's convention.
+    """
+    path = run_dir / "data_seq.tsv"
+    if not path.exists():
+        return {}
+    try:
+        df = pd.read_csv(path, sep="\t", dtype=str).fillna("")
+    except Exception:
+        return {}
+    if "ID" not in df.columns or "Seq_date" not in df.columns:
+        return {}
+    return dict(zip(df["ID"].astype(str), df["Seq_date"].astype(str)))
+
+
 def _load_run_inputs(run_dir: Path) -> dict:
     """Load the run-level inputs that both matching and ingestion need.
 
@@ -282,6 +300,7 @@ def run_ingestion(args: argparse.Namespace, repo: Repository) -> dict:
     data_analysis = inputs["data_analysis"]
     copla = inputs["copla"]
     integrons = inputs["integrons"]
+    seq_dates = _load_seq_dates(run_dir)
 
     n_hosts = n_plasmids = n_integrons = 0
     n_plasmids_skipped_size = 0
@@ -296,6 +315,7 @@ def run_ingestion(args: argparse.Namespace, repo: Repository) -> dict:
         repo.ingest_host({
             "host_uid": host_uid,
             "run_name": run_name,
+            "seq_date": seq_dates.get(isolate_id, ""),
             "lab_id": row.get("Lab_id", ""),
             "isolate_id": isolate_id,
             "strain": row.get("Strain", ""),
@@ -737,9 +757,16 @@ def _build_hit(match: dict) -> dict:
         "match_level": match.get("match_level", ""),
         "previous_host_uid": repo_row.get("host_uid", ""),
         "previous_isolate_id": repo_host.get("isolate_id", "") or repo_row.get("sample_id", ""),
+        # Prefer the recorded sequencing date; fall back to the run name (a date
+        # in the lab's convention) so older repositories still show something.
+        "previous_seq_date": repo_host.get("seq_date", "") or repo_host.get("run_name", "") or repo_row.get("run_name", ""),
         "previous_species": repo_host.get("species", ""),
         "previous_mlst": repo_host.get("mlst", ""),
         "previous_ptu": repo_row.get("ptu", ""),
+        "previous_rep": repo_row.get("rep", ""),
+        "previous_mob": repo_row.get("mob", ""),
+        "previous_mpf": repo_row.get("mpf", ""),
+        "previous_size": repo_row.get("size", ""),
         "previous_amr_genes": ";".join(sort_amr_genes(_split_gene_string(repo_row.get("amr_genes", "")))),
         "cross_species": "yes" if _is_cross_species(match) else "no",
         "ingested_at": repo_row.get("ingested_at", ""),
