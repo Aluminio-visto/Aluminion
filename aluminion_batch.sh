@@ -41,7 +41,9 @@ INIT_REPO_FLAG=""     # when set, "--init-repo" is forwarded to the first launch
 PASSTHROUGH=()
 
 show_help() {
-    cat << EOF
+    # Quoted 'EOF' so the backtick-quoted examples below are printed literally;
+    # an unquoted heredoc would command-substitute them (e.g. run `--` as a command).
+    cat << 'EOF'
 
 Aluminion batch wrapper: process multiple MinKNOW runs sequentially.
 
@@ -68,11 +70,18 @@ Additional options:
   -h, --help           Show this message.
 
 Each run folder MUST contain its own list_seq.tsv (enforced via --require-run-list).
-Any flag after `--` is forwarded verbatim to each aluminion invocation, e.g.
-`-- --resume --skip-kraken --polish-batchsize 8`.
+
+Forwarding aluminion options (the standalone "--" is REAL syntax, not a typo):
+  This wrapper only understands the options listed above. Every flag meant for
+  aluminion itself (e.g. --resume, --skip-kraken, --polish-batchsize) must be placed
+  AFTER a bare "--" separator. The "--" marks "forward everything past here verbatim
+  to each aluminion invocation". Passing such a flag without the leading "--" is
+  rejected as an unknown argument.
+    Correct:   aluminion_batch.sh --runlist runs.tsv -d /seqs -t 30 -- --resume
+    Wrong:     aluminion_batch.sh --runlist runs.tsv -d /seqs -t 30 --resume
 
 Example:
-  aluminion_batch.sh --runlist runs.tsv -d /seqs/KLEBIRE -b /db -t 30 --init-repo \\
+  aluminion_batch.sh --runlist runs.tsv -d /seqs/KLEBIRE -b /db -t 30 --init-repo \
       -- --resume --skip-kraken
 
 EOF

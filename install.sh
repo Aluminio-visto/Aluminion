@@ -24,7 +24,8 @@ warn()  { echo -e "\033[1;33m[WARNING] $1\033[0m"; }
 error() { echo -e "\033[1;31m[ERROR] $1\033[0m"; exit 1; }
 
 show_help() {
-    cat << EOF
+    # Quoted 'EOF': static help text, no variable expansion needed.
+    cat << 'EOF'
 
 Aluminion install script
 

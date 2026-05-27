@@ -324,8 +324,19 @@ aluminion_batch --runlist runs.tsv -d /seqs/KLEBIRE -b /path/to/Databases -t 30 
 ```
 
 `--init-repo` is recognised directly (it is forwarded to the first launched run;
-the MGE repository is created automatically on the first run regardless). Flags
-after `--` are forwarded verbatim to every `aluminion` invocation. Per-run logic:
+the MGE repository is created automatically on the first run regardless).
+
+> **The standalone `--` is real syntax, not a typo.** The wrapper only understands
+> its own options (`--runlist`, `-d`, `-b`, `-t`, `--skip-import-from-minknow`,
+> `--init-repo`, `--force`). Every flag meant for `aluminion` itself — `--resume`,
+> `--skip-kraken`, `--polish-batchsize`, etc. — must come **after a bare `--`
+> separator**, which marks "everything past here is forwarded verbatim to each
+> `aluminion` invocation." So in `... -t 30 -- --resume --skip-kraken`, the wrapper
+> consumes `-t 30`, then forwards `--resume --skip-kraken` unchanged. Passing
+> `--resume` *without* the leading `--` makes the wrapper reject it as an unknown
+> argument (`[ERROR] Unknown argument: --resume`).
+
+Per-run logic:
 
 | Condition                                          | Action                                                            |
 |----------------------------------------------------|-------------------------------------------------------------------|

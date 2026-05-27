@@ -76,7 +76,7 @@ Additional options:
                   (--no-minknow is kept as a back-compat alias.)
   --unique-run    Self-contained single-run mode. Skips every interaction with
                   the parent <BASE_DIR>/repositorio/ folder: no directory is
-                  created, no reads are copied there, and `is_repeated` samples
+                  created, no reads are copied there, and \`is_repeated\` samples
                   are processed as fresh runs (the prior reads cannot be
                   concatenated without the repository). Use it for one-off
                   projects, when no shared repositorio exists, or to protect an
