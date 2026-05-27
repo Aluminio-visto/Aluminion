@@ -75,11 +75,11 @@ Additional options:
                   abort with a clear error if fastq_pass/ is missing.
                   (--no-minknow is kept as a back-compat alias.)
   --unique-run    Self-contained single-run mode. Skips every interaction with
-                  the parent <BASE_DIR>/repositorio/ folder: no directory is
-                  created, no reads are copied there, and \`is_repeated\` samples
-                  are processed as fresh runs (the prior reads cannot be
-                  concatenated without the repository). Use it for one-off
-                  projects, when no shared repositorio exists, or to protect an
+                  the shared repository (<BASE_DIR>/repository or --repo): no read
+                  accumulator directory is created, no reads are copied there, and
+                  \`is_repeated\` samples are processed as fresh runs (the prior reads
+                  cannot be concatenated without the repository). Use it for one-off
+                  projects, when no shared repository exists, or to protect an
                   existing one from being touched by a run you don't fully
                   trust yet.
   --skip-preprocessing  Skip read QC and filtering (NanoPlot + Chopper). Requires a
@@ -488,7 +488,10 @@ else
             | grep -Ev '^[[:space:]]*$|^[xX]$' \
             | sort -u \
             | while read -r bc; do
-                padded=$(printf "%02d" "$bc")
+                # Force base-10: printf treats a leading-zero value like "08"/"09" as
+                # octal, where 8 and 9 are invalid digits ("invalid octal number").
+                # 10#$bc strips that interpretation so zero-padded barcodes work.
+                padded=$(printf "%02d" "$((10#$bc))")
                 src="${FASTQ_SRC}/barcode${padded}"
                 if [ -d "$src" ]; then
                     cp -r "$src" fastq_pass/
@@ -505,11 +508,15 @@ else
 fi
 
 mkdir -p 01_reads/QC 02_filter/QC 03_assemblies/quast 04_taxonomies/{kraken2,gtdb} 05_plasmids 08_Anotacion 09_phages 10_ices 11_integrons
-# The cross-run shared repository lives next to the run folder. Under --unique-run
-# we leave it untouched (either it does not exist yet, or the user wants this run
-# to stay isolated from a pre-existing repositorio).
+# Cross-run shared repository. This is the SAME directory the MGE alert system uses
+# ($REPO, default <BASE_DIR>/repository), unified so there is a single shared store
+# instead of the old split (legacy bash "repositorio" held only the is_repeated read
+# accumulator; Python "repository" holds the plasmid/integron indices). Only 01_reads/
+# is created here — the MGE subdirs (plasmids/, integrons/, sketches/) are created and
+# populated by mge_repository.py during the alert step. Under --unique-run the shared
+# store is left untouched so the run stays isolated.
 if [ -z "$UNIQUE_RUN" ]; then
-    mkdir -p ../repositorio/{01_reads,03_assemblies,05_plasmids,08_Anotacion,09_phages,10_ices,11_integrons}
+    mkdir -p "${REPO}/01_reads"
 fi
 
 # ==============================================================================
@@ -529,41 +536,38 @@ if [ -z "$SKIP_PREPROCESSING" ]; then
         bc="${bc%"${bc##*[![:space:]]}"}"
         # Zero-pad barcode to match MinKNOW's two-digit directory naming (barcode01, barcode09…).
         # The copy step above already pads with printf "%02d"; this keeps the two in sync.
-        padded_bc=$(printf "%02d" "$bc")
+        # 10#$bc forces base-10 so a zero-padded "08"/"09" is not misread as octal.
+        padded_bc=$(printf "%02d" "$((10#$bc))")
         if resume_done "01_reads/${id}.fastq.gz"; then
             log "  [resume] Read concat: ${id} already done, skipping."
         elif [ -z "$rep" ]; then
             # Fresh sample — concatenate the per-barcode FASTQs from this run only.
             cat fastq_pass/barcode${padded_bc}/*.fastq.gz > 01_reads/${id}.fastq.gz
             if [ -z "$UNIQUE_RUN" ]; then
-                cp 01_reads/${id}.fastq.gz ../repositorio/01_reads/${id}.fastq.gz
+                cp 01_reads/${id}.fastq.gz "${REPO}/01_reads/${id}.fastq.gz"
             fi
         else
             # is_repeated sample. In repository-aware mode, prepend the prior reads
-            # stored in repositorio. Under --unique-run (or when the repository
-            # exists but lacks prior reads for this sample), fall back to the new
-            # reads alone and warn so the user knows the merge didn't happen.
-            if [ -z "$UNIQUE_RUN" ] && [ -f "../repositorio/01_reads/${id}.fastq.gz" ]; then
-                cat ../repositorio/01_reads/${id}.fastq.gz fastq_pass/barcode${padded_bc}/*.fastq.gz > 01_reads/${id}.fastq.gz
-                cp 01_reads/${id}.fastq.gz ../repositorio/01_reads/${id}.fastq.gz
+            # stored in the shared repository. Under --unique-run (or when the
+            # repository exists but lacks prior reads for this sample), fall back to
+            # the new reads alone and warn so the user knows the merge didn't happen.
+            if [ -z "$UNIQUE_RUN" ] && [ -f "${REPO}/01_reads/${id}.fastq.gz" ]; then
+                cat "${REPO}/01_reads/${id}.fastq.gz" fastq_pass/barcode${padded_bc}/*.fastq.gz > 01_reads/${id}.fastq.gz
+                cp 01_reads/${id}.fastq.gz "${REPO}/01_reads/${id}.fastq.gz"
             else
                 if [ -n "$UNIQUE_RUN" ]; then
-                    warn "  Sample ${id} is marked is_repeated but --unique-run is active — using new reads only (no concat with repositorio)."
+                    warn "  Sample ${id} is marked is_repeated but --unique-run is active — using new reads only (no concat with the repository)."
                 else
-                    warn "  Sample ${id} is marked is_repeated but no prior reads found in repositorio — using new reads only."
+                    warn "  Sample ${id} is marked is_repeated but no prior reads found in the repository — using new reads only."
                 fi
                 cat fastq_pass/barcode${padded_bc}/*.fastq.gz > 01_reads/${id}.fastq.gz
                 if [ -z "$UNIQUE_RUN" ]; then
-                    cp 01_reads/${id}.fastq.gz ../repositorio/01_reads/${id}.fastq.gz
+                    cp 01_reads/${id}.fastq.gz "${REPO}/01_reads/${id}.fastq.gz"
                 fi
             fi
         fi
         echo -e "${id}\t\t\t$PWD/01_reads/${id}.fastq.gz\t\t" >> samplesheet.tsv
     done
-
-    if [ -z "$UNIQUE_RUN" ]; then
-        cut -f3 list_seq.tsv | tail -n+2 > ../repositorio/samples
-    fi
     find 01_reads -type f -name "*.fastq.gz" -size "+${MIN_READ_MB}M" -exec basename {} .fastq.gz \; | sort | uniq > samples
 
     if [ ! -s samples ]; then
@@ -1292,7 +1296,7 @@ else
 fi
 
 if [ -n "$UNIQUE_RUN" ]; then
-    log "Pipeline successfully finished in --unique-run mode (no repositorio interaction). Aluminion out."
+    log "Pipeline successfully finished in --unique-run mode (no repository interaction). Aluminion out."
 else
     log "Pipeline successfully finished. Aluminion out."
 fi
