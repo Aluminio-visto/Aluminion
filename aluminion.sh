@@ -393,10 +393,16 @@ log "Log file: $LOG_FILE"
 cd "$WORKDIR"
 
 # Copy MinKNOW metadata files (small, always needed). Skipped under --no-minknow
-# when the run folder is already a self-contained import.
+# when the run folder is already a self-contained import. The .minknow_import_done
+# sentinel (written after a complete fastq_pass/ import below) lets --resume skip the
+# whole MinKNOW import on a re-run, so a finished folder is not re-copied from scratch.
 if [ -z "$NO_MINKNOW" ]; then
-    cp "${MINKNOW_DIR}/${RUN_NAME}/no_sample_id/"*/final_summary_*.txt . 2>/dev/null || true
-    cp "${MINKNOW_DIR}/${RUN_NAME}/no_sample_id/"*/report_*.json      . 2>/dev/null || true
+    if resume_done "fastq_pass/.minknow_import_done"; then
+        log "  [resume] MinKNOW metadata already imported, skipping."
+    else
+        cp "${MINKNOW_DIR}/${RUN_NAME}/no_sample_id/"*/final_summary_*.txt . 2>/dev/null || true
+        cp "${MINKNOW_DIR}/${RUN_NAME}/no_sample_id/"*/report_*.json      . 2>/dev/null || true
+    fi
 fi
 
 # Resolve list_seq.tsv with the following precedence:
@@ -453,6 +459,11 @@ if [ -n "$NO_MINKNOW" ]; then
         exit 1
     fi
     log "Using existing fastq_pass/ inside the run folder (MinKNOW import skipped)."
+elif resume_done "fastq_pass/.minknow_import_done"; then
+    # A previous run already imported every referenced barcode into fastq_pass/.
+    # Re-copying with cp -r would overwrite identical files and thrash the disk for
+    # no gain, so on --resume we trust the completed import and move on.
+    log "  [resume] fastq_pass/ already imported from MinKNOW, skipping copy."
 else
     mkdir -p fastq_pass
     FASTQ_SRC=$(ls -d "${MINKNOW_DIR}/${RUN_NAME}/no_sample_id/"*/fastq_pass 2>/dev/null | head -n1)
@@ -471,6 +482,9 @@ else
                     log "Warning: barcode${padded} not found in MinKNOW fastq_pass — skipping."
                 fi
             done
+        # Mark the import complete so a later --resume skips it. Written only after the
+        # copy loop, so an interrupted import (no sentinel) is correctly retried.
+        touch fastq_pass/.minknow_import_done
     else
         log "Warning: MinKNOW fastq_pass directory not found. Continuing without copying reads."
     fi
