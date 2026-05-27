@@ -175,22 +175,36 @@ resume_done() { [ -n "$RESUME" ] && { [ -f "$1" ] || [ -d "$1" ]; }; }
 #     for i in ...; do { work "$i"; } & par_wait <MAX>; done
 #     par_drain                                   # after the loop (or later)
 #
-# Why a manual counter instead of `while (( $(jobs -rp|wc -l) >= MAX ))`: command
-# substitution `$(...)` forks a subshell with an EMPTY job table, so `jobs` there
-# always reports zero and the throttle never engages. We track the in-flight count
-# by hand and block on `wait -n` (wait for the next job to finish) when at cap.
-# set -e safety: a finished job's non-zero exit would abort the run under errexit,
-# so we swallow it with `|| true`; each job body is responsible for its own errors.
-_par_running=0
-par_reset() { _par_running=0; }
+# Implementation: track the PIDs of the jobs WE launch in an array, and wait only on
+# those specific PIDs — never a bare `wait`/`wait -n`.
+#   * Why not `while (( $(jobs -rp|wc -l) >= MAX ))`: command substitution `$(...)` forks
+#     a subshell with an EMPTY job table, so `jobs` there always reports zero and the
+#     throttle never engages.
+#   * Why not a bare `wait` in par_drain: stdout/stderr are piped to a `tee -a` child via
+#     `exec > >(tee ...)` (process substitution). A bare `wait` (and `wait -n` with no
+#     args) also waits on that logger child, which never exits until the script ends — so
+#     the pipeline HANGS FOREVER. It is most visible on --resume, when every per-sample
+#     step is skipped, no jobs are launched, and tee is the only remaining child. Waiting
+#     on explicit PIDs sidesteps tee and any unrelated background job entirely.
+# par_wait blocks on the OLDEST in-flight PID (FIFO) when at cap; `wait <pid>` works on
+# every bash (unlike `wait -n <pid...>`, which needs bash >= 5.1). For these homogeneous,
+# light per-sample jobs the head-of-line cost is negligible. set -e safety: a finished
+# job's non-zero exit would abort the run under errexit, so we swallow it with `|| true`;
+# each job body is responsible for its own errors.
+_par_pids=()
+par_reset() { _par_pids=(); }
 par_wait()  {
-    _par_running=$((_par_running + 1))
-    if [ "$_par_running" -ge "$1" ]; then
-        wait -n 2>/dev/null || true
-        _par_running=$((_par_running - 1))
+    # Must be called immediately after `... &` so $! is that job's PID.
+    _par_pids+=("$!")
+    if [ "${#_par_pids[@]}" -ge "$1" ]; then
+        wait "${_par_pids[0]}" 2>/dev/null || true
+        _par_pids=("${_par_pids[@]:1}")          # drop the reaped (oldest) PID
     fi
 }
-par_drain() { wait || true; _par_running=0; }
+par_drain() {
+    [ "${#_par_pids[@]}" -gt 0 ] && wait "${_par_pids[@]}" 2>/dev/null || true
+    _par_pids=()
+}
 
 # Prune large, non-reusable intermediates after a fully completed run. Disabled by
 # --keep-everything. Only ever called at the very end of a complete run (the early
