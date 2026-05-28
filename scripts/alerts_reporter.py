@@ -168,10 +168,25 @@ def _badge(label: str, css_class: str) -> str:
     return f'<span class="badge {css_class}">{html.escape(label)}</span>'
 
 
-def _field(label: str, value: str) -> str:
+def _field(label, value) -> str:
+    """Render one label/value pair as a small HTML block.
+
+    Coerces every argument to ``str`` before passing it to ``html.escape``
+    because ``html.escape`` calls ``s.replace('&', '&amp;')`` and dies on
+    non-string scalars with ``'int' object has no attribute 'replace'``.
+    The mge_alerts JSON round-trip used to leak ints when ``repo_row['size']``
+    came from the tuple-match branch (cast via ``.astype(int)``); fixing that
+    at the source removed the immediate trigger, but keeping this defensive
+    here means a future column whose dtype drifts cannot crash the report.
+    """
+    label_s = str(label) if label is not None else ""
+    if value is None or value == "":
+        value_html = "&mdash;"
+    else:
+        value_html = html.escape(str(value))
     return (
-        f'<div><div class="label">{html.escape(label)}</div>'
-        f'<div class="value">{html.escape(value) if value else "&mdash;"}</div></div>'
+        f'<div><div class="label">{html.escape(label_s)}</div>'
+        f'<div class="value">{value_html}</div></div>'
     )
 
 

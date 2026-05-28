@@ -65,7 +65,10 @@ ALERTS_COLUMNS: list[str] = [
     "priority",                # high | medium
     "mge_type",                # plasmid | integron
     "current_host_uid",
-    "current_lab_id",
+    # current_lab_id removed 2026-05-28: redundant with current_isolate_id for
+    # downstream consumers, and forcing it through list_seq.tsv added a brittle
+    # join that did not earn its keep in the alert report. lab_id is still
+    # stored in the repository's hosts.tsv for cross-run traceability.
     "current_isolate_id",
     "current_species",
     "current_mlst",
@@ -727,7 +730,7 @@ def _build_alert_row(
         "priority": priority,
         "mge_type": mge_type,
         "current_host_uid": current_host.get("host_uid", ""),
-        "current_lab_id": current_host.get("lab_id", ""),
+        # current_lab_id intentionally omitted (see ALERTS_COLUMNS comment).
         "current_isolate_id": current_isolate_id,
         "current_species": current_host.get("species", ""),
         "current_mlst": current_host.get("mlst", ""),
@@ -749,27 +752,50 @@ def _build_alert_row(
 
 
 def _build_hit(match: dict) -> dict:
-    """Project one match record into the compact per-hit dict stored in JSON."""
+    """Project one match record into the compact per-hit dict stored in JSON.
+
+    Every field is coerced to ``str`` so the JSON round-trip is type-stable:
+    ``repo_row["size"]`` is an ``int`` when the match came from the tuple
+    branch (which casts ``df_t["size"].astype(int)`` to filter by the size
+    band) but a plain string when it came from the ANI branch — leading to
+    a mixed ``"size": "65530"`` vs ``"size": 60569`` schema inside the
+    serialized JSON, which then crashed ``alerts_reporter._field`` because
+    ``html.escape`` cannot ``.replace`` an int. Stringifying here also future-
+    proofs the reporter against any other column whose dtype may vary.
+    """
     repo_row = match.get("repo_row", {}) or {}
     repo_host = match.get("repo_host", {}) or {}
+
+    def _s(v):
+        # Treat NaN / None as the empty string so blank cells stay blank in the
+        # rendered HTML instead of showing the literal string "nan".
+        if v is None:
+            return ""
+        try:
+            if pd.isna(v):  # pandas / numpy NaN
+                return ""
+        except (TypeError, ValueError):
+            pass
+        return str(v)
+
     return {
-        "match_uid": match.get("match_uid", ""),
-        "match_level": match.get("match_level", ""),
-        "previous_host_uid": repo_row.get("host_uid", ""),
-        "previous_isolate_id": repo_host.get("isolate_id", "") or repo_row.get("sample_id", ""),
+        "match_uid": _s(match.get("match_uid", "")),
+        "match_level": _s(match.get("match_level", "")),
+        "previous_host_uid": _s(repo_row.get("host_uid", "")),
+        "previous_isolate_id": _s(repo_host.get("isolate_id", "") or repo_row.get("sample_id", "")),
         # Prefer the recorded sequencing date; fall back to the run name (a date
         # in the lab's convention) so older repositories still show something.
-        "previous_seq_date": repo_host.get("seq_date", "") or repo_host.get("run_name", "") or repo_row.get("run_name", ""),
-        "previous_species": repo_host.get("species", ""),
-        "previous_mlst": repo_host.get("mlst", ""),
-        "previous_ptu": repo_row.get("ptu", ""),
-        "previous_rep": repo_row.get("rep", ""),
-        "previous_mob": repo_row.get("mob", ""),
-        "previous_mpf": repo_row.get("mpf", ""),
-        "previous_size": repo_row.get("size", ""),
+        "previous_seq_date": _s(repo_host.get("seq_date", "") or repo_host.get("run_name", "") or repo_row.get("run_name", "")),
+        "previous_species": _s(repo_host.get("species", "")),
+        "previous_mlst": _s(repo_host.get("mlst", "")),
+        "previous_ptu": _s(repo_row.get("ptu", "")),
+        "previous_rep": _s(repo_row.get("rep", "")),
+        "previous_mob": _s(repo_row.get("mob", "")),
+        "previous_mpf": _s(repo_row.get("mpf", "")),
+        "previous_size": _s(repo_row.get("size", "")),
         "previous_amr_genes": ";".join(sort_amr_genes(_split_gene_string(repo_row.get("amr_genes", "")))),
         "cross_species": "yes" if _is_cross_species(match) else "no",
-        "ingested_at": repo_row.get("ingested_at", ""),
+        "ingested_at": _s(repo_row.get("ingested_at", "")),
     }
 
 
