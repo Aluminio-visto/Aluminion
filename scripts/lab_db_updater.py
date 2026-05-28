@@ -484,6 +484,20 @@ def main():
         # ------------------------------------------------------------------
         merged_df = pd.merge(datos_seq, result3, on='ID', how='left', suffixes=('', '_result3'))
 
+        # Force the repeat-tracking columns to object dtype so per-cell string
+        # assignments below don't raise pandas.errors.LossySetitemError. On a
+        # cumulative DB where no sample has been repeated yet, these columns
+        # are loaded 100% NaN — pandas infers float64 and pandas >= 2.x then
+        # refuses to silently upcast a string Barcode (e.g. '65') into a float
+        # column. The historical pandas 1.5.3 (dev myenv) did the upcast
+        # silently, which is why this regression only surfaced on the
+        # production server (Python 3.12 + pandas 2.x). 'Seq_date_*' is also
+        # forced object because the same column ends up as a string ('YYYY-MM-DD').
+        for _col in ('Barcode_rep1', 'Barcode_rep2',
+                     'Seq_date_rep1', 'Seq_date_rep2'):
+            if _col in merged_df.columns:
+                merged_df[_col] = merged_df[_col].astype('object')
+
         # Repeat tracking: only samples already present in the prior cumulative
         # DB (repeat_ids) record their new barcode/date in the next free rep
         # slot. Fresh samples keep Barcode/Seq_date only; their rep columns stay
