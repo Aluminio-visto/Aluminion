@@ -32,6 +32,12 @@ from pathlib import Path
 
 import pandas as pd
 
+# Priority tier ordering for the pattern grouping logic below. The user-facing
+# pattern title prefers the gene from the highest-tier category present on the
+# carriers — so a plasmid carrying OXA-48 (carbapenemase) is named after the
+# carbapenemase even if the alert row also lists an ESBL.
+_PRIORITY_TIER_ORDER = ("carbapenemase", "colistin", "hv_klebsiella", "esbl")
+
 # At most this many prior repository hits are rendered per alert card; older
 # occurrences are summarized as a count. Prevalent plasmids (pOXA-48 et al.)
 # can match dozens of priors, so showing the most recent few keeps the card
@@ -198,6 +204,232 @@ def _species_mlst(species: str, mlst: str) -> str:
     return sp
 
 
+# =============================================================================
+# Pattern grouping (Stream A of the 2026-05-28 UX rewrite)
+# =============================================================================
+# The alerts.tsv schema stays one-row-per-MGE so external consumers don't
+# break, but the HTML report collapses N alert rows sharing a biological
+# "pattern" (e.g. pOXA-48-like = PTU-L/M + IncL/M + OXA-48) into a single
+# expandable card. Carriers and their prior hits live inside that card.
+# Pattern key:
+#   plasmid  -> (PTU, primary Rep token, top priority gene)
+#   integron -> ('integron', canonical sorted cassette gene set)
+# Plasmids without any priority gene fall into an "Other" bucket keyed only
+# by (PTU, primary Rep) so they still cluster by tuple instead of fragmenting.
+# =============================================================================
+
+def _primary_rep(rep: str) -> str:
+    """First ';'-separated Rep token; '' if none."""
+    if not rep:
+        return ""
+    return rep.split(";")[0].strip()
+
+
+def _top_priority_gene(row: pd.Series) -> tuple[str, str]:
+    """Pick the (gene, category) used to title the pattern.
+
+    Returns the first gene of the highest-tier category present in
+    ``priority_categories``; falls back to the first gene of
+    ``priority_genes_detected`` if neither maps to a known tier. Empty
+    string when no priority gene was detected.
+    """
+    detected = (row.get("priority_genes_detected", "") or "").strip()
+    if not detected:
+        return ("", "")
+    categories = {c.strip() for c in (row.get("priority_categories", "") or "").split(",") if c.strip()}
+    genes = [g.strip() for g in detected.split(";") if g.strip()]
+    if not genes:
+        return ("", "")
+    # Pick the tier that's actually present on this row, by global tier order.
+    for tier in _PRIORITY_TIER_ORDER:
+        if tier in categories:
+            # Match the first gene whose pattern matches this tier. We avoid
+            # re-importing _priority_genes' compiled patterns here; the row's
+            # `priority_genes_detected` is already the matched set, so the
+            # tier label + a gene from that set is good enough as a title.
+            return (genes[0], tier)
+    return (genes[0], next(iter(categories), ""))
+
+
+def _pattern_key(row: pd.Series) -> tuple:
+    """Compute the hashable pattern key for one alerts.tsv row."""
+    mge_type = row.get("mge_type", "")
+    if mge_type == "integron":
+        gs_json = row.get("gene_set", "") or ""
+        try:
+            genes = json.loads(gs_json) if gs_json else []
+        except (json.JSONDecodeError, TypeError):
+            genes = []
+        canonical = tuple(sorted({str(g).strip() for g in genes if str(g).strip()}))
+        return ("integron", canonical)
+    # plasmid (and any unknown mge_type) keyed by tuple.
+    ptu = (row.get("ptu", "") or "").strip()
+    rep_primary = _primary_rep(row.get("rep", "") or "")
+    top_gene, _ = _top_priority_gene(row)
+    return ("plasmid", ptu, rep_primary, top_gene)
+
+
+def _pattern_title(key: tuple, sample_row: pd.Series) -> str:
+    """Build the human-readable title shown on the pattern card."""
+    if key[0] == "integron":
+        _, genes = key
+        if not genes:
+            return "Integron (empty cassette)"
+        shown = list(genes)[:3]
+        more = f" + {len(genes) - 3} more" if len(genes) > 3 else ""
+        return f"Integron: {', '.join(shown)}{more}"
+    # plasmid
+    _, ptu, rep, gene = key
+    # Treat the bare dash as "not determined" — appending it as "(-)" is just
+    # noise in the title. The metadata line under the title carries the raw
+    # PTU value for users who care about the difference.
+    ptu_show = ptu if (ptu and ptu != "-") else ""
+    rep_show = rep if (rep and rep != "-") else ""
+    if gene:
+        # "OXA-48 / IncL/M (PTU-L/M)" — the gene comes first because that's
+        # what the clinician is searching the page for; the PTU goes in
+        # parens so two patterns sharing gene+Rep but differing by PTU don't
+        # render with identical titles (real case on the production run:
+        # CTX-M-15 / IncFIB(K) split across PTU-F and PTU-FE).
+        title = f"{gene} / {rep_show}" if rep_show else gene
+        if ptu_show:
+            title += f" ({ptu_show})"
+        return title
+    if rep_show:
+        return f"Plasmid: {rep_show}" + (f" ({ptu_show})" if ptu_show else "")
+    if ptu_show:
+        return f"Plasmid: {ptu_show}"
+    return "Plasmid: unclassified"
+
+
+def _pattern_summary_meta(block: dict) -> str:
+    """One-line "metadata strip" rendered under the pattern title.
+
+    Aggregates the carriers' shared metadata into a compact summary. Per-
+    carrier variation (different MOB / MPF strings detected across samples)
+    is exposed in each carrier sub-block when the card is expanded.
+    """
+    parts: list[str] = []
+    if block["ptu"]:
+        parts.append(f"PTU: {block['ptu']}")
+    if block["rep"] or block["mob"] or block["mpf"]:
+        parts.append(
+            f"Rep / MOB / MPF: {block['rep'] or '-'} / "
+            f"{block['mob'] or '-'} / {block['mpf'] or '-'}"
+        )
+    if block["size_repr"]:
+        parts.append(f"~{block['size_repr']} bp")
+    if block["top_gene"]:
+        cat = f" [{block['top_category']}]" if block["top_category"] else ""
+        parts.append(f"Priority: {block['top_gene']}{cat}")
+    return " · ".join(parts)
+
+
+def _representative_value(values: list[str]) -> str:
+    """Most common non-empty value across carriers; '' when all blank."""
+    cleaned = [v for v in values if v and v != "-"]
+    if not cleaned:
+        return ""
+    # Counter-by-hand to avoid a stdlib import cost; the list is small.
+    counts: dict[str, int] = {}
+    for v in cleaned:
+        counts[v] = counts.get(v, 0) + 1
+    return max(counts.items(), key=lambda x: x[1])[0]
+
+
+def _group_by_pattern(df: pd.DataFrame) -> list[dict]:
+    """Group an alerts.tsv DataFrame into pattern blocks.
+
+    Returns a list of dicts shaped for ``_render_pattern_card``. The caller
+    splits the list by priority and orders within each section.
+    """
+    blocks: dict[tuple, dict] = {}
+    for _, row in df.iterrows():
+        key = _pattern_key(row)
+        blk = blocks.get(key)
+        if blk is None:
+            top_gene, top_cat = _top_priority_gene(row)
+            blk = {
+                "key": key,
+                "mge_type": row.get("mge_type", ""),
+                "carriers": [],
+                "priorities": set(),
+                "cross_species_carriers": 0,
+                "first_occurrence_carriers": 0,
+                "total_prior_hits": 0,
+                "top_gene": top_gene,
+                "top_category": top_cat,
+                # Representative metadata collected after the loop.
+                "_ptu_vals": [],
+                "_rep_vals": [],
+                "_mob_vals": [],
+                "_mpf_vals": [],
+                "_size_vals": [],
+            }
+            blocks[key] = blk
+        blk["carriers"].append(row)
+        blk["priorities"].add(row.get("priority", "") or "")
+        if (row.get("cross_species", "") or "") == "yes":
+            blk["cross_species_carriers"] += 1
+        if (row.get("alert_category", "") or "") == "NEW_PRIORITY":
+            blk["first_occurrence_carriers"] += 1
+        try:
+            blk["total_prior_hits"] += int(row.get("n_hits", "0") or 0)
+        except (TypeError, ValueError):
+            pass
+        blk["_ptu_vals"].append(row.get("ptu", "") or "")
+        blk["_rep_vals"].append(_primary_rep(row.get("rep", "") or ""))
+        blk["_mob_vals"].append(row.get("mob", "") or "")
+        blk["_mpf_vals"].append(row.get("mpf", "") or "")
+        blk["_size_vals"].append(row.get("size", "") or "")
+        # Prefer to remember a top gene/category if the first carrier didn't
+        # have one but a later carrier in the same key does (rare edge case;
+        # the key would force them to share, so a non-empty top_gene on any
+        # carrier is the right value to display).
+        if not blk["top_gene"]:
+            g, c = _top_priority_gene(row)
+            if g:
+                blk["top_gene"], blk["top_category"] = g, c
+
+    # Finalise representative fields and pattern-level metadata.
+    final: list[dict] = []
+    for key, blk in blocks.items():
+        sample_row = blk["carriers"][0]
+        blk["ptu"] = _representative_value(blk["_ptu_vals"])
+        blk["rep"] = _representative_value(blk["_rep_vals"])
+        blk["mob"] = _representative_value(blk["_mob_vals"])
+        blk["mpf"] = _representative_value(blk["_mpf_vals"])
+        # Size: numeric median of the carriers; falls back to representative
+        # string if nothing parses.
+        numeric_sizes: list[int] = []
+        for s in blk["_size_vals"]:
+            try:
+                if s:
+                    numeric_sizes.append(int(float(s)))
+            except (TypeError, ValueError):
+                pass
+        if numeric_sizes:
+            numeric_sizes.sort()
+            mid = numeric_sizes[len(numeric_sizes) // 2]
+            blk["size_repr"] = f"{mid:,}"
+        else:
+            blk["size_repr"] = _representative_value(blk["_size_vals"])
+        # Pattern priority = the highest priority any carrier reaches.
+        blk["priority"] = "high" if "high" in blk["priorities"] else (
+            "medium" if "medium" in blk["priorities"] else ""
+        )
+        blk["any_cross_species"] = blk["cross_species_carriers"] > 0
+        blk["n_carriers"] = len(blk["carriers"])
+        blk["title"] = _pattern_title(key, sample_row)
+        blk["meta_line"] = _pattern_summary_meta(blk)
+        # Drop the working buffers so the dict is clean for rendering.
+        for k in list(blk.keys()):
+            if k.startswith("_"):
+                del blk[k]
+        final.append(blk)
+    return final
+
+
 def _render_hit(hit: dict, mge_type: str) -> str:
     """Render one prior repository occurrence as a sub-box inside an alert."""
     # Prior isolate, annotated with its sequencing date (or run name) in parens.
@@ -239,8 +471,16 @@ def _render_hit(hit: dict, mge_type: str) -> str:
     return f"<div class='hit'>{rows_html}{cross_badge}</div>"
 
 
-def _render_alert(row: pd.Series) -> str:
-    """Render one alerts.tsv row as an HTML card (one alert == one MGE)."""
+def _render_carrier(row: pd.Series) -> str:
+    """Render one alerts.tsv row as a carrier sub-card inside a pattern.
+
+    Was previously the top-level ``_render_alert``; renamed for Stream A
+    of the 2026-05-28 UX rewrite, where the top level is now the pattern
+    card and individual MGE rows render here. Other than the FIRST
+    OCCURRENCE badge (replacing the old NEW PRIORITY one with semantics
+    closer to what the user reads in a grouped report), the body is
+    unchanged on purpose so the per-carrier detail view stays familiar.
+    """
     category = row["alert_category"]
     priority = row["priority"]
     mge_type = row["mge_type"]
@@ -248,7 +488,10 @@ def _render_alert(row: pd.Series) -> str:
 
     head_badges: list[str] = [_badge(mge_type.upper(), f"mge-{mge_type}")]
     if category == "NEW_PRIORITY":
-        head_badges.append(_badge("NEW PRIORITY", "cat-new"))
+        # Inside a recurrent pattern, this carrier is the first time the MGE
+        # appears in the repository. Tag it so the user spots novel hosts
+        # at a glance without having to scan match_hits_json counts.
+        head_badges.append(_badge("FIRST OCCURRENCE", "first-occ"))
     else:
         head_badges.append(_badge("RECURRENT", "cat-rec"))
     if cross:
@@ -349,8 +592,50 @@ def _isolate_from_uid(host_uid: str) -> str:
     return host_uid or ""
 
 
+def _render_pattern_card(block: dict) -> str:
+    """Render one pattern as a collapsible <details> card with carriers inside."""
+    head_badges: list[str] = [_badge(block["mge_type"].upper(), f"mge-{block['mge_type']}")]
+    if block["priority"]:
+        # Reuse the cat-rec colors for the priority badge to keep the existing
+        # palette small; the priority tier is already visible via the left
+        # border color and the section heading.
+        head_badges.append(_badge(f"{block['priority'].upper()} PRIORITY", "cat-rec"))
+    if block["any_cross_species"]:
+        head_badges.append(_badge("CROSS-SPECIES", "cross"))
+    if block["first_occurrence_carriers"] > 0:
+        head_badges.append(_badge(f"{block['first_occurrence_carriers']} NEW", "first-occ"))
+
+    counts = (
+        f"Current-run carriers: <b>{block['n_carriers']}</b> &middot; "
+        f"Prior occurrences (sum across carriers): <b>{block['total_prior_hits']}</b>"
+    )
+
+    carriers_html = "\n".join(_render_carrier(r) for r in block["carriers"])
+
+    summary = (
+        f'<summary>'
+        f'<h3>{html.escape(block["title"])} {" ".join(head_badges)}</h3>'
+        f'<div class="pattern-meta">{html.escape(block["meta_line"])}</div>'
+        f'<div class="pattern-counts">{counts}</div>'
+        f'</summary>'
+    )
+    return (
+        f'<details class="pattern priority-{block["priority"]}">'
+        f'{summary}'
+        f'<div class="pattern-body">{carriers_html}</div>'
+        f'</details>'
+    )
+
+
 def render_alerts_html(alerts_tsv: Path, output_html: Path, run_name: str = "") -> None:
-    """Read ``alerts_tsv`` and write a fully-rendered HTML report to ``output_html``."""
+    """Read ``alerts_tsv`` and write a fully-rendered HTML report to ``output_html``.
+
+    The report groups alerts by biological pattern (Stream A of the
+    2026-05-28 UX rewrite). One ``<details>`` card per pattern; carriers
+    and their prior hits render inside when expanded. Pattern key:
+    ``(PTU, primary Rep, top priority gene)`` for plasmids, the canonical
+    sorted cassette gene set for integrons.
+    """
     df = pd.read_csv(alerts_tsv, sep="\t", dtype=str).fillna("")
 
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -376,18 +661,30 @@ def render_alerts_html(alerts_tsv: Path, output_html: Path, run_name: str = "") 
             "detected, or the repository is empty (first run after init).</div>"
         )
     else:
+        # Build pattern blocks once; sections filter by priority. Within a
+        # section, order patterns by (number of current-run carriers DESC,
+        # number of prior hits DESC) so the most prevalent show up first.
+        all_blocks = _group_by_pattern(df)
+        all_blocks.sort(
+            key=lambda b: (b["n_carriers"], b["total_prior_hits"]),
+            reverse=True,
+        )
+
         sections: list[str] = []
         for level, css_class, title in [
             ("high", "high", "HIGH priority"),
             ("medium", "medium", "MEDIUM priority"),
         ]:
-            sub = df[df["priority"] == level]
-            if sub.empty:
+            blocks = [b for b in all_blocks if b["priority"] == level]
+            if not blocks:
                 continue
-            cards = "\n".join(_render_alert(row) for _, row in sub.iterrows())
+            cards = "\n".join(_render_pattern_card(b) for b in blocks)
+            n_carriers = sum(b["n_carriers"] for b in blocks)
             sections.append(
                 f'<div class="section {css_class}">'
-                f'  <h2>{html.escape(title)} ({len(sub)})</h2>'
+                f'  <h2>{html.escape(title)} '
+                f'({len(blocks)} pattern{"s" if len(blocks) != 1 else ""}, '
+                f'{n_carriers} carrier{"s" if n_carriers != 1 else ""})</h2>'
                 f'  {cards}'
                 f'</div>'
             )
