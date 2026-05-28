@@ -146,9 +146,21 @@ def get_arguments():
     input_group.add_argument('-i', '--input_folder', dest='input_folder', required=True,
                              help='Required. Folder containing aluminion.sh outputs to summarise.',
                              type=os.path.abspath)
+    # PubMLST schema root: default to <CONDA_PREFIX>/db/pubmlst/ so the path
+    # follows whichever conda env the script is invoked under. Falls back to
+    # an empty string when CONDA_PREFIX is unset; downstream `os.path.exists`
+    # checks in _process_mlst_row handle that gracefully. CLAUDE.md forbids
+    # hardcoded absolute paths — the previous '/home/usuario/...' default was
+    # a lab-specific install that broke as soon as the script ran in a
+    # different env or host.
+    _default_pubmlst = (
+        os.path.join(os.environ['CONDA_PREFIX'], 'db', 'pubmlst')
+        if os.environ.get('CONDA_PREFIX') else ''
+    )
     input_group.add_argument('-db', '--pubMLST_database', dest='pubMLST_database', required=False,
-                             default='/home/usuario/miniconda3/envs/mlst/db/pubmlst/',
-                             help='Folder containing PubMLST schemas.',
+                             default=_default_pubmlst,
+                             help='Folder containing PubMLST schemas '
+                                  '(default: $CONDA_PREFIX/db/pubmlst when set).',
                              type=os.path.abspath)
 
     output_group = parser.add_argument_group('Output', 'Output parameters')

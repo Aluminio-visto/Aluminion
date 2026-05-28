@@ -106,38 +106,55 @@ def extract_fastas(gbk_file, cds_output_file, fna_file, integron):
     return d_int
 
 def extract_info(sample, subdf, replicon, integron, input_path, original_path):
-    # Integrase
+    # Integrase metadata. Specific exceptions instead of bare `except` so that
+    # KeyboardInterrupt / SystemExit can still propagate; an empty intI selection
+    # raises IndexError on .iloc[0], and a missing column raises KeyError.
     try:
         integrase_row = subdf[subdf['annotation'] == 'intI'].iloc[0]
         integrase_model = integrase_row['model']
         integrase_strand = integrase_row['strand']
-    except:
+    except (IndexError, KeyError):
         integrase_model = ''
         integrase_strand = -1
 
     # attC sites
     try:
         attc_models = subdf[subdf['type_elt'] == 'attC']['model'].tolist()
-    except:
+    except KeyError:
         attc_models = ''
 
+    gbk_file = input_path + f'/{replicon}.gbk'
+    cds_output_file = input_path + f'/{replicon}_{integron}.faa'
+    fna_file = input_path + f'/{replicon}_{integron}.fna'
     try:
-        # Extract faa and fna for integrons
-        gbk_file = input_path + f'/{replicon}.gbk'
-        cds_output_file = input_path + f'/{replicon}_{integron}.faa'
-        fna_file = input_path + f'/{replicon}_{integron}.fna'
         d_int = extract_fastas(gbk_file, cds_output_file, fna_file, integron)
-    except:
-        log.warning('GBK parsing error. Check the integrity of %s', gbk_file)
+    except Exception as e:
+        log.warning('GBK parsing error for %s/%s/%s (%s): %s. Skipping integron.',
+                    sample, replicon, integron, gbk_file, e)
         return None
 
     df_abr = pd.DataFrame(columns = ['pos_beg', 'pos_end', 'abr_ann'])
     df_prokka = pd.DataFrame(columns = ['pos_beg', 'pos_end', 'prokka_ann'])
-    # If the integron has CDS, annotate them with Prokka and Abricate
+    # If the integron has CDS, annotate them with Prokka and Abricate. Either
+    # tool failing (e.g. missing binary, malformed FAA, OOM) used to propagate
+    # `CalledProcessError` all the way up to `run_parsing` and abort EVERY
+    # remaining sample's parsing — the exact failure mode that crashed the
+    # 2026-05-27 batch when prokka was not installed. Convert to a logged
+    # warning and skip just this integron instead.
     if len(d_int.keys()) > 0:
-        prokka_dir, abr_out = annotate_cds(cds_output_file, input_path, replicon, integron)
-        df_prokka = prokka_parse(prokka_dir)
-        df_abr = abr_parse(abr_out)
+        try:
+            prokka_dir, abr_out = annotate_cds(cds_output_file, input_path, replicon, integron)
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            log.warning('CDS annotation failed for %s/%s/%s (%s). Skipping integron.',
+                        sample, replicon, integron, e)
+            return None
+        try:
+            df_prokka = prokka_parse(prokka_dir)
+            df_abr = abr_parse(abr_out)
+        except Exception as e:
+            log.warning('Parsing Prokka/Abricate output failed for %s/%s/%s: %s. '
+                        'Skipping integron.', sample, replicon, integron, e)
+            return None
     # Merge with annotations, prioritise Abricate and reorient df if needed
     subdf['pos_beg'] = subdf['pos_beg'].astype('int64')
     subdf['pos_end'] = subdf['pos_end'].astype('int64')
@@ -217,23 +234,29 @@ def run_parsing(original_path, out_folder=None):
         # 11_integrons/<sample>/Results_Integron_Finder_*/<file>.integrons
         # os.path keeps this portable across Windows and POSIX path separators.
         sample = os.path.basename(os.path.dirname(input_path))
-        
+
         try:
             df_integron = pd.read_table(integron_file, comment='#')
         except Exception:
             log.info('No integrons in %s', sample)
             continue
 
-        # Divide into integrons and chromosomes
-        grouped = df_integron.groupby(['ID_replicon', 'ID_integron'])
-        subdfs = {}
-
-        for (replicon, integron), group in grouped:
-            key = f"{replicon}_{integron}"
-            subdfs[key] = group
-            info = extract_info(sample, subdfs[key], replicon, integron, input_path, original_path)
-            if info:
-                summary_df.loc[len(summary_df)] = info
+        # Per-sample isolation: a single malformed .integrons file or an
+        # unhandled exception inside extract_info (dtype mismatch on merge,
+        # GFF parse error, ...) used to take down the whole integron parsing
+        # step for every remaining sample. Catch broadly here and log so the
+        # rest of the run still produces a useful integron_summary.csv.
+        try:
+            grouped = df_integron.groupby(['ID_replicon', 'ID_integron'])
+            for (replicon, integron), group in grouped:
+                info = extract_info(sample, group, replicon, integron,
+                                    input_path, original_path)
+                if info:
+                    summary_df.loc[len(summary_df)] = info
+        except Exception as e:
+            log.warning('Integron parsing failed for sample %s (%s). '
+                        'Skipping; other samples continue.', sample, e)
+            continue
 
     # Save to the main folder (where the reporter will look for it)
     output_csv = os.path.join(out_folder, 'integron_summary.csv')

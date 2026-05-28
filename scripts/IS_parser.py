@@ -33,6 +33,20 @@ def main():
     report     = os.path.join(input_folder, "IS_chr.tsv")
     report_out = os.path.join(out_folder,   "IS_chr_out.tsv")
 
+    out_cols = ['IS', 'start', 'end', '%ID', 'mismatch']
+
+    # A sample with zero ISfinder hits leaves IS_chr.tsv empty; pd.read_csv on
+    # an empty file raises EmptyDataError, which would propagate to bash and
+    # abort the IS stage under `set -e` (the caller in aluminion.sh has no
+    # `|| true`). Write a header-only TSV and return so downstream consumers
+    # (cut -f 2 in aluminion.sh:1215, head/tail counts) see an empty-but-valid
+    # table. The unnamed index column is preserved on purpose: the bash
+    # consumer keys on column 2 = IS name, which depends on the pandas default
+    # index occupying column 1. Changing that would silently shift every cut.
+    if not os.path.exists(report) or os.path.getsize(report) == 0:
+        pd.DataFrame(columns=out_cols).to_csv(report_out, sep='\t')
+        return
+
     df = pd.read_csv(report, sep='\t', names=['IS', 'contig', 'start', 'end', '%ID', 'mismatch', 'evalue'])
     df['start2'] = df['start']
     df['end2']   = df['end']
@@ -45,6 +59,8 @@ def main():
     df = df[df['%ID'] > 90]
     df = df.drop(columns=['contig', 'evalue', 'start2', 'end2'])
 
+    # Keep the default (index=True) so the unnamed index column stays in
+    # position 1, leaving IS name in position 2 for the bash `cut -f 2` call.
     df.to_csv(report_out, sep='\t')
 
 

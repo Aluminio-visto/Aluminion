@@ -63,9 +63,9 @@ def run_parsing(input_folder, out_folder=None):
                 elif line.startswith('Contig:'):
                     current_record['Contig'] = line.split(':')[1].strip()
                 elif line.startswith('Query is a'):
-                    partes = line.split(' ')
-                    if len(partes) >= 4:
-                        current_record['PTU'] = partes[3].strip()
+                    parts = line.split(' ')
+                    if len(parts) >= 4:
+                        current_record['PTU'] = parts[3].strip()
                 elif line.startswith('PTU could not'):
                     current_record['PTU'] = '-'
                 elif line.startswith('Size:'):

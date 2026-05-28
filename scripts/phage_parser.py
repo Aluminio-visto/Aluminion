@@ -44,20 +44,35 @@ def read_summary(infile):
     return None
 
 def execute_blastn(assembly_fasta, phage_fna):
-    """Executes BLASTN to find exact phage regions in the original assembly."""
+    """Executes BLASTN to find exact phage regions in the original assembly.
+
+    Returns an empty DataFrame (with the expected columns) when BLAST runs but
+    produces no hits. The previous version called pd.read_table on a
+    zero-byte stdout stream, which raises EmptyDataError — a normal outcome
+    for phage-free isolates that would otherwise abort the whole parser.
+    """
+    blast_columns = ['qseqid', 'sseqid', 'pident', 'qcovhsp', 'length', 'qlen', 'slen',
+                     'qstart', 'qend', 'sstart', 'send', 'sframe', 'evalue', 'bitscore']
     mkbl_cmd = ['makeblastdb', '-in', assembly_fasta, '-parse_seqids', '-dbtype', 'nucl']
     # check=True surfaces makeblastdb failures (e.g. truncated FASTA, missing perms)
     # instead of letting the subsequent blastn fail with a less helpful error.
     subprocess.run(mkbl_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, check=True)
-    blast_cmd = ['blastn', '-query', phage_fna, '-db', assembly_fasta, '-outfmt', '6 qseqid sseqid pident qcovhsp length qlen slen qstart qend sstart send sframe evalue bitscore']
+    blast_cmd = ['blastn', '-query', phage_fna, '-db', assembly_fasta,
+                 '-outfmt', '6 qseqid sseqid pident qcovhsp length qlen slen qstart qend sstart send sframe evalue bitscore']
+    # Drain stdout to bytes BEFORE attempting to parse so we can branch on the
+    # zero-hit case without provoking pandas' EmptyDataError. pipe.communicate()
+    # also captures stderr in one call and avoids the deadlock risk of waiting
+    # on Popen.wait() with a full stderr pipe buffer.
     pipe = subprocess.Popen(blast_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    df_blast = pd.read_table(pipe.stdout, header=None)
-    pipe.wait()
+    out_bytes, err_bytes = pipe.communicate()
     if pipe.returncode != 0:
-        err = pipe.stderr.read().decode(errors='replace')
+        err = err_bytes.decode(errors='replace')
         raise RuntimeError(f"blastn failed (rc={pipe.returncode}): {err}")
-    if not df_blast.empty:
-        df_blast.columns = ['qseqid', 'sseqid', 'pident', 'qcovhsp', 'length', 'qlen', 'slen', 'qstart', 'qend', 'sstart', 'send', 'sframe', 'evalue', 'bitscore']
+    if not out_bytes.strip():
+        return pd.DataFrame(columns=blast_columns)
+    import io
+    df_blast = pd.read_table(io.BytesIO(out_bytes), header=None)
+    df_blast.columns = blast_columns
     return df_blast
 
 def process_blastn(df_blast):
@@ -114,27 +129,39 @@ def run_parsing(original_path, out_folder=None):
     for phage_path in glob.glob(search_pattern):
         if not os.path.isdir(phage_path):
             continue
-            
+
         sample = os.path.basename(os.path.normpath(phage_path))
         phage_sum = os.path.join(phage_path, 'summary.txt')
         phage_fna = os.path.join(phage_path, 'region_DNA.txt')
         assembly_fasta = os.path.join(original_path, f'03_assemblies/{sample}/assembly.fasta')
-        
-        if os.path.isfile(phage_sum) and os.path.isfile(phage_fna) and os.path.isfile(assembly_fasta):
+
+        if not (os.path.isfile(phage_sum) and os.path.isfile(phage_fna) and os.path.isfile(assembly_fasta)):
+            continue
+
+        # Per-sample isolation: a single malformed Phastest output, a broken
+        # assembly FASTA, or a transient makeblastdb/blastn failure used to
+        # propagate up and abort phage parsing for every remaining sample.
+        # This is especially relevant now that Phastest is non-fatal — failed
+        # runs can leave partial outputs in 09_phages/phastest_deep/<sample>/.
+        try:
             df_phastest = read_summary(phage_sum)
-            if df_phastest is not None and not df_phastest.empty:
-                df_blast = execute_blastn(assembly_fasta, phage_fna)
-                df_blast2 = process_blastn(df_blast)
-                
-                if not df_blast2.empty:
-                    combo_df = df_phastest.merge(df_blast2, left_on='REGION', right_on='qseqid', how='outer')
-                    combo_df['Sample'] = sample
-                    combo_df = combo_df[['Sample', 'REGION', 'sseqid', 'sstart', 'send', 'length', 'MOST_COMMON_PHAGE_NAME(hit_genes_count)',
-                                        'COMPLETENESS(score)', 'SPECIFIC_KEYWORD', 'TOTAL_PROTEIN_NUM', 'PHAGE+HYPO_PROTEIN_PERCENTAGE', 'ATT_SITE_SHOWUP']]
-                    combo_df.rename(columns={'REGION': 'Fago', 'sseqid': 'contig', 'sstart': 'Start', 'send': 'End', 'MOST_COMMON_PHAGE_NAME(hit_genes_count)': 'Cluster'}, inplace=True)
-                    
-                    extract_fasta(combo_df, phage_fna, os.path.join(original_path, '09_phages'), sample)
-                    summary_df = pd.concat([summary_df, combo_df], axis=0, ignore_index=True)
+            if df_phastest is None or df_phastest.empty:
+                continue
+            df_blast = execute_blastn(assembly_fasta, phage_fna)
+            df_blast2 = process_blastn(df_blast)
+            if df_blast2.empty:
+                continue
+            combo_df = df_phastest.merge(df_blast2, left_on='REGION', right_on='qseqid', how='outer')
+            combo_df['Sample'] = sample
+            combo_df = combo_df[['Sample', 'REGION', 'sseqid', 'sstart', 'send', 'length', 'MOST_COMMON_PHAGE_NAME(hit_genes_count)',
+                                'COMPLETENESS(score)', 'SPECIFIC_KEYWORD', 'TOTAL_PROTEIN_NUM', 'PHAGE+HYPO_PROTEIN_PERCENTAGE', 'ATT_SITE_SHOWUP']]
+            combo_df.rename(columns={'REGION': 'Fago', 'sseqid': 'contig', 'sstart': 'Start', 'send': 'End', 'MOST_COMMON_PHAGE_NAME(hit_genes_count)': 'Cluster'}, inplace=True)
+            extract_fasta(combo_df, phage_fna, os.path.join(original_path, '09_phages'), sample)
+            summary_df = pd.concat([summary_df, combo_df], axis=0, ignore_index=True)
+        except Exception as e:
+            log.warning('Phage parsing failed for sample %s (%s). '
+                        'Skipping; other samples continue.', sample, e)
+            continue
 
     output_csv = os.path.join(out_folder, 'phage_summary.csv')
     summary_df.to_csv(output_csv, index=False)

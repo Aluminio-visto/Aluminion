@@ -57,22 +57,24 @@ def load_and_standardize(file_path, sep=',', key_col=None):
 # Unit formatting functions (Genomics)
 # ==========================================
 def fmt_mbp_0(x):
+    # Specific exceptions only — bare `except:` also swallows KeyboardInterrupt
+    # and SystemExit, which masks real failures during report generation.
     try: return f"{float(x)/1e6:.0f} Mbp"
-    except: return x
+    except (TypeError, ValueError): return x
 
 def fmt_mbp_2(x):
     try: return f"{float(x)/1e6:.2f} Mbp"
-    except: return x
+    except (TypeError, ValueError): return x
 
 def fmt_kbp_dynamic(x):
     """Uses 1 decimal if below 10 Kbp, and 0 decimals if 10 Kbp or above."""
-    try: 
+    try:
         val = float(x)
         if val < 10000:
             return f"{val/1e3:.1f} Kbp"
         else:
             return f"{val/1e3:.0f} Kbp"
-    except: return x
+    except (TypeError, ValueError): return x
 
 def main():
     work_dir = sys.argv[1] if len(sys.argv) > 1 else "."

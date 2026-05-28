@@ -248,6 +248,7 @@ failed_deconcat=()
 failed_circlator=()
 failed_bandage=()
 failed_typing=()
+failed_phages=()
 
 # ==============================================================================
 # COMMAND LINE ARGUMENT PARSING
@@ -373,6 +374,22 @@ done
 
 if ! command -v docker >/dev/null 2>&1; then
     error_log "Docker not found. Required for MOB-suite, Copla, and Phastest. Install Docker and ensure the daemon is running."
+    exit 1
+fi
+
+# Phastest inputs preflight: the docker container runs as root and stamps
+# phastest_inputs/<sample>.fasta with root:root ownership. A previous run that
+# aborted before its cleanup leaves root-owned residue that blocks the next
+# `cp` with "Permiso denegado". The runtime fix (rm -f + cp -f in the Phastest
+# loop) handles per-sample residue gracefully, but if the DIRECTORY itself
+# became unwritable we want to fail in seconds, not after Chopper+Flye+Bakta.
+# Skipped when phages are disabled via --skip-phages.
+if [ -z "${SKIP_PHAGES}" ] && [ -d "${PHASTEST_DIR}/phastest_inputs" ] \
+        && [ ! -w "${PHASTEST_DIR}/phastest_inputs" ]; then
+    error_log "${PHASTEST_DIR}/phastest_inputs is not writable by $(id -un)."
+    error_log "Likely owned by root after a prior Phastest run. Fix:"
+    error_log "  sudo chown -R $(id -u):$(id -g) ${PHASTEST_DIR}/phastest_inputs"
+    error_log "Or pass --skip-phages to disable the Phastest stage for this run."
     exit 1
 fi
 
@@ -973,6 +990,34 @@ done
 # outputs, and the later annotation parallel pools must not see leftover QC jobs in
 # their concurrency accounting.
 par_drain
+
+# Validate NanoPlot pre/post-filter outputs now that the pool has been drained.
+# A NanoPlot job that silently failed in the background pool (Chrome wrapper
+# missing, choreographer error, OOM) leaves NanoStats.txt absent — the downstream
+# `for i in $(cat samples); do grep ... NanoStats.txt | datamash transpose; done`
+# loop then emits fewer rows than the `samples` file, and `paste samples
+# QC_reads.csv` silently shifts every value column by one, contaminating every
+# table and report. Fail fast here with the exact list of missing files so the
+# user can re-run with --just-preprocessing once the underlying issue is fixed.
+# (Skipped under --skip-preprocessing: the user is responsible for having a
+# previous run's QC outputs intact, and the pre-existing reads guard at line ~668
+# already vets the filtered FASTQs.)
+if [ -z "$SKIP_PREPROCESSING" ]; then
+    missing_nanostats=()
+    for i in $(cat samples); do
+        [ -s "01_reads/QC/${i}/NanoStats.txt" ] || missing_nanostats+=("01_reads/QC/${i}/NanoStats.txt")
+        [ -s "02_filter/QC/${i}/NanoStats.txt" ] || missing_nanostats+=("02_filter/QC/${i}/NanoStats.txt")
+    done
+    if [ ${#missing_nanostats[@]} -gt 0 ]; then
+        error_log "NanoPlot output is missing or empty for the following sentinels:"
+        for f in "${missing_nanostats[@]}"; do error_log "  - ${f}"; done
+        error_log "A NanoPlot job in the parallel QC pool likely failed silently."
+        error_log "Check the Chrome wrapper (\${WORKDIR}/.chrome_wrapper) and NanoPlot logs,"
+        error_log "then re-run with --just-preprocessing to regenerate the QC outputs."
+        exit 1
+    fi
+fi
+
 [ "$STOP_AFTER" = "assembly" ] && { log "Done — stopping after assembly (--just-assembly). Assemblies in 03_assemblies/."; exit 0; }
 
 # 3. Annotation
@@ -1138,28 +1183,52 @@ fi
 # 5. Phastest (Docker)
 if [ -z "$SKIP_PHAGES" ]; then
     log "Running Phages module (Phastest)..."
+    host_uid=$(id -u); host_gid=$(id -g)
     for i in $(cat samples); do
         if resume_done "09_phages/phastest_deep/${i}"; then
             log "  [resume] Phastest: ${i} done, skipping."
             continue
         fi
         mkdir -p 09_phages/phastest_deep/"$i"/
-        cp 03_assemblies/"$i".fasta "${PHASTEST_DIR}/phastest_inputs/"
+
+        # Phastest processes the input FASTA in-place inside its container (which runs
+        # as root) and stamps the file with root:root ownership. If a prior run aborted
+        # before line `rm -rf .../phastest_inputs/$i.fasta` (e.g. a downstream failure),
+        # the leftover input file persists as root:root mode 644, and a plain `cp` from
+        # the host user can't truncate-overwrite it → "Permiso denegado". The dir itself
+        # is host-user-owned, so `rm -f` works (only needs dir write perm). Clear any
+        # stale residue first, then copy. `cp -f` adds belt-and-braces unlink-then-create.
+        rm -f "${PHASTEST_DIR}/phastest_inputs/${i}.fasta"
+        if ! cp -f 03_assemblies/"$i".fasta "${PHASTEST_DIR}/phastest_inputs/"; then
+            warn "Phastest: could not stage ${i}.fasta in ${PHASTEST_DIR}/phastest_inputs/. Skipping."
+            failed_phages+=("$i")
+            continue
+        fi
+
         # Phastest must run as root inside the container — its perl scripts live in
         # /root/phastest-app/scripts/ with 700 perms. Passing --user <host_uid:gid>
         # makes them unreadable, which silently breaks prophage detection (the
         # earlier `--phage-only` flag was a workaround that masked the failure by
         # skipping every step that needed those scripts).
         #
-        # Side effect: Phastest creates JOBS/$i as root, so the host user can't
-        # `rm -rf` it afterwards. Wrap the phastest call in `bash -c` so the same
-        # container (still root) chowns the output tree back to the host user
-        # before exiting. Phastest's exit code is preserved via $rc.
-        host_uid=$(id -u); host_gid=$(id -g)
-        docker compose -f "${PHASTEST_DIR}/docker-compose.yml" run --rm \
-            --entrypoint /bin/bash phastest \
-            -c "phastest -i fasta -m deep -s '$i'.fasta --yes; rc=\$?; chown -R ${host_uid}:${host_gid} /phastest-app/JOBS/'$i' 2>/dev/null; exit \$rc"
-        cp -r "${PHASTEST_DIR}/phastest-app-docker/JOBS/$i/"* 09_phages/phastest_deep/"$i"/ || true
+        # Side effect: Phastest creates JOBS/$i as root AND mutates the input file
+        # under phastest_inputs/ to root ownership. Wrap the phastest call in `bash -c`
+        # so the same container (still root) chowns BOTH trees back to the host user
+        # before exiting; otherwise the next sample's `cp` fails with EACCES as above.
+        # The inputs bind-mount target inside the container is `/phastest-app/inputs`
+        # (phastest-docker default; verify with `docker compose config`). Phastest's
+        # exit code is preserved via $rc.
+        if ! docker compose -f "${PHASTEST_DIR}/docker-compose.yml" run --rm \
+                --entrypoint /bin/bash phastest \
+                -c "phastest -i fasta -m deep -s '$i'.fasta --yes; rc=\$?; \
+                    chown -R ${host_uid}:${host_gid} /phastest-app/JOBS/'$i' /phastest-app/inputs 2>/dev/null; \
+                    exit \$rc"; then
+            warn "Phastest container exited non-zero for ${i}. Continuing."
+            failed_phages+=("$i")
+            # Fall through to cleanup so leftovers don't poison the next sample.
+        fi
+
+        cp -r "${PHASTEST_DIR}/phastest-app-docker/JOBS/$i/"* 09_phages/phastest_deep/"$i"/ 2>/dev/null || true
         rm -rf "${PHASTEST_DIR}/phastest-app-docker/JOBS/$i" "${PHASTEST_DIR}/phastest_inputs/$i.fasta"
     done
     conda activate aluminion_annot
@@ -1281,7 +1350,7 @@ fi
 
 # Print a consolidated warning summary for all non-fatal failures
 if [ ${#failed_polish[@]} -gt 0 ] || [ ${#failed_deconcat[@]} -gt 0 ] || [ ${#failed_circlator[@]} -gt 0 ] \
-   || [ ${#failed_bandage[@]} -gt 0 ] || [ ${#failed_typing[@]} -gt 0 ]; then
+   || [ ${#failed_bandage[@]} -gt 0 ] || [ ${#failed_typing[@]} -gt 0 ] || [ ${#failed_phages[@]} -gt 0 ]; then
     echo ""
     warn "========================================================================"
     warn "Pipeline finished with warnings — the run completed but the following"
@@ -1291,6 +1360,7 @@ if [ ${#failed_polish[@]} -gt 0 ] || [ ${#failed_deconcat[@]} -gt 0 ] || [ ${#fa
     [ ${#failed_circlator[@]} -gt 0 ] && warn "  Not recircularized (circlator)    : ${failed_circlator[*]}"
     [ ${#failed_bandage[@]}   -gt 0 ] && warn "  No assembly graph image (Bandage) : ${failed_bandage[*]}"
     [ ${#failed_typing[@]}    -gt 0 ] && warn "  Typing tools failed               : ${failed_typing[*]}"
+    [ ${#failed_phages[@]}    -gt 0 ] && warn "  Phastest failed (no prophages)    : ${failed_phages[*]}"
     warn "========================================================================"
     echo ""
 fi
@@ -1299,7 +1369,7 @@ fi
 # Skipped under --keep-everything, and also when any optional step failed: an
 # imperfect run keeps all intermediates so the user can inspect what went wrong.
 had_warnings=$(( ${#failed_polish[@]} + ${#failed_deconcat[@]} + ${#failed_circlator[@]} \
-               + ${#failed_bandage[@]} + ${#failed_typing[@]} ))
+               + ${#failed_bandage[@]} + ${#failed_typing[@]} + ${#failed_phages[@]} ))
 if [ -n "$KEEP_EVERYTHING" ]; then
     log "Keeping all intermediate files (--keep-everything)."
 elif [ "$had_warnings" -gt 0 ]; then

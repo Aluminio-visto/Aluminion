@@ -138,25 +138,31 @@ def get_gfa(gfa):
 # %%
 def parse_info(file_path, d_links, d_paths):
     df = pd.read_table(file_path)
-    df.sort_values('length', ascending=False, inplace=True)    # Default order, but just in case
+    # sort_values preserves the ORIGINAL index labels, so a subsequent
+    # df['col'][0] still resolves by LABEL — which only matches the largest
+    # contig because Flye's assembly_info.txt happens to be 0-indexed today.
+    # reset_index makes every [0]/[1] below unambiguously positional, defending
+    # against any upstream filter/concat that would otherwise silently return
+    # the wrong contig as "the chromosome" in the Assembly_score calculation.
+    df = df.sort_values('length', ascending=False).reset_index(drop=True)
     d_info = {}
 
     # Is the largest contig closed?
-    d_info['contig1_closed'] = df['circ.'][0] == 'Y'
+    d_info['contig1_closed'] = df['circ.'].iloc[0] == 'Y'
 
     # Size ratio (2 largest contigs / total)
-    contig1 = df['#seq_name'][0]
+    contig1 = df['#seq_name'].iloc[0]
     if len(df) != 1:
         total_length = sum(df['length'])
-        l_contig1 = df['length'][0]
-        l_contig2 = df['length'][1]
+        l_contig1 = df['length'].iloc[0]
+        l_contig2 = df['length'].iloc[1]
         d_info['ratio_total'] = (l_contig1 + l_contig2) / total_length
 
         # Ratio between the two largest contigs
         d_info['ratio_greatest_contigs'] = l_contig2 / l_contig1
 
         # Check if the two largest contigs share a common node
-        contig2 = df['#seq_name'][1]
+        contig2 = df['#seq_name'].iloc[1]
         edges1 = d_paths[contig1]
         edges2 = d_paths[contig2]
         d_info['are_linked'] = False
@@ -407,7 +413,12 @@ def main():
                             "Total bases.1" : "N_bases_post"})
 
     QC_reads = QC_reads.drop(columns=["MaxQ", "Longest read", "Sample.1", "Samp", "MaxQ.1", "Longest read.1"], errors='ignore')
-    QC_reads[["N_bases_post"]].apply(pd.to_numeric)
+    # Coerce N_bases_post to numeric in place; the previous `QC_reads[[...]].apply(pd.to_numeric)`
+    # built a temporary frame and threw away the result, leaving any non-numeric string
+    # in place. Use `pd.to_numeric` with `errors='coerce'` to turn parse failures into NaN
+    # instead of crashing the cumulative DB build.
+    if "N_bases_post" in QC_reads.columns:
+        QC_reads["N_bases_post"] = pd.to_numeric(QC_reads["N_bases_post"], errors='coerce')
     result2 = pd.merge(result, QC_reads, on="ID", how='outer')
 
     # Populate with QC_assembly.csv data. aluminion.sh emits the column header
@@ -420,7 +431,11 @@ def main():
 
     result3 = pd.merge(result2, QC_assembly, on="ID", how='outer')
 
-    result3[["Total length", "N_bases_post"]].apply(pd.to_numeric)
+    # Same fix as for N_bases_post above: the previous apply() call was discarded.
+    # `Depth` divides bases by assembly length, so both columns MUST be numeric.
+    for col in ("Total length", "N_bases_post"):
+        if col in result3.columns:
+            result3[col] = pd.to_numeric(result3[col], errors='coerce')
 
     result3["Depth"] = result3["N_bases_post"].div(result3["Total length"])
     result3["Depth"] = result3["Depth"].round(0).astype('Int64')
