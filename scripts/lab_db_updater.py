@@ -48,7 +48,15 @@ def parse_arguments():
 # cumulative database so column dtypes and rounding stay identical.
 # -----------------------------------------------------------------------------
 def _finalize_seq_ints(df):
-    """Round the integer/percent columns of a data_seq table (in place)."""
+    """Round the integer/percent columns of a data_seq table (in place).
+
+    Idempotent on already-finalized inputs: Pct_bases_kept is expected to be
+    a percent (97.3) by the time this function runs, NOT a fraction (0.973).
+    The fraction -> percent multiplication is done once at the call site in
+    main() right after computing the ratio, so that historical samples whose
+    Pct_bases_kept has already been finalized in a prior run don't get
+    re-multiplied here on every cumulative pass.
+    """
     int_columns = [
         'Depth', 'Samples_per_run', 'Samples_to_repeat', 'Median_length_pre',
         'N_reads_pre', 'N_bases_pre', 'Median_length_post', 'N_reads_post', 'N_bases_post',
@@ -58,8 +66,34 @@ def _finalize_seq_ints(df):
             df[col] = df[col].astype(str).str.replace(',', '', regex=False).str.strip()
             df[col] = pd.to_numeric(df[col], errors='coerce').round().astype('Int64')
     if 'Pct_bases_kept' in df.columns:
-        df['Pct_bases_kept'] = (pd.to_numeric(df['Pct_bases_kept'], errors='coerce') * 100).round(1)
+        df['Pct_bases_kept'] = pd.to_numeric(df['Pct_bases_kept'], errors='coerce').round(1)
+    # Assembly_score is a calculated score with legitimate non-integer values
+    # (e.g. 4.25) but integer-valued samples (5.0, 3.0) used to render as
+    # "5.0" / "3.0" in the TSV. %g strips trailing zeros while preserving the
+    # decimals when they carry information. NaN stays empty.
+    if 'Assembly_score' in df.columns:
+        df['Assembly_score'] = df['Assembly_score'].apply(_fmt_compact_float)
     return df
+
+
+def _fmt_compact_float(v):
+    """Format a numeric value as a compact string ('5' / '4.25' / '97.3').
+
+    Drops the trailing '.0' for integer values, keeps the decimals for
+    non-integers. Returns '' for NaN / None / non-coercible inputs so the
+    TSV cell stays blank instead of writing the literal 'nan'.
+    """
+    if v is None or v == "":
+        return ""
+    try:
+        if pd.isna(v):
+            return ""
+    except (TypeError, ValueError):
+        pass
+    try:
+        return format(float(v), "g")
+    except (TypeError, ValueError):
+        return str(v)
 
 
 def _finalize_analysis(df):
@@ -74,6 +108,11 @@ def _finalize_analysis(df):
         if col in df.columns:
             df[col] = df[col].astype(str).str.replace(',', '', regex=False).str.strip()
             df[col] = pd.to_numeric(df[col], errors='coerce').round().astype('Int64')
+    # Assembly_score: drop the trailing '.0' for integer values while keeping
+    # legitimate fractional scores (4.25, 3.75) intact. Same compact format
+    # used in _finalize_seq_ints for the data_seq snapshot.
+    if 'Assembly_score' in df.columns:
+        df['Assembly_score'] = df['Assembly_score'].apply(_fmt_compact_float)
     return df
 
 # %%
@@ -440,7 +479,14 @@ def main():
     result3["Depth"] = result3["N_bases_post"].div(result3["Total length"])
     result3["Depth"] = result3["Depth"].round(0).astype('Int64')
 
-    result3["Pct_bases_kept"] = result3["N_bases_post"].div(result3["N_bases_pre"])
+    # Pct_bases_kept is stored as a PERCENT (e.g. 97.3) on disk. Compute it as
+    # a percent here, once, so that every downstream pass through the cumulative
+    # finalize is a no-op for already-finalized historical samples. Previously
+    # the ratio was kept as a fraction (~0.973) and _finalize_seq_ints multiplied
+    # by 100 every time it ran — fine on the first cumulative run, but on the
+    # second run historical samples got re-multiplied (97.3 -> 9730), on the
+    # third run again (-> 973000), etc. (Bug #3a, 2026-05-28 PM).
+    result3["Pct_bases_kept"] = result3["N_bases_post"].div(result3["N_bases_pre"]) * 100
 
     # Add assembly quality score
     result3['Assembly_score'] = result3['ID'].map(d_quality)
@@ -598,8 +644,15 @@ def main():
             analisis["Barcode"]  = analisis["Barcode"].astype(str)
             analisis['Barcode']  = analisis['Barcode'].replace('nan', np.nan)
 
-            # Merge historical data with new data
-            analisis_final = pd.merge(analisis, result4, on='ID', how='left', suffixes=('', '_result4'))
+            # Merge historical data with new data. Use outer (not left) so the
+            # current run's NEW samples — those not yet in the historical
+            # data_analysis.tsv — also appear in the cumulative output. The data_seq
+            # path doesn't need this because it pre-augments datos_seq via
+            # `nuevas_filas = lista_cepas[~lista_cepas['ID'].isin(datos_seq['ID'])]`
+            # before its own merge; the analysis path has no equivalent step, so a
+            # left merge silently drops every brand-new sample of the current run
+            # from the cumulative data_analysis.tsv.
+            analisis_final = pd.merge(analisis, result4, on='ID', how='outer', suffixes=('', '_result4'))
             for column in analisis.columns:
                 if column != 'ID':
                     analisis_final[column] = analisis_final[column + '_result4'].combine_first(analisis_final[column])
