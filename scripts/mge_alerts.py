@@ -52,6 +52,7 @@ from mge_repository import (
     Repository,
     deserialize_gene_set,
     make_host_uid,
+    normalize_gene_set,
     now_iso,
     serialize_gene_set,
 )
@@ -165,33 +166,56 @@ def parse_arguments() -> argparse.Namespace:
 def _parse_cassette_gene_set(row: pd.Series) -> set[str]:
     """Extract the unique gene names from an integron_summary.csv row.
 
-    Each ``Cassette N`` cell is a Python list literal (e.g.
-    ``"['blaOXA-1_1']"``); each list item is a string of the form
-    ``"<gene>;<description>"``. We keep only the leading ``<gene>`` token to
-    build a comparable cassette gene set. Cells that are empty, ``"-"`` or
-    unparseable are silently skipped.
+    Handles TWO formats produced by ``integron_parser.py`` over the lifetime
+    of the lab:
+
+    1. **Current format** (since the parser switched to
+       ``", ".join(cassettes)``): each ``Cassette N`` cell is a bare,
+       comma-separated string of gene names, e.g. ``"blaOXA-1, NA, NA, NA"``,
+       or a single bare token like ``"aac(6')-Ib-D181Y"``.
+    2. **Legacy format** (still found in older repository entries and in the
+       ``examples/`` files): each cell is a Python list literal like
+       ``"['blaOXA-1_1', 'aac(6\\')Ib-cr_1']"``; items may further carry a
+       ``"<gene>;<description>"`` shape — we keep only ``<gene>``.
+
+    Distinguishing the two: ``ast.literal_eval`` only succeeds on the legacy
+    form (bare strings like ``blaGES-13`` are NOT valid Python literals).
+    Falling through to ``split(',')`` on parse failure handles the current
+    format. Results are passed through :func:`normalize_gene_set` so the
+    ``"NA"`` placeholder rows and Prokka per-hit ``_<digits>`` suffixes do
+    not pollute the resulting set.
+
+    Until this dual-format support landed, the parser silently dropped every
+    cassette under the current format — leaving the entire integron repository
+    indexed with empty ``gene_set_json``. That broke Jaccard matching for
+    every cross-run integron, regardless of how identical the cassettes were.
     """
-    genes: set[str] = set()
+    raw_items: list[str] = []
     for col, val in row.items():
         if not isinstance(col, str) or not col.startswith("Cassette "):
             continue
         if not val or val == "-":
             continue
+        items: list[str]
         try:
-            items = ast.literal_eval(val)
+            parsed = ast.literal_eval(val)
         except (ValueError, SyntaxError):
-            continue
-        if not isinstance(items, list):
-            continue
+            # Current format: bare comma-separated string.
+            items = val.split(",")
+        else:
+            # Legacy format: list literal. Single non-list values (rare)
+            # are wrapped so the loop body stays uniform.
+            if isinstance(parsed, list):
+                items = [str(x) for x in parsed]
+            else:
+                items = [str(parsed)]
         for item in items:
-            if not isinstance(item, str):
-                continue
-            # Items can be e.g. "blaOXA-1_1" or "aphA;Aminoglycoside ...";
-            # we only want the gene name.
+            # Both formats may carry "gene;description" inside an item;
+            # take the leading token as the gene-name candidate.
             name = item.split(";")[0].strip()
             if name:
-                genes.add(name)
-    return genes
+                raw_items.append(name)
+    return normalize_gene_set(raw_items)
 
 
 def _load_seq_dates(run_dir: Path) -> dict[str, str]:

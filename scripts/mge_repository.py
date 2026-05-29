@@ -389,7 +389,36 @@ class Repository:
                 fh.write(f">{uid}\n{sub_seq}\n")
 
         df = self.load_integron_index()
-        if (df["uid"] == uid).any():
+        existing_mask = df["uid"] == uid
+        if existing_mask.any():
+            # In-place backfill of legacy entries: every integron ingested
+            # before the parser dual-format fix carried gene_set_json="[]"
+            # and amr_genes="" because _parse_cassette_gene_set silently
+            # dropped every cassette under the current integron_summary.csv
+            # format. Re-running aluminion --resume on a historical run
+            # re-invokes mge_alerts.run_ingestion which lands here with the
+            # *now correctly parsed* metadata; promote it onto the existing
+            # row when the existing one is empty. Guarded against
+            # overwriting good data: only touches a column if the existing
+            # value is empty/"[]" AND the new value is non-empty/non-"[]".
+            new_gs = metadata.get("gene_set_json", "[]")
+            new_amr = metadata.get("amr_genes", "")
+            new_vir = metadata.get("vir_genes", "")
+            existing_gs = str(df.loc[existing_mask, "gene_set_json"].iloc[0] or "")
+            existing_amr = str(df.loc[existing_mask, "amr_genes"].iloc[0] or "")
+            existing_vir = str(df.loc[existing_mask, "vir_genes"].iloc[0] or "")
+            changed = False
+            if existing_gs in ("", "[]") and new_gs not in ("", "[]"):
+                df.loc[existing_mask, "gene_set_json"] = new_gs
+                changed = True
+            if not existing_amr and new_amr:
+                df.loc[existing_mask, "amr_genes"] = new_amr
+                changed = True
+            if not existing_vir and new_vir:
+                df.loc[existing_mask, "vir_genes"] = new_vir
+                changed = True
+            if changed:
+                df.to_csv(self.integron_index_path, sep="\t", index=False)
             return uid
 
         size = end - start + 1
@@ -555,18 +584,28 @@ class Repository:
         index >= ``min_jaccard`` against ``query_gene_set``, sorted by
         descending Jaccard. An empty ``query_gene_set`` or empty repo index
         returns an empty frame.
+
+        Both the query and every repo entry are run through
+        :func:`normalize_gene_set` to strip Prokka per-hit ``_<digits>``
+        suffixes and drop placeholder rows ("NA", "-"). Without this,
+        biologically identical integrons frequently score Jaccard < 0.5
+        (see the regression test for the 5x effect on a synthetic pair),
+        which masks all real epidemiological recurrences.
         """
         df = self.load_integron_index()
         result_cols = list(INTEGRON_INDEX_COLUMNS) + ["jaccard"]
         if df.empty:
             return pd.DataFrame(columns=result_cols)
-        query = {g for g in query_gene_set if g}
+        query = normalize_gene_set(query_gene_set)
         if not query:
             return pd.DataFrame(columns=result_cols)
 
         scores: list[float] = []
         for _, row in df.iterrows():
-            repo_set = set(deserialize_gene_set(row["gene_set_json"]))
+            # Legacy index entries written before this normalization existed
+            # still carry "aadA1_5" / "NA" tokens in gene_set_json — normalize
+            # on-the-fly so they match cleanly without re-ingesting the repo.
+            repo_set = normalize_gene_set(deserialize_gene_set(row["gene_set_json"]))
             if not repo_set:
                 scores.append(0.0)
                 continue
@@ -592,8 +631,13 @@ def now_iso() -> str:
 
 
 def serialize_gene_set(genes: Iterable[str]) -> str:
-    """Canonical JSON serialization of an integron cassette gene set."""
-    return json.dumps(sorted({g.strip() for g in genes if g and g.strip()}))
+    """Canonical JSON serialization of an integron cassette gene set.
+
+    Inputs are normalized first (see :func:`normalize_gene_set`) so that
+    Prokka-style per-hit suffixes and "NA" placeholder rows don't pollute
+    the on-disk index and silently break Jaccard matching downstream.
+    """
+    return json.dumps(sorted(normalize_gene_set(genes)))
 
 
 def deserialize_gene_set(s: str) -> list[str]:
@@ -605,6 +649,52 @@ def deserialize_gene_set(s: str) -> list[str]:
         return list(loaded) if isinstance(loaded, list) else []
     except (json.JSONDecodeError, TypeError):
         return []
+
+
+# Compile once at import time so the normalize_* helpers below stay hot
+# in the per-row loops inside Repository.find_integron_matches_by_jaccard.
+import re as _re
+_GENE_HIT_SUFFIX_RE = _re.compile(r"_\d+$")
+
+# Placeholder cells emitted by integron_parser when a Prokka CDS had no gene
+# symbol assigned (only a product description like "hypothetical protein").
+# These are NOT real gene names; treating them as such inflates the Jaccard
+# union and silently masks real matches between epidemiologically identical
+# integrons. Add new placeholders here if integron_parser ever introduces them.
+_GENE_PLACEHOLDERS = {"NA", "-", "?", "Unknown", ""}
+
+
+def _normalize_gene_name(name: str) -> str:
+    """Strip Prokka's per-hit ``_<digits>`` suffix (e.g. ``aadA1_5`` -> ``aadA1``).
+
+    The suffix is a hit-index from the Prokka run, NOT a stable allele
+    identifier — IntegronFinder/Prokka can assign different numbers to the
+    SAME gene across two integrons in the same run, which makes set-based
+    Jaccard matching essentially useless for integrons until this is stripped.
+    Returns the input unchanged when no suffix is present, or ``""`` when
+    the input is empty / a known placeholder.
+    """
+    if not isinstance(name, str):
+        return ""
+    s = name.strip()
+    if s in _GENE_PLACEHOLDERS:
+        return ""
+    return _GENE_HIT_SUFFIX_RE.sub("", s)
+
+
+def normalize_gene_set(genes: Iterable[str]) -> set[str]:
+    """Normalize a cassette gene set: strip per-hit suffixes, drop placeholders.
+
+    Idempotent. Used on BOTH the ingest path (so future index entries are
+    clean) and the matching path's repo side (so legacy entries written
+    before this normalization existed still match correctly).
+    """
+    out: set[str] = set()
+    for g in genes:
+        n = _normalize_gene_name(g)
+        if n:
+            out.add(n)
+    return out
 
 
 # -----------------------------------------------------------------------------
