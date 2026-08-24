@@ -584,7 +584,14 @@ def main():
                 .str.replace(r'\.v1\^', '', regex=True)
                 .str.replace(r'\^', '', regex=True)
                 .str.split(';')
-                .apply(lambda x: ', '.join(map(str, set(x))) if isinstance(x, list) else '')
+                # dict.fromkeys, not set(): a set's iteration order depends on
+                # PYTHONHASHSEED, so re-running the parser on identical input used
+                # to emit the same genes in a different order ("OXA-10, ACT-16" vs
+                # "ACT-16, OXA-10"). That made every cumulative-DB diff look like a
+                # real change. dict.fromkeys dedupes while preserving Kleborate's
+                # own gene order, so the output is reproducible.
+                .apply(lambda x: ', '.join(dict.fromkeys(map(str, x)))
+                       if isinstance(x, list) else '')
             )
 
         # Collapse Kaptive "unknown (...)" annotations to a plain "-".

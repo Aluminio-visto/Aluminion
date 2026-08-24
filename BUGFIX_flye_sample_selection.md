@@ -196,3 +196,50 @@ automatic insertion of the script's own directory into `sys.path`, which is how
 login shell — only in some sandboxed/tooling environments — but if it leaks in,
 10 tests fail with a misleading `ModuleNotFoundError: No module named '_log'`
 that has nothing to do with the code under test.
+
+---
+
+# Follow-up 2: non-deterministic AMR gene order in taxonomy.csv
+
+Found while validating the pandas-3 fix above against a real run (`2026_06_23`,
+28 samples): regenerating `taxonomy.csv` from unchanged inputs produced a
+*different* `Other_resistance` string than the stored one — `"ACT-16, OXA-2,
+OXA-10"` vs `"OXA-10, ACT-16, OXA-2"`. Same genes, different order.
+
+## Root cause
+
+The Kleborate AMR-column dedupe used a `set`:
+
+```python
+.apply(lambda x: ', '.join(map(str, set(x))) if isinstance(x, list) else '')
+```
+
+A Python `set` of strings has no defined iteration order — it depends on
+`PYTHONHASHSEED`, which is randomised per interpreter process. Five runs of the
+identical input gave four different orderings. Applies to all three AMR columns
+(`Other_resistance`, `ESBL`, `Carbapenemase`).
+
+## Why it matters
+
+Not cosmetic. `lab_db_updater.py` merges these values into the cumulative
+`data_analysis.tsv`, so a re-run or `--resume` rewrote AMR strings for samples
+whose data had not changed — making every cumulative diff look like a real
+biological change and destroying the audit trail. It also means two people
+running the same command on the same run get different output files.
+
+## Fix
+
+`dict.fromkeys()` instead of `set()`: dedupes while preserving Kleborate's own
+gene order, so output is reproducible. Verified on the real `2026_06_23` run —
+three consecutive regenerations now give a byte-identical `taxonomy.csv`
+(md5 `eb01760fccbe…`). All 9 differing cells versus the stored table are
+order-only; the gene *sets* are identical, so no biological content changed.
+
+## Validation of the pandas-3 fix on real data
+
+`parser.py` re-run on a copy of `2026_06_23` (inputs only — the run directory
+itself was never written to): 28/28 samples, **0 empty cells** in `Subspecies`,
+`MLST`, `Serotype`, `KO_locus`, `Carbapenemase`, `ESBL`, `allele_1`, and every
+column byte-identical to the pandas-2 original except the gene-order cells
+above. `aluminion_reporter.py` renders the full HTML (134 KB) with subspecies,
+MLST and AMR fields present. Suite 47/47.
