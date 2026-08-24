@@ -246,6 +246,8 @@ A timestamped log is written inside the run folder.
 | `--no-alerts`            | Skip the cross-run MGE alerts step                                          | —                             |
 | `--just-preprocessing`   | Stop after Stage 1. Output: `02_filter/<sample>.fastq.gz`                   | —                             |
 | `--just-assembly`        | Stop after Stage 2. Output: `03_assemblies/<sample>.fasta`                  | —                             |
+| `--flye-timeout <DUR>`   | Wall-clock limit per Flye assembly, as a `timeout` duration (`90m`, `4h`). A sample that exceeds it is terminated and handled exactly like a Flye failure, so one pathological sample cannot stall an unattended batch forever. `0` waits indefinitely (legacy behaviour). Also settable via `$ALUMINION_FLYE_TIMEOUT`. | `4h` |
+| `--retry-failed-assembly` | Clear `<run>/.failed_assemblies`, the record of samples Flye could not assemble, so `--resume` attempts them again. Without it, a known unassemblable sample is skipped on resumed runs instead of burning the full `--flye-timeout` on every pass. | — |
 | `-h / --help`            | Show help and exit                                                          | —                             |
 
 ### Parallelism and performance
@@ -376,7 +378,24 @@ If Flye fails to assemble a sample, Aluminion pauses and offers three choices:
 
 Samples skipped here are removed from the internal `samples` tracking file,
 so every downstream module (polishing, Bakta, Kleborate, …) ignores them
-automatically.
+automatically. They are also appended to `<run>/.failed_assemblies`, so a later
+`--resume` skips them instead of re-attempting an assembly already known to
+fail; use `--retry-failed-assembly` to clear that record.
+
+A contaminated or otherwise pathological sample can make Flye **hang** rather
+than fail — it spins inside `Extending reads` and never exits, which means the
+table above is never reached and an unattended batch stalls indefinitely. Every
+Flye call therefore runs under `--flye-timeout` (default `4h`); exceeding it
+terminates that assembly and routes the sample through the same failure handling
+(option `1` in non-interactive runs). Set `--flye-timeout 0` to wait forever.
+
+### Which samples enter a run
+
+The `samples` file is built as the **intersection** of the IDs declared in
+`list_seq.tsv` and the per-sample FASTQs in `01_reads/` that exceed
+`--min-read-mb`. The sample sheet is therefore authoritative on every pass,
+including `--resume`: deleting a row genuinely drops that sample. Reads left on
+disk for an ID no longer in the sheet are reported once in the log and ignored.
 
 Optional refinement steps (polishing, deconcat, dnaapler, Bandage, the typing
 tools) are **non-fatal**: a failure only emits a warning. The assembly is kept

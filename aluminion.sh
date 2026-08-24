@@ -41,6 +41,14 @@ CHOPPER_HEADCROP=20
 # Abricate AMR-gene calling thresholds (percent identity / coverage).
 ABRICATE_MIN_ID=75
 ABRICATE_MIN_COV=75
+# Wall-clock limit for a single Flye assembly, as a `timeout` duration (30m, 4h, ...).
+# A contaminated or otherwise pathological sample can make Flye spin forever inside
+# "Extending reads" instead of exiting with an error: it never returns, so the
+# assembly-failure handler below never runs and an unattended batch stalls for good.
+# On timeout the sample is treated exactly like a Flye failure (skipped, recorded in
+# the warnings summary) so the rest of the run — and the rest of the batch — proceeds.
+# Set to 0 to disable the limit and wait indefinitely (legacy behaviour).
+FLYE_TIMEOUT="${ALUMINION_FLYE_TIMEOUT:-4h}"
 
 show_help() {
     cat << EOF
@@ -104,6 +112,14 @@ QC and filtering thresholds (override sensible defaults):
   --chopper-headcrop <N>  Chopper 5' headcrop in bp. (Default: ${CHOPPER_HEADCROP})
   --abricate-minid <N>    Abricate minimum % identity for AMR calls. (Default: ${ABRICATE_MIN_ID})
   --abricate-mincov <N>   Abricate minimum % coverage for AMR calls. (Default: ${ABRICATE_MIN_COV})
+  --flye-timeout <DUR>    Wall-clock limit per Flye assembly, as a \`timeout\` duration
+                  (e.g. 90m, 4h). A sample that exceeds it is treated as a Flye failure
+                  and skipped, so one pathological sample cannot stall an unattended
+                  batch forever. Use 0 to wait indefinitely. (Default: ${FLYE_TIMEOUT})
+  --retry-failed-assembly Clear the run's record of samples that previously failed to
+                  assemble, so --resume attempts them again. Without this flag a known
+                  unassemblable sample is skipped on resumed runs instead of burning the
+                  full --flye-timeout on every pass.
 
 Cross-run MGE alerts (match this run's plasmids/integrons against a cumulative
 repository to flag epidemiologically relevant recurrences):
@@ -273,6 +289,9 @@ ALERT_NEW_PRIORITY=""
 NO_ALERTS=""
 # Keep all intermediate files instead of pruning them at the end of a complete run.
 KEEP_EVERYTHING=""
+# Clear the per-run record of samples Flye could not assemble, forcing a retry on
+# --resume. Must be initialised: `set -u` aborts on an unset variable reference.
+RETRY_FAILED_ASSEMBLY=""
 # Forbid the parent-directory list_seq.tsv fallback. Set by aluminion_batch.sh so
 # that, in recurrent multi-folder analyses, each run is forced to carry its own
 # list_seq.tsv inside the run folder (otherwise barcodes/sample IDs would collide
@@ -317,6 +336,8 @@ while [[ "$#" -gt 0 ]]; do
         --chopper-headcrop)  CHOPPER_HEADCROP="$2"; shift ;;
         --abricate-minid)    ABRICATE_MIN_ID="$2"; shift ;;
         --abricate-mincov)   ABRICATE_MIN_COV="$2"; shift ;;
+        --flye-timeout)      FLYE_TIMEOUT="$2"; shift ;;
+        --retry-failed-assembly) RETRY_FAILED_ASSEMBLY=true ;;
         # Early-stop flags
         --just-preprocessing) STOP_AFTER="preprocessing" ;;
         --just-assembly) STOP_AFTER="assembly" ;;
@@ -585,12 +606,52 @@ if [ -z "$SKIP_PREPROCESSING" ]; then
         fi
         echo -e "${id}\t\t\t$PWD/01_reads/${id}.fastq.gz\t\t" >> samplesheet.tsv
     done
-    find 01_reads -type f -name "*.fastq.gz" -size "+${MIN_READ_MB}M" -exec basename {} .fastq.gz \; | sort | uniq > samples
+    # Build the sample list as the INTERSECTION of (a) the IDs declared in
+    # list_seq.tsv and (b) the per-sample FASTQs on disk that pass the size filter.
+    #
+    # Scanning 01_reads/ alone (the old behaviour) made `samples` a function of disk
+    # state instead of the sample sheet, so list_seq.tsv was authoritative only on a
+    # sample's FIRST pass. Once 01_reads/<id>.fastq.gz existed, deleting a row from
+    # list_seq.tsv had no effect: the find picked the leftover FASTQ back up and every
+    # --resume re-queued the sample for assembly. That is exactly how a sample removed
+    # from the sheet kept being handed to Flye. Intersecting makes the sheet
+    # authoritative on every pass — dropping a row now really drops the sample —
+    # while keeping the size filter as the quality gate it was meant to be.
+    awk -F'\t' 'NR>1 {gsub(/^[[:space:]]+|[[:space:]]+$/, "", $3); if ($3 != "") print $3}' \
+        list_seq.tsv | tr -d '\r' | sort -u > .listed_ids
+    find 01_reads -type f -name "*.fastq.gz" -size "+${MIN_READ_MB}M" -exec basename {} .fastq.gz \; \
+        | sort -u > .reads_on_disk
+    # Stage the new list, then validate it BEFORE replacing `samples`. Writing the find
+    # result straight into `samples` destroyed it whenever the scan came back empty —
+    # which is the normal state of a completed run whose 01_reads/ was pruned by the
+    # end-of-run cleanup. A --resume over such a run (e.g. a loop re-resuming every
+    # historical run) truncated `samples` to zero rows and then aborted, losing the
+    # record of which samples the run contained.
+    comm -12 .listed_ids .reads_on_disk > .samples_new
 
-    if [ ! -s samples ]; then
-        error_log "No samples passed the ${MIN_READ_MB}MB filter."
+    # Reads present and big enough, but no longer declared in the sheet: almost always
+    # a row the user deliberately removed (bad sequencing, contaminated sample). Say so
+    # explicitly, because silently ignoring a 400MB FASTQ would otherwise look like a bug.
+    dropped_ids=$(comm -13 .listed_ids .reads_on_disk | tr '\n' ' ')
+    if [ -n "${dropped_ids// /}" ]; then
+        log "Reads on disk not listed in list_seq.tsv — excluded from this run: ${dropped_ids}"
+    fi
+    rm -f .listed_ids .reads_on_disk
+
+    if [ ! -s .samples_new ]; then
+        rm -f .samples_new
+        if [ -s samples ]; then
+            error_log "No reads in 01_reads/ pass the ${MIN_READ_MB}MB filter, but this run already has a"
+            error_log "'samples' file with $(wc -l < samples) sample(s) — the reads were most likely pruned by the"
+            error_log "end-of-run cleanup. The existing 'samples' file was left untouched."
+            error_log "Regenerate the reads with --just-preprocessing, or re-run with --skip-preprocessing"
+            error_log "to reuse the existing results without touching the reads."
+        else
+            error_log "No samples in list_seq.tsv have reads in 01_reads/ passing the ${MIN_READ_MB}MB filter."
+        fi
         exit 1
     fi
+    mv .samples_new samples
 
     conda activate aluminion_reads
 
@@ -718,13 +779,58 @@ else
 fi
 
 log "Assembly (Flye)..."
+
+# Run Flye under an optional wall-clock limit. A pathological sample (contaminated,
+# chimeric, or extreme coverage) can leave Flye spinning inside "Extending reads"
+# without ever returning; unwrapped, that hangs the run — and any batch driving it —
+# indefinitely, because the failure handler below is only reached when flye exits.
+# `timeout` turns that hang into exit code 124, which the handler treats as a failure.
+# Extra args (e.g. --meta) are forwarded to flye.
+run_flye() {
+    local sample="$1"; shift
+    if [ "$FLYE_TIMEOUT" = "0" ]; then
+        flye --nano-hq "02_filter/${sample}.fastq.gz" --threads "$THREADS_TOTAL" \
+            --out-dir "03_assemblies/${sample}" "$@"
+    else
+        # --foreground lets Flye keep the terminal (so its progress output still reaches
+        # the tee'd log); the follow-up SIGKILL after 60s covers a Flye that ignores TERM.
+        timeout --foreground --kill-after=60s "$FLYE_TIMEOUT" \
+            flye --nano-hq "02_filter/${sample}.fastq.gz" --threads "$THREADS_TOTAL" \
+            --out-dir "03_assemblies/${sample}" "$@"
+    fi
+}
+
+# Persistent record of samples Flye could not assemble. Without it, every --resume
+# re-queues a known-unassemblable sample and pays the full assembly cost (now up to
+# FLYE_TIMEOUT) again before failing in exactly the same way. Samples recorded here are
+# skipped on resumed runs; --retry-failed-assembly clears the record to force a retry
+# (e.g. after re-sequencing the isolate or raising --flye-timeout).
+FAILED_ASSEMBLY_RECORD=".failed_assemblies"
+if [ -n "$RETRY_FAILED_ASSEMBLY" ]; then
+    [ -f "$FAILED_ASSEMBLY_RECORD" ] && log "Clearing the assembly-failure record (--retry-failed-assembly)."
+    rm -f "$FAILED_ASSEMBLY_RECORD"
+fi
+
 failed_assembly=()
 for i in $(cat samples); do
     if resume_done "03_assemblies/${i}/assembly.fasta"; then
         log "  [resume] Flye: ${i} already assembled, skipping."
         continue
     fi
-    if ! flye --nano-hq 02_filter/${i}.fastq.gz --threads $THREADS_TOTAL --out-dir 03_assemblies/${i}; then
+    if [ -n "$RESUME" ] && [ -f "$FAILED_ASSEMBLY_RECORD" ] && grep -qxF "$i" "$FAILED_ASSEMBLY_RECORD"; then
+        warn "  [resume] Flye: ${i} previously failed to assemble — skipping (--retry-failed-assembly to retry)."
+        failed_assembly+=("$i")
+        continue
+    fi
+    flye_rc=0
+    run_flye "$i" || flye_rc=$?
+    # 124 (or 137 when the follow-up SIGKILL was needed) means the timeout fired, not
+    # that Flye diagnosed a problem — surface that distinction in the log.
+    if [ "$flye_rc" -eq 124 ] || [ "$flye_rc" -eq 137 ]; then
+        warn "  Flye exceeded the ${FLYE_TIMEOUT} limit on ${i} and was terminated (--flye-timeout)."
+        warn "  This usually means a contaminated or unassemblable sample. Inspect 03_assemblies/${i}/flye.log."
+    fi
+    if [ "$flye_rc" -ne 0 ]; then
         echo ""
         echo "  ┌──────────────────────────────────────────────────────────────────────┐"
         echo "  │  ASSEMBLY FAILED: ${i}                                               |"
@@ -753,7 +859,7 @@ for i in $(cat samples); do
             2)
                 log "Retrying Flye with --meta for sample ${i}..."
                 rm -rf 03_assemblies/${i}
-                if ! flye --nano-hq 02_filter/${i}.fastq.gz --threads $THREADS_TOTAL --out-dir 03_assemblies/${i} --meta; then
+                if ! run_flye "$i" --meta; then
                     error_log "Flye --meta also failed for ${i}. Skipping sample."
                     failed_assembly+=("$i")
                 else
@@ -776,6 +882,9 @@ if [ ${#failed_assembly[@]} -gt 0 ]; then
     log "Removing ${#failed_assembly[@]} failed sample(s) from pipeline: ${failed_assembly[*]}"
     for s in "${failed_assembly[@]}"; do
         sed -i "/^${s}$/d" samples
+        # Remember the failure so a later --resume does not pay the assembly cost again.
+        grep -qxF "$s" "$FAILED_ASSEMBLY_RECORD" 2>/dev/null \
+            || echo "$s" >> "$FAILED_ASSEMBLY_RECORD"
     done
 fi
 
