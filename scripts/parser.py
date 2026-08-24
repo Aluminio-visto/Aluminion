@@ -521,9 +521,11 @@ def main():
         # Explicit per-column strip — DataFrame.apply with a Series.str.strip
         # lambda was silently leaving the values unchanged in some pandas
         # versions, which broke the downstream Sample-based merge.
+        # Do NOT gate this on `dtype == 'object'`: pandas 3 infers text columns
+        # as the dedicated 'str' dtype, so that guard is False and every strip
+        # below is skipped, letting an untrimmed Sample key kill the merges.
         for c in gambit_df.columns:
-            if gambit_df[c].dtype == 'object':
-                gambit_df[c] = gambit_df[c].astype(str).str.strip()
+            gambit_df[c] = gambit_df[c].astype(str).str.strip()
 
     if not species_df.empty:
         species_df['Majority_species'] = (
@@ -558,13 +560,15 @@ def main():
     kraken_df = kraken_df[kraken_cols]
     # Explicit per-column strip + internal-whitespace collapse — defends against
     # stray spaces introduced upstream (Kraken report → bash awk → tab-split).
+    # Not gated on `dtype == 'object'`: pandas 3 gives text columns the 'str'
+    # dtype, so that guard silently disabled this strip and the trailing space on
+    # Sample ("Eclo_VC_600-1 ") made every downstream join match zero rows.
     for c in kraken_df.columns:
-        if kraken_df[c].dtype == 'object':
-            kraken_df[c] = (
-                kraken_df[c].astype(str)
-                .str.strip()
-                .str.replace(r'\s+', ' ', regex=True)
-            )
+        kraken_df[c] = (
+            kraken_df[c].astype(str)
+            .str.strip()
+            .str.replace(r'\s+', ' ', regex=True)
+        )
 
     # Successive left-joins: kraken -> gambit -> mlst -> kleborate -> ectyper
     merged_taxonomy = pd.merge(kraken_df, gambit_df, how='left', on='Sample')

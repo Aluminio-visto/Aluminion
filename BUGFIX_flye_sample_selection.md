@@ -118,3 +118,81 @@ release with removals beyond the 2.x changes that produced the earlier
 exercising: `pytest` is **not installed** in `aluminion_annot`, so the suite has
 never run against the version production actually uses. Recommend
 `mamba install -n aluminion_annot pytest` and a full run before the next batch.
+
+---
+
+# Follow-up (same day): pandas 3 silently disabled the merge-key strips in parser.py
+
+Installing pytest into `aluminion_annot` — per the follow-up above — let the suite
+run against the version production actually uses for the first time, and it
+immediately found a live bug. **Not a test-harness artefact: `parser.py` produces
+wrong output on the next run.**
+
+## Symptom
+
+Under pandas 3.0.3, `taxonomy.csv` came out with `Subspecies`, `MLST`,
+`Serotype`, `KO_locus`, `Carbapenemase`, `ESBL` and the allele columns **entirely
+empty** (19/19 rows), and `Aluminion_Report.html` lost the corresponding fields.
+`parser.py` still exited 0 and logged "Process completed successfully" — the
+failure is silent.
+
+## Root cause
+
+Two defensive whitespace-strip loops were gated on the column dtype:
+
+```python
+for c in kraken_df.columns:
+    if kraken_df[c].dtype == 'object':      # <-- False on pandas 3
+        kraken_df[c] = kraken_df[c].astype(str).str.strip()...
+```
+
+pandas 3 infers text columns as the dedicated `str` dtype rather than `object`,
+so `dtype == 'object'` is False and **every strip in both loops was skipped**.
+The `Sample` key coming out of the Kraken report (`Kraken report → awk →
+tab-split`) carries a trailing space — `'Eclo_VC_600-1 '` — which the strip
+existed precisely to remove. With the strip disabled, all five successive
+`pd.merge(..., on='Sample')` joins matched **zero** rows:
+
+```
+merge kraken→gambit    claves comunes: 0    (19x19 rows)
+merge      →mlst       claves comunes: 0
+merge      →kleborate  claves comunes: 0
+merge      →ectyper    claves comunes: 0
+```
+
+Because the joins are `how='left'`, the row count stayed at 19 and no error was
+raised — the merged columns just came back all-NaN. This is the same class of bug
+as the pandas-1.5.3 `DataFrame.apply(lambda x: x.str.strip())` no-op the comments
+in that function already warn about: the *idiom* was fixed, but the *dtype guard
+wrapping it* reintroduced the identical failure on a newer pandas.
+
+## Fix
+
+Drop the dtype guard in both loops (`scripts/parser.py`, the `gambit_df` and
+`kraken_df` strips) and strip unconditionally. Both loops run on frames already
+narrowed to their final text columns — `gambit_df` to `['Sample','Subspecies']`,
+`kraken_df` to `kraken_cols` — so `astype(str)` cannot clobber a numeric column
+that matters. Verified: all five merges recover 19/19 keys, no empty cells, and
+real values land (`Enterobacter hormaechei subsp. xiangfangensis`, MLST `114`,
+`KL53/O3/O3a`). Behaviour is identical under pandas 2.2.2.
+
+Grepped the rest of `scripts/` for the same pattern: these two were the only
+occurrences. `lab_db_updater.py` strips unconditionally and was never affected.
+
+## Blast radius
+
+**Existing tables are clean.** Every `taxonomy.csv` under
+`/home/usuario/Seqs/Enthere` (runs `2025_08_27`, `2025_09_09`, `2025_09_16`,
+`2025_12_15`, `2026_06_23`) shows 0 empty values in `Subspecies` / `MLST` /
+`KO_locus` — they were generated when the env still had pandas 2 and the guard
+still worked. The bug would have corrupted the *next* run, not past ones. No
+historical repair needed.
+
+## Note on running the tests
+
+`pytest` must be run with `PYTHONSAFEPATH` unset. That variable disables Python's
+automatic insertion of the script's own directory into `sys.path`, which is how
+`scripts/*.py` resolve `from _log import get_logger`. It is not set in a normal
+login shell — only in some sandboxed/tooling environments — but if it leaks in,
+10 tests fail with a misleading `ModuleNotFoundError: No module named '_log'`
+that has nothing to do with the code under test.
