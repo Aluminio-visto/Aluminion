@@ -1418,6 +1418,16 @@ phastest_reset_cluster() {
 if [ -z "$SKIP_PHAGES" ]; then
     log "Running Phages module (Phastest)..."
     host_uid=$(id -u); host_gid=$(id -g)
+    # Reset the SLURM nodes ONCE here, not before every sample. The nodes may
+    # already be in the bad state when the run starts (a previous run killed
+    # mid-Phastest is how this was found), so the run does need one reset up front
+    # — but paying it per sample cost ~31 s each (16 s restart + 15 s settle) and,
+    # worse, measured BLAST parallelism on SCT-HURS-13 dropped to ~1.2x versus
+    # 6.8x on a sample that ran without a preceding restart: repeatedly bouncing
+    # slurmd against a live controller leaves the array under-dispatched. Per
+    # sample, the reset now happens only on the retry, where the sample has
+    # already failed and there is nothing left to lose.
+    phastest_reset_cluster || true
     for i in $(cat samples); do
         if phastest_done "$i"; then
             log "  [resume] Phastest: ${i} done, skipping."
@@ -1463,8 +1473,8 @@ if [ -z "$SKIP_PHAGES" ]; then
         # nodes is exactly what fixes it. A sample that dies at the 180 min tolerate
         # time produced nothing, so retrying costs nothing but time; without the
         # retry a single lost array piece discards the sample's prophage calls.
-        # The reset runs BEFORE the first attempt too: the nodes may already be in
-        # the bad state when the run starts (that is how this was found).
+        # The up-front reset happens once before this loop, not here: see the note
+        # at the top of the module for why per-sample resets hurt dispatch.
         # Same residue hazard as the input FASTA above, and for the same reason: a
         # run killed between the container exiting and the `rm -rf` below leaves
         # JOBS/$i behind, root- or nobody-owned. Phastest would then start on top of
@@ -1477,8 +1487,12 @@ if [ -z "$SKIP_PHAGES" ]; then
 
         phastest_ok=""
         for attempt in 1 2; do
-            [ "$attempt" -eq 2 ] && log "  Phastest: retrying ${i} (attempt 2/2) after cluster reset..."
-            phastest_reset_cluster || true
+            # Only on the retry: the module already reset the cluster once before the
+            # loop, and resetting before every attempt measurably degraded dispatch.
+            if [ "$attempt" -eq 2 ]; then
+                log "  Phastest: retrying ${i} (attempt 2/2) after cluster reset..."
+                phastest_reset_cluster || true
+            fi
             if docker compose -f "${PHASTEST_DIR}/docker-compose.yml" run --rm \
                     --entrypoint /bin/bash phastest \
                     -c "phastest -i fasta -m deep -s '$i'.fasta --yes; rc=\$?; \
