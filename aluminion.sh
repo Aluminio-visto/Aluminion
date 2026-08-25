@@ -173,6 +173,24 @@ warn()      { echo -e "\033[1;33m[WARNING] $1\033[0m"; }
 # Returns true if --resume is active and the sentinel file or directory already exists
 resume_done() { [ -n "$RESUME" ] && { [ -f "$1" ] || [ -d "$1" ]; }; }
 
+# Returns true if --resume is active and EVERY named path exists as a regular,
+# non-empty FILE. Use this — never resume_done on a directory — whenever the
+# output directory is created by the tool (or by our own `mkdir -p`) *before* the
+# work inside it finishes. `resume_done <dir>` is true the instant a sample
+# starts, so a sample interrupted mid-run (Ctrl-C, OOM, power cut, a batch moving
+# on after an error) is silently treated as complete on the next --resume, and its
+# missing results are then indistinguishable from a genuine biological negative.
+# That exact failure mode cost us Phastest samples (see phastest_done) and the
+# same shape exists for every directory-sentinel step.
+resume_files_done() {
+    [ -n "$RESUME" ] || return 1
+    local f
+    for f in "$@"; do
+        [ -s "$f" ] || return 1
+    done
+    return 0
+}
+
 # ------------------------------------------------------------------------------
 # Bounded-concurrency helper for embarrassingly-parallel per-sample steps.
 # ------------------------------------------------------------------------------
@@ -1141,7 +1159,14 @@ done
 log "Plasmid Extraction (MOB-Suite Docker, up to ${PAR_MOBSUITE} in parallel)..."
 par_reset
 for i in $(cat samples); do
-    resume_done "08_Anotacion/${i}/mob_recon" && { log "  [resume] MOB-suite: ${i} done, skipping."; continue; }
+    # contig_report.txt AND chromosome.fasta: mob_recon writes contig_report.txt
+    # first and chromosome.fasta last (verified: chromosome.fasta is the newest
+    # file in 54/54 completed samples), so requiring both means a container killed
+    # mid-run is retried instead of skipped. mob_recon already runs with --force,
+    # so it overwrites a partial output dir on its own — no cleanup needed here.
+    resume_files_done "08_Anotacion/${i}/mob_recon/contig_report.txt" \
+                      "08_Anotacion/${i}/mob_recon/chromosome.fasta" \
+        && { log "  [resume] MOB-suite: ${i} done, skipping."; continue; }
     # Each call is an independent --rm container writing to its own output dir, so a
     # few can run at once. -n is reduced (THREADS_MOBSUITE) so the pool as a whole
     # does not oversubscribe; mob_recon is BLAST-heavy and still multi-threaded.
@@ -1189,7 +1214,17 @@ if [ -z "$SKIP_INTEGRONS" ]; then
     log "Running Integrons module (Integron_finder)..."
     conda activate aluminion_integron
     for i in $(cat samples); do
-        resume_done "11_integrons/${i}" && { log "  [resume] Integron_Finder: ${i} done, skipping."; continue; }
+        # <sample>.summary is integron_finder's final output (verified present for
+        # 118/118 completed samples). The directory itself is created by
+        # integron_finder before it does any work (finder.py: os.mkdir(config.outdir)
+        # / os.mkdir(config.result_dir) run before the logger is even initialised),
+        # so a directory sentinel marks an interrupted sample as done.
+        resume_files_done "11_integrons/${i}/Results_Integron_Finder_${i}/${i}.summary" \
+            && { log "  [resume] Integron_Finder: ${i} done, skipping."; continue; }
+        # integron_finder has no --force and happily reuses a pre-existing outdir,
+        # so a partial tree from an interrupted run would be re-parsed as if
+        # complete. Clear it before retrying.
+        [ -d "11_integrons/${i}" ] && rm -rf "11_integrons/${i}"
         integron_finder 03_assemblies/${i}.fasta --cpu $THREADS_TOTAL --outdir 11_integrons/${i} --func-annot --gbk || true
     done
     conda activate aluminion_annot
@@ -1213,9 +1248,23 @@ if [ -z "$SKIP_PLASMIDS" ]; then
     mkdir -p "$COPLA_LOGDIR"
     par_reset
     for j in $(cat samples); do
-        if resume_done "08_Anotacion/${j}/copla"; then
-            log "  [resume] Copla: ${j} done, skipping."
-            continue
+        # Copla has no single final output file: it emits one set of results per
+        # plasmid contig. So the completion test is a COUNT — one
+        # *.ptu_prediction.tsv per input plasmid_*.fasta, using the same size
+        # filter as the find loop below so the two always agree. A directory
+        # sentinel here would skip a sample whose container pool was interrupted
+        # after typing only some of its plasmids, and the untyped ones would then
+        # read as plasmids with no PTU assignment rather than as missing work.
+        if [ -n "$RESUME" ] && [ -d "08_Anotacion/${j}/copla" ]; then
+            n_pl=$(find 08_Anotacion/${j}/mob_recon/ -type f -name "plasmid_*.fasta" \
+                       -size -600k -size +1k 2>/dev/null | wc -l)
+            n_ptu=$(find 08_Anotacion/${j}/copla/ -type f -name "*.ptu_prediction.tsv" \
+                       2>/dev/null | wc -l)
+            if [ "$n_pl" -eq "$n_ptu" ]; then
+                log "  [resume] Copla: ${j} done (${n_ptu}/${n_pl} plasmids), skipping."
+                continue
+            fi
+            warn "Copla: ${j} incomplete (${n_ptu}/${n_pl} plasmids typed). Reprocessing."
         fi
         {
             # MOB-suite names plasmid contigs `plasmid_<CLUSTER>.fasta` (e.g. plasmid_AB949.fasta).
