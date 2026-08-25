@@ -1290,13 +1290,68 @@ fi
 
 
 # 5. Phastest (Docker)
+#
+# Phastest completion sentinel: `success.txt`, NOT the directory.
+# ---------------------------------------------------------------
+# The output directory is created by THIS script before the container runs, so
+# `resume_done <dir>` is true the instant the sample starts. A sample interrupted
+# mid-flight therefore looks complete on the next --resume and is skipped with an
+# empty (or partial) directory — its prophages silently become "none found",
+# indistinguishable from a genuine negative. Observed on ENTHERE_2026_JUL_07:
+# SCT-HURS-13 was skipped with 0 files after a Ctrl+C. Phastest writes success.txt
+# only after the run completes, so that is the sentinel we test. A directory
+# without success.txt is stale residue and is cleared before retrying.
+phastest_done() { [ -n "$RESUME" ] && [ -f "09_phages/phastest_deep/${1}/success.txt" ]; }
+
+# Reset the Phastest SLURM cluster before a sample.
+# -------------------------------------------------
+# The phastest-docker stack runs 8 persistent compute nodes (c1..c8, slurmd) but
+# the CONTROLLER (slurmctld) lives in the ephemeral `run --rm` container aluminion
+# launches per sample — docker-compose.yml comments the standalone slurmctld
+# service out and gives the ephemeral service `hostname: slurmctld`. So the
+# scheduler's brain is born and dies with every sample while the nodes persist,
+# and slurm.conf sets ReturnToService=0, meaning a node the dying controller
+# marked down never comes back on its own.
+#
+# Consequence, observed on ENTHERE_2026_JUL_07 after a Ctrl+C: BLAST is dispatched
+# as an `sbatch --array=1-208 --wait` job, and array pieces silently never get
+# scheduled. The remaining pieces finish in ~6 min, then `--wait` blocks until
+# phastest.pl's internal phage_finder_tolerate_time (180 min) expires and the
+# sample dies with no results. SCT-HURS-43 ran 207/208 pieces in 6.3 min and
+# then waited 3 h for piece 99; SCT-HURS-44 ran 206/208 in 6.5 min and waited
+# ~2 h for pieces 90 and 208. The pieces themselves are ordinary protein and the
+# phage DB is intact — the work is fine, the scheduler lost the jobs.
+#
+# `docker compose restart` on the node services re-registers them with the next
+# controller, which clears the down/drain state ReturnToService=0 would otherwise
+# make permanent. Non-fatal: if the reset fails we still try the sample.
+PHASTEST_NODES="${ALUMINION_PHASTEST_NODES:-c1 c2 c3 c4 c5 c6 c7 c8}"
+phastest_reset_cluster() {
+    [ -n "$PHASTEST_NO_RESET" ] && return 0
+    log "  Phastest: resetting SLURM nodes (${PHASTEST_NODES})..."
+    if ! docker compose -f "${PHASTEST_DIR}/docker-compose.yml" restart $PHASTEST_NODES >/dev/null 2>&1; then
+        warn "Phastest: could not restart SLURM nodes. Continuing (jobs may stall)."
+        return 1
+    fi
+    # slurmd needs a moment to register with the controller before sbatch is usable.
+    sleep "${ALUMINION_PHASTEST_RESET_WAIT:-15}"
+    return 0
+}
+
 if [ -z "$SKIP_PHAGES" ]; then
     log "Running Phages module (Phastest)..."
     host_uid=$(id -u); host_gid=$(id -g)
     for i in $(cat samples); do
-        if resume_done "09_phages/phastest_deep/${i}"; then
+        if phastest_done "$i"; then
             log "  [resume] Phastest: ${i} done, skipping."
             continue
+        fi
+        # No success.txt but a directory present = interrupted/timed-out attempt.
+        # Clear it so the retry starts clean and the copy below can't mix runs.
+        if [ -d "09_phages/phastest_deep/${i}" ] && \
+           [ -n "$(find "09_phages/phastest_deep/${i}" -mindepth 1 -print -quit 2>/dev/null)" ]; then
+            warn "Phastest: ${i} has no success.txt (interrupted or timed out). Retrying from scratch."
+            rm -rf "09_phages/phastest_deep/${i}"
         fi
         mkdir -p 09_phages/phastest_deep/"$i"/
 
@@ -1327,12 +1382,36 @@ if [ -z "$SKIP_PHAGES" ]; then
         # The inputs bind-mount target inside the container is `/phastest-app/inputs`
         # (phastest-docker default; verify with `docker compose config`). Phastest's
         # exit code is preserved via $rc.
-        if ! docker compose -f "${PHASTEST_DIR}/docker-compose.yml" run --rm \
-                --entrypoint /bin/bash phastest \
-                -c "phastest -i fasta -m deep -s '$i'.fasta --yes; rc=\$?; \
-                    chown -R ${host_uid}:${host_gid} /phastest-app/JOBS/'$i' /phastest-app/inputs 2>/dev/null; \
-                    exit \$rc"; then
-            warn "Phastest container exited non-zero for ${i}. Continuing."
+        # One retry, because the stall is a scheduler-state problem and resetting the
+        # nodes is exactly what fixes it. A sample that dies at the 180 min tolerate
+        # time produced nothing, so retrying costs nothing but time; without the
+        # retry a single lost array piece discards the sample's prophage calls.
+        # The reset runs BEFORE the first attempt too: the nodes may already be in
+        # the bad state when the run starts (that is how this was found).
+        phastest_ok=""
+        for attempt in 1 2; do
+            [ "$attempt" -eq 2 ] && log "  Phastest: retrying ${i} (attempt 2/2) after cluster reset..."
+            phastest_reset_cluster || true
+            if docker compose -f "${PHASTEST_DIR}/docker-compose.yml" run --rm \
+                    --entrypoint /bin/bash phastest \
+                    -c "phastest -i fasta -m deep -s '$i'.fasta --yes; rc=\$?; \
+                        chown -R ${host_uid}:${host_gid} /phastest-app/JOBS/'$i' /phastest-app/inputs 2>/dev/null; \
+                        exit \$rc"; then
+                # Exit 0 is not enough: phastest.pl returns 0 after phage_finder times
+                # out. success.txt is the only trustworthy signal of a real result.
+                if [ -f "${PHASTEST_DIR}/phastest-app-docker/JOBS/$i/success.txt" ]; then
+                    phastest_ok="yes"
+                    break
+                fi
+                warn "Phastest: ${i} exited 0 but wrote no success.txt (phage_finder timeout)."
+            else
+                warn "Phastest container exited non-zero for ${i}."
+            fi
+            # Clear the failed attempt's tree so attempt 2 (or the next run) starts clean.
+            rm -rf "${PHASTEST_DIR}/phastest-app-docker/JOBS/$i"
+        done
+        if [ -z "$phastest_ok" ]; then
+            warn "Phastest failed for ${i} after 2 attempts. Continuing without its prophages."
             failed_phages+=("$i")
             # Fall through to cleanup so leftovers don't poison the next sample.
         fi
