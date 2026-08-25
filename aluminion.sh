@@ -153,6 +153,8 @@ Parallelism (per-sample steps; set as environment variables, not flags):
     ALUMINION_PAR_ABRICATE  Abricate AMR + virulence.      (Default: 8)
     ALUMINION_PAR_MOBSUITE  MOB-suite plasmid recon.       (Default: 2)
     ALUMINION_PAR_COPLA     Copla plasmid typing.          (Default: 3)
+    ALUMINION_COPLA_CPUS    Docker --cpus quota per Copla container, capping the
+                            image's baked-in 20 threads. (Default: threads/PAR_COPLA)
   Example: ALUMINION_PAR_FILTER=8 ALUMINION_PAR_ABRICATE=16 aluminion -r RUN ...
   pigz is used automatically for FASTQ compression when installed (gzip fallback).
 
@@ -383,6 +385,16 @@ PAR_QC="${ALUMINION_PAR_QC:-4}"                # NanoPlot read QC (pre + post fi
 PAR_ABRICATE="${ALUMINION_PAR_ABRICATE:-8}"    # Abricate AMR/VFDB (single-thread BLAST, light I/O)
 PAR_MOBSUITE="${ALUMINION_PAR_MOBSUITE:-2}"    # MOB-suite Docker (BLAST-heavy; each still multi-threaded)
 PAR_COPLA="${ALUMINION_PAR_COPLA:-3}"          # Copla Docker (per plasmid contig)
+# Copla's internal thread counts are baked into the rpalcab/copla:1.0 image and
+# cannot be patched from the host: `docker run -v $(pwd):/tmp` mounts only the run
+# directory, so the copy of the Copla source in ~/Programs/copla is NOT what runs
+# (bin/check_conjugation_systems.sh there sets a bare THREADS=20, no ${THREADS:-20},
+# so there is no env knob to override either). With PAR_COPLA=3 that is 3 x 20 = 60
+# threads competing for 36 cores — the oversubscription behind the observed load of
+# ~118. The one lever available from outside the image is Docker's own CPU quota, so
+# cap each container. Default keeps the pool at or below the host's core count.
+COPLA_CPUS="${ALUMINION_COPLA_CPUS:-$(( THREADS_TOTAL / PAR_COPLA ))}"
+[ "$COPLA_CPUS" -lt 1 ] && COPLA_CPUS=1
 # Per-job thread budget for steps that remain multi-threaded while parallelised, so
 # the pool as a whole does not oversubscribe the CPU. Floor at 1 thread.
 THREADS_FILTER=$(( THREADS_TOTAL / PAR_FILTER ));     [ "$THREADS_FILTER"   -lt 1 ] && THREADS_FILTER=1
@@ -1274,7 +1286,7 @@ if [ -z "$SKIP_PLASMIDS" ]; then
             find 08_Anotacion/${j}/mob_recon/ -type f -name "plasmid_*.fasta" -size -600k -size +1k | while read -r i; do
                 cluster=$(basename "$i" .fasta | cut -d'_' -f2)
                 cp "${i}" 05_plasmids/${cluster}_${j}.fasta
-                echo "Sample: ${j}" && echo "Contig: ${cluster}" && docker run --rm -v $(pwd):/tmp "$COPLA_IMAGE" copla /tmp/"${i}" /data/app/databases/Copla_RS84/RS84f_sHSBM.pickle /data/app/databases/Copla_RS84/CoplaDB.fofn /tmp/08_Anotacion/${j}/copla
+                echo "Sample: ${j}" && echo "Contig: ${cluster}" && docker run --rm --cpus "$COPLA_CPUS" -v $(pwd):/tmp "$COPLA_IMAGE" copla /tmp/"${i}" /data/app/databases/Copla_RS84/RS84f_sHSBM.pickle /data/app/databases/Copla_RS84/CoplaDB.fofn /tmp/08_Anotacion/${j}/copla
             done > "${COPLA_LOGDIR}/${j}.txt" 2>&1
         } &
         par_wait "$PAR_COPLA"
