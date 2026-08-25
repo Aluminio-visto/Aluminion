@@ -82,7 +82,13 @@ def main():
     log.info('Generating report in: %s', os.getcwd())
 
     # 1. Load tables
-    df_lista    = load_and_standardize("list_seq.tsv", sep='\t', key_col='ID')
+    # Candidate list, tried in order: aluminion.sh normally rewrites a legacy Spanish
+    # header to the English schema before we get here, but if that translation ever
+    # misses a variant (it did — "Nº Cultivo"/"ID único" slipped past an anchored
+    # regex), falling back on the Spanish names keeps the report generating instead
+    # of dying with KeyError: 'Sample' after the whole run is already computed.
+    df_lista    = load_and_standardize("list_seq.tsv", sep='\t',
+                                      key_col=['ID', 'ID único', 'ID unico'])
     df_qcreads  = load_and_standardize("QC_reads.csv", sep='\t', key_col='Sample')
     df_qcass    = load_and_standardize("QC_assembly.csv", sep='\t', key_col='Samples')
     df_tax      = load_and_standardize("taxonomy.xlsx", key_col='Sample')
@@ -132,6 +138,20 @@ def main():
     # ==========================================
     df_qc = df_lista.copy()
     
+    # A merge on a key one side lacks raises KeyError and kills the report after the
+    # entire run has been assembled and annotated — the most expensive possible place
+    # to fail. Warn and skip the merge instead: a report missing its QC columns is
+    # recoverable (rerun the consolidation once the sheet is fixed), an aborted run
+    # at this stage is not.
+    def _mergeable(left, right, name, key='Sample'):
+        for df, side in ((left, 'QC table'), (right, name)):
+            if key not in df.columns:
+                log.warning('%s has no %r column (found: %s) — skipping this merge. '
+                            'Check the list_seq.tsv header against examples/list_seq_template.tsv.',
+                            side, key, ', '.join(map(str, df.columns[:8])))
+                return False
+        return True
+
     if not df_qcreads.empty:
         rename_dict = {
             'Median length': 'Median L_pre', 'Median quality': 'Median Q_pre',
@@ -142,10 +162,12 @@ def main():
             'MaxQ.1': 'Max Q_post', 'Longest read.1': 'Longest read_post'
         }
         df_qcreads.rename(columns=rename_dict, inplace=True)
-        df_qc = pd.merge(df_qc, df_qcreads, on='Sample', how='left')
+        if _mergeable(df_qc, df_qcreads, 'QC_reads.csv'):
+            df_qc = pd.merge(df_qc, df_qcreads, on='Sample', how='left')
 
     if not df_qcass.empty:
-        df_qc = pd.merge(df_qc, df_qcass, on='Sample', how='left')
+        if _mergeable(df_qc, df_qcass, 'QC_assembly.csv'):
+            df_qc = pd.merge(df_qc, df_qcass, on='Sample', how='left')
     
     df_qc.drop(columns=['Strain', 'DNA_conc', 'is_repeated', 'Sample.1', '# predicted genes (>= 300 bp)'], errors='ignore', inplace=True)
 
@@ -214,17 +236,20 @@ def main():
     if not tax_base_cols: tax_base_cols = ['Sample']
     df_taxonomy = df_lista[tax_base_cols].copy() if not df_lista.empty and 'Sample' in df_lista.columns else pd.DataFrame(columns=tax_base_cols)
     
-    if not df_tax.empty: df_taxonomy = pd.merge(df_taxonomy, df_tax, on='Sample', how='left')
+    if not df_tax.empty and _mergeable(df_taxonomy, df_tax, 'taxonomy'):
+        df_taxonomy = pd.merge(df_taxonomy, df_tax, on='Sample', how='left')
     
     # Merge Kleborate (Omp mutations)
-    if not df_kleb.empty and 'klebsiella_pneumo_complex__amr__Omp_mutations' in df_kleb.columns:
+    if (not df_kleb.empty and 'klebsiella_pneumo_complex__amr__Omp_mutations' in df_kleb.columns
+            and 'Sample' in df_kleb.columns):
         df_omp = df_kleb[['Sample', 'klebsiella_pneumo_complex__amr__Omp_mutations']].copy()
         df_omp.rename(columns={'klebsiella_pneumo_complex__amr__Omp_mutations': 'Omp muts'}, inplace=True)
         # Replace the '-' that Kleborate uses so the field appears empty
         df_omp['Omp muts'] = df_omp['Omp muts'].replace('-', '')
         df_taxonomy = pd.merge(df_taxonomy, df_omp, on='Sample', how='left')
 
-    if not df_abr.empty and 'Resistance_genes' in df_abr.columns:
+    if (not df_abr.empty and 'Resistance_genes' in df_abr.columns
+            and _mergeable(df_taxonomy, df_abr, 'AbR_modif.xlsx')):
         df_taxonomy = pd.merge(df_taxonomy, df_abr[['Sample', 'Resistance_genes']], on='Sample', how='left')
         df_taxonomy['Resistance_genes'] = df_taxonomy['Resistance_genes'].astype(str).str.replace(r'\s+\([\d\.]+\)', '', regex=True).replace('nan', '')
 

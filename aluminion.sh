@@ -519,8 +519,21 @@ fi
 # to the current English schema. Earlier versions of the pipeline shipped Spanish names;
 # this keeps old lab sheets working without forcing the user to edit them manually.
 # Field order is preserved — only the header row is rewritten.
+#
+# Detection is by CONTENT, not by an exact prefix: the anchored '^(Cultivo|Cepa)\b'
+# this used to test failed on the sheets the lab actually exports from Excel, whose
+# first field is "Nº Cultivo" (and third "ID único" — accented, with a space). The
+# header was therefore left in Spanish, aluminion_reporter.py's key_col='ID' never
+# matched, no 'Sample' column was created, and the run died at the QC merge with
+# KeyError: 'Sample' AFTER every sample had already been assembled and annotated.
+# So: match if any known Spanish marker appears anywhere in the header line, and
+# require that the English schema is NOT already in place.
 list_header=$(head -n 1 list_seq.tsv | tr -d '\r')
-if echo "$list_header" | grep -qE '^(Cultivo|Cepa)\b'; then
+# NOTE: the guard uses $'\t' (bash ANSI-C quoting), not '\t' inside the pattern —
+# GNU grep -E does not honour \t as an escape, it matches a literal 't', so
+# '(^|\t)Lab_id' would silently never match the English header.
+if ! echo "$list_header" | grep -qE "^Lab_id($(printf '\t')|$)" \
+   && echo "$list_header" | grep -qiE 'Cultivo|Cepario|Cepa|ID[[:space:]]*(único|unico)|Repetir|\[DNA\]'; then
     warn "list_seq.tsv uses legacy Spanish column names — auto-translating to English (Lab_id, Strain, ID, Barcode, DNA_conc, is_repeated)."
     {
         echo -e "Lab_id\tStrain\tID\tBarcode\tDNA_conc\tis_repeated"
