@@ -1327,7 +1327,10 @@ phastest_done() { [ -n "$RESUME" ] && [ -f "09_phages/phastest_deep/${1}/success
 # make permanent. Non-fatal: if the reset fails we still try the sample.
 PHASTEST_NODES="${ALUMINION_PHASTEST_NODES:-c1 c2 c3 c4 c5 c6 c7 c8}"
 phastest_reset_cluster() {
-    [ -n "$PHASTEST_NO_RESET" ] && return 0
+    # ${VAR:-} and not $VAR: this script runs under `set -euo pipefail`, so
+    # dereferencing an unset variable aborts with "unbound variable". Every
+    # optional/env-provided knob must carry the :- default.
+    [ -n "${PHASTEST_NO_RESET:-}" ] && return 0
     log "  Phastest: resetting SLURM nodes (${PHASTEST_NODES})..."
     if ! docker compose -f "${PHASTEST_DIR}/docker-compose.yml" restart $PHASTEST_NODES >/dev/null 2>&1; then
         warn "Phastest: could not restart SLURM nodes. Continuing (jobs may stall)."
