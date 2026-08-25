@@ -1388,6 +1388,16 @@ if [ -z "$SKIP_PHAGES" ]; then
         # retry a single lost array piece discards the sample's prophage calls.
         # The reset runs BEFORE the first attempt too: the nodes may already be in
         # the bad state when the run starts (that is how this was found).
+        # Same residue hazard as the input FASTA above, and for the same reason: a
+        # run killed between the container exiting and the `rm -rf` below leaves
+        # JOBS/$i behind, root- or nobody-owned. Phastest would then start on top of
+        # a foreign tree and the `cp -r` afterwards would mix two attempts' outputs
+        # into one sample. Observed after the Ctrl+C on ENTHERE_2026_JUL_07:
+        # JOBS/SCT-HURS-13 (usuario) and JOBS/SCT-HURS-44 (nobody:nogroup) survived.
+        # JOBS/ itself is host-user-owned, so `rm -rf` on a child works regardless of
+        # who owns the child (only the parent's write bit matters).
+        rm -rf "${PHASTEST_DIR}/phastest-app-docker/JOBS/$i"
+
         phastest_ok=""
         for attempt in 1 2; do
             [ "$attempt" -eq 2 ] && log "  Phastest: retrying ${i} (attempt 2/2) after cluster reset..."
