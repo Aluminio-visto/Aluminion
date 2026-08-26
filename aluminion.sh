@@ -50,6 +50,18 @@ ABRICATE_MIN_COV=75
 # Set to 0 to disable the limit and wait indefinitely (legacy behaviour).
 FLYE_TIMEOUT="${ALUMINION_FLYE_TIMEOUT:-4h}"
 
+# Disjointig-stage subsampling for high-coverage samples. Flye's "Extending reads"
+# stage costs time superlinearly in coverage, and ONT runs on a good library
+# routinely land at 150-180x — far past the point where extra reads add assembly
+# information. --asm-coverage makes Flye use only its longest reads for that stage
+# (all reads are still used for the repeat graph and polishing, so contiguity and
+# consensus quality are unaffected); it requires --genome-size to know what depth
+# to subsample to. Empty = do not pass either flag (Flye's own default: use
+# everything). ALUMINION_FLYE_ASM_COVERAGE=50 with a 5.2m genome size is the
+# upstream-recommended setting for bacterial ONT assemblies.
+FLYE_ASM_COVERAGE="${ALUMINION_FLYE_ASM_COVERAGE:-}"
+FLYE_GENOME_SIZE="${ALUMINION_FLYE_GENOME_SIZE:-5.2m}"
+
 show_help() {
     cat << EOF
 
@@ -116,6 +128,15 @@ QC and filtering thresholds (override sensible defaults):
                   (e.g. 90m, 4h). A sample that exceeds it is treated as a Flye failure
                   and skipped, so one pathological sample cannot stall an unattended
                   batch forever. Use 0 to wait indefinitely. (Default: ${FLYE_TIMEOUT})
+  --flye-asm-coverage <N> Use only the longest reads, down to N-fold coverage, for Flye's
+                  disjointig stage ("Extending reads"), which is where high-coverage
+                  samples stall. All reads are still used for the repeat graph and
+                  polishing, so contiguity and consensus are unaffected. Requires a
+                  genome size; 50 is the upstream recommendation for bacteria.
+                  Empty = pass neither flag. (Default: ${FLYE_ASM_COVERAGE:-(unset)})
+  --flye-genome-size <S>  Estimated genome size for --flye-asm-coverage, in Flye's
+                  notation (e.g. 5.2m). Ignored unless --flye-asm-coverage is set.
+                  (Default: ${FLYE_GENOME_SIZE})
   --retry-failed-assembly Clear the run's record of samples that previously failed to
                   assemble, so --resume attempts them again. Without this flag a known
                   unassemblable sample is skipped on resumed runs instead of burning the
@@ -357,6 +378,8 @@ while [[ "$#" -gt 0 ]]; do
         --abricate-minid)    ABRICATE_MIN_ID="$2"; shift ;;
         --abricate-mincov)   ABRICATE_MIN_COV="$2"; shift ;;
         --flye-timeout)      FLYE_TIMEOUT="$2"; shift ;;
+        --flye-asm-coverage) FLYE_ASM_COVERAGE="$2"; shift ;;
+        --flye-genome-size)  FLYE_GENOME_SIZE="$2"; shift ;;
         --retry-failed-assembly) RETRY_FAILED_ASSEMBLY=true ;;
         # Early-stop flags
         --just-preprocessing) STOP_AFTER="preprocessing" ;;
@@ -831,15 +854,20 @@ log "Assembly (Flye)..."
 # Extra args (e.g. --meta) are forwarded to flye.
 run_flye() {
     local sample="$1"; shift
+    # Both flags or neither: --asm-coverage without --genome-size is a Flye usage error.
+    local cov_args=()
+    if [ -n "$FLYE_ASM_COVERAGE" ] && [ -n "$FLYE_GENOME_SIZE" ]; then
+        cov_args=(--genome-size "$FLYE_GENOME_SIZE" --asm-coverage "$FLYE_ASM_COVERAGE")
+    fi
     if [ "$FLYE_TIMEOUT" = "0" ]; then
         flye --nano-hq "02_filter/${sample}.fastq.gz" --threads "$THREADS_TOTAL" \
-            --out-dir "03_assemblies/${sample}" "$@"
+            "${cov_args[@]}" --out-dir "03_assemblies/${sample}" "$@"
     else
         # --foreground lets Flye keep the terminal (so its progress output still reaches
         # the tee'd log); the follow-up SIGKILL after 60s covers a Flye that ignores TERM.
         timeout --foreground --kill-after=60s "$FLYE_TIMEOUT" \
             flye --nano-hq "02_filter/${sample}.fastq.gz" --threads "$THREADS_TOTAL" \
-            --out-dir "03_assemblies/${sample}" "$@"
+            "${cov_args[@]}" --out-dir "03_assemblies/${sample}" "$@"
     fi
 }
 
