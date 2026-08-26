@@ -387,8 +387,33 @@ def main():
         datos_seq["Barcode"]    = datos_seq["Barcode"].astype(str)
         datos_seq['Barcode'] = datos_seq['Barcode'].replace('nan', np.nan)
 
-    # Table with current run sample information
-    lista_cepas = pd.read_csv(cepas, sep='\t', usecols=["Lab_id", "Strain", "ID", "Barcode", "DNA_conc"], dtype={'Barcode': 'string'})
+    # Table with current run sample information.
+    # Defense-in-depth: normally aluminion.sh has already rewritten a legacy
+    # Spanish header to the English schema before we get here, but this script
+    # is also invoked standalone (consolidation-only recovery, see README §10),
+    # where that translation never ran. Reading with usecols=[English names]
+    # on an untranslated sheet raises "Usecols do not match columns" and aborts
+    # the run *between* the HTML report and mge_alerts.py — so the report is
+    # produced but Alerts_Report.html never is. We therefore translate the
+    # header here too, using the same Spanish markers as the bash guard.
+    _es2en = {
+        'Nº Cultivo': 'Lab_id', 'No Cultivo': 'Lab_id', 'Cultivo': 'Lab_id',
+        'Cepario': 'Strain', 'Cepa': 'Strain',
+        'ID único': 'ID', 'ID unico': 'ID',
+        '[DNA]': 'DNA_conc', 'Conc': 'DNA_conc',
+        'Repetir': 'is_repeated', 'Repetida': 'is_repeated',
+    }
+    lista_cepas = pd.read_csv(cepas, sep='\t', dtype={'Barcode': 'string'})
+    lista_cepas.columns = [c.strip().lstrip('\ufeff') for c in lista_cepas.columns]
+    lista_cepas = lista_cepas.rename(columns=_es2en)
+    _needed = ["Lab_id", "Strain", "ID", "Barcode", "DNA_conc"]
+    _missing = [c for c in _needed if c not in lista_cepas.columns]
+    if _missing:
+        raise ValueError(
+            f"list_seq.tsv is missing required columns {_missing} even after "
+            f"header translation. Found columns: {list(lista_cepas.columns)}"
+        )
+    lista_cepas = lista_cepas[_needed]
     lista_cepas['Barcode'] = lista_cepas['Barcode'].str.replace(r'barcode', '', regex=True)
 
     # A sample is a genuine REPEAT only if it already exists in the cumulative
