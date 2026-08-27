@@ -571,12 +571,40 @@ fi
 # `tr -d '\r'` strips CRLF line endings that appear when list_seq.tsv is exported
 # from Excel on Windows — without it, "01\r" would not match any printf %02d output.
 if [ -n "$NO_MINKNOW" ]; then
-    if [ ! -d "fastq_pass" ] || [ -z "$(ls -A fastq_pass 2>/dev/null)" ]; then
+    # fastq_pass/ is only ever dereferenced later by the read-concatenation loop
+    # inside the preprocessing block, and only for a sample where resume_done() is
+    # false. It is NOT needed at all when --skip-preprocessing is set (that block
+    # never runs), and it is not needed under --resume if every listed sample
+    # already has its concatenated reads staged in 01_reads/<id>.fastq.gz (e.g. a
+    # project where reads were concatenated and named by hand or by an external
+    # pipeline, never through this script's own fastq_pass/ import). Don't demand
+    # fastq_pass/ in those cases — it would never be read anyway.
+    _fastq_pass_needed=true
+    if [ -n "$SKIP_PREPROCESSING" ]; then
+        _fastq_pass_needed=false
+    elif [ -n "$RESUME" ]; then
+        _fastq_pass_needed=false
+        while IFS=$'\t' read -r _fp_cult _fp_cep _fp_id _fp_bc _fp_dna _fp_rep; do
+            [ -z "$_fp_id" ] && continue
+            if [ ! -s "01_reads/${_fp_id}.fastq.gz" ]; then
+                _fastq_pass_needed=true
+                break
+            fi
+        done < <(tail -n +2 list_seq.tsv | tr -d '\r')
+    fi
+    if [ "$_fastq_pass_needed" = true ] && { [ ! -d "fastq_pass" ] || [ -z "$(ls -A fastq_pass 2>/dev/null)" ]; }; then
         error_log "--skip-import-from-minknow set but ${WORKDIR}/fastq_pass/ is missing or empty."
-        error_log "Either populate fastq_pass/ with per-barcode subfolders or drop --skip-import-from-minknow."
+        error_log "Either populate fastq_pass/ with per-barcode subfolders, drop --skip-import-from-minknow,"
+        error_log "or — if 01_reads/<ID>.fastq.gz is already staged for every sample — add --resume so the"
+        error_log "read-concatenation step is skipped and fastq_pass/ is never required."
         exit 1
     fi
-    log "Using existing fastq_pass/ inside the run folder (MinKNOW import skipped)."
+    if [ -d "fastq_pass" ] && [ -n "$(ls -A fastq_pass 2>/dev/null)" ]; then
+        log "Using existing fastq_pass/ inside the run folder (MinKNOW import skipped)."
+    else
+        log "fastq_pass/ not required: reads already staged in 01_reads/ (--resume) or --skip-preprocessing is set."
+    fi
+    unset _fastq_pass_needed
 elif resume_done "fastq_pass/.minknow_import_done"; then
     # A previous run already imported every referenced barcode into fastq_pass/.
     # Re-copying with cp -r would overwrite identical files and thrash the disk for
@@ -584,7 +612,14 @@ elif resume_done "fastq_pass/.minknow_import_done"; then
     log "  [resume] fastq_pass/ already imported from MinKNOW, skipping copy."
 else
     mkdir -p fastq_pass
-    FASTQ_SRC=$(ls -d "${MINKNOW_DIR}/${RUN_NAME}/no_sample_id/"*/fastq_pass 2>/dev/null | head -n1)
+    # `|| true` after the pipeline (not just on `ls`) is required under
+    # `set -o pipefail`: when the glob matches nothing, `ls` exits 2 (discarded to
+    # /dev/null) and, even though the downstream `head -n1` exits 0, pipefail makes
+    # the *pipeline's* status the rightmost non-zero — i.e. 2 — which propagated
+    # into this command-substitution assignment and aborted the whole run via the
+    # ERR trap, before ever reaching the "MinKNOW directory not found" warning
+    # below that is supposed to handle exactly this (non-fatal) case.
+    FASTQ_SRC=$(ls -d "${MINKNOW_DIR}/${RUN_NAME}/no_sample_id/"*/fastq_pass 2>/dev/null | head -n1 || true)
     if [ -n "$FASTQ_SRC" ]; then
         tail -n +2 list_seq.tsv \
             | tr -d '\r' \
