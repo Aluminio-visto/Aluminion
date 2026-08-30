@@ -1060,8 +1060,15 @@ for i in $(cat samples); do
     if echo "$header" | grep -q 'basecall_model_version_id='; then
         model=$(echo "$header" | awk -F 'basecall_model_version_id=' '{print $2}' | awk '{print $1}')
     else
-        # Older Dorado header format without explicit basecall_model_version_id field
-        model=$(echo "$header" | grep -o 'dna_[^[:space:]]*' | rev | cut -f3- -d'_' | rev)
+        # Older Dorado header format without explicit basecall_model_version_id field.
+        # `|| true` is load-bearing: grep exits 1 when it matches nothing, and under
+        # `set -euo pipefail` that non-zero status becomes the command substitution's
+        # status and aborts the whole run — which made the `[ -z "$model" ]` guard
+        # below dead code it could never reach. Reads not basecalled by Dorado carry
+        # neither field (observed on Pantoeas/III and /IV: pre-staged 2022-era reads
+        # whose headers are a bare UUID), and for those the correct behaviour is the
+        # graceful skip that guard implements, not an abort.
+        model=$(echo "$header" | grep -o 'dna_[^[:space:]]*' | rev | cut -f3- -d'_' | rev || true)
     fi
 
     if [ -z "$model" ]; then

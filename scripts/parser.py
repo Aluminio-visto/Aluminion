@@ -286,14 +286,36 @@ def _process_mlst_row(row_fields, pubmlst_db_root):
         schema = pd.read_csv(db_path, sep='\t')
         candidates = pd.merge(query, schema, how='left', on=safe_genes)
     else:
-        candidates = pd.DataFrame([{'ST': []}])
+        # Nothing to look up: either no gene got an exact allele call (every
+        # allele inexact `~N` or missing `-` — routine when the assembly is not
+        # the scheme's species), or the PubMLST schema is not on disk. A NA ST
+        # routes this row through the all-NaN branch below.
+        # The previous `pd.DataFrame([{'ST': []}])` built a 1x1 frame whose only
+        # value was an empty list, which is NOT NaN — so it fell through to the
+        # `ST + 1` branch and raised IndexError on a frame with one column,
+        # aborting the whole run (observed on Pantoeas/Ia: 5/5 samples typed
+        # against the cronobacter scheme with no exact allele).
+        candidates = pd.DataFrame({'ST': [pd.NA]})
+
+    if 'ST' not in candidates.columns:
+        # A merge collision would rename ST to ST_x/ST_y; treat it as no result
+        # rather than letting get_loc raise and take the run down.
+        candidates = pd.DataFrame({'ST': [pd.NA]})
 
     # When the merge produced a single all-NaN row, take only the ST column;
     # otherwise take the column right after ST (the allele combination column).
+    # `ST + 1` can point one past the last column when ST is the final column of
+    # the merge (a schema with no trailing non-gene column, every scheme gene
+    # consumed by the merge key); .iloc then raises "positional indexers are
+    # out-of-bounds". Fall back to the ST column itself in that case.
+    st_pos = candidates.columns.get_loc('ST')
     if candidates.shape[0] == 1 and candidates['ST'].isna().any():
-        candidate_alleles = candidates.iloc[:, candidates.columns.get_indexer(['ST'])]
+        allele_pos = st_pos
+    elif st_pos + 1 < candidates.shape[1]:
+        allele_pos = st_pos + 1
     else:
-        candidate_alleles = candidates.iloc[:, candidates.columns.get_indexer(['ST']) + 1]
+        allele_pos = st_pos
+    candidate_alleles = candidates.iloc[:, [allele_pos]]
 
     possible_alleles = candidate_alleles.to_dict('list')
     for gene, alleles in possible_alleles.items():
