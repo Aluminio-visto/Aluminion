@@ -1450,47 +1450,49 @@ phastest_done() { [ -n "$RESUME" ] && [ -f "09_phages/phastest_deep/${1}/success
 # and slurm.conf sets ReturnToService=0, meaning a node the dying controller
 # marked down never comes back on its own.
 #
-# Consequence, observed on ENTHERE_2026_JUL_07 after a Ctrl+C: BLAST is dispatched
-# as an `sbatch --array=1-208 --wait` job, and array pieces silently never get
-# scheduled. The remaining pieces finish in ~6 min, then `--wait` blocks until
-# phastest.pl's internal phage_finder_tolerate_time (180 min) expires and the
-# sample dies with no results. SCT-HURS-43 ran 207/208 pieces in 6.3 min and
-# then waited 3 h for piece 99; SCT-HURS-44 ran 206/208 in 6.5 min and waited
-# ~2 h for pieces 90 and 208. The pieces themselves are ordinary protein and the
-# phage DB is intact — the work is fine, the scheduler lost the jobs.
+# Consequence, observed on ENTHERE_2026_JUL_07 after a Ctrl+C, and again on
+# ENTHERE_2026_JUN_25 (every sample from the second one onward failed both
+# attempts — 9/9, 0% recovered by a retry, once the cluster degraded mid-run):
+# BLAST is dispatched as an `sbatch --array=1-N --wait` job, and array pieces
+# silently never get scheduled. The remaining pieces finish in minutes, then
+# `--wait` blocks until phastest.pl's internal phage_finder_tolerate_time
+# (180 min) expires and the sample dies with no results. The pieces themselves
+# are ordinary protein and the phage DB is intact — the work is fine, the
+# scheduler lost the jobs.
 #
-# `docker compose restart` on the node services re-registers them with the next
-# controller, which clears the down/drain state ReturnToService=0 would otherwise
-# make permanent. Non-fatal: if the reset fails we still try the sample.
-PHASTEST_NODES="${ALUMINION_PHASTEST_NODES:-c1 c2 c3 c4 c5 c6 c7 c8}"
+# `docker compose restart` on the node containers only restarts the process
+# inside the SAME container filesystem layer — it does not clear whatever stuck
+# state (munge sockets, slurmd lock/PID files, orphaned job registrations) lives
+# in that writable layer, and empirically it never recovered dispatch once a run
+# degraded (0/9 retries recovered, across every run logged so far).
+# `docker compose down --remove-orphans` destroys and recreates every container
+# from scratch — the named volumes (etc_slurm, slurm_jobdir, the slurmdbd
+# database) persist, but each node's writable layer is wiped. This is the reset
+# a manually-run version of this pipeline used successfully before this module
+# existed. It costs more per sample than a plain restart (a full cluster
+# bring-up, not 8 process restarts), but only a full teardown has actually been
+# observed to clear a stuck cluster, so it now runs before every attempt rather
+# than once per run. Non-fatal: if the reset fails we still try the sample.
 phastest_reset_cluster() {
     # ${VAR:-} and not $VAR: this script runs under `set -euo pipefail`, so
     # dereferencing an unset variable aborts with "unbound variable". Every
     # optional/env-provided knob must carry the :- default.
     [ -n "${PHASTEST_NO_RESET:-}" ] && return 0
-    log "  Phastest: resetting SLURM nodes (${PHASTEST_NODES})..."
-    if ! docker compose -f "${PHASTEST_DIR}/docker-compose.yml" restart $PHASTEST_NODES >/dev/null 2>&1; then
-        warn "Phastest: could not restart SLURM nodes. Continuing (jobs may stall)."
+    log "  Phastest: tearing down cluster (docker compose down --remove-orphans)..."
+    if ! docker compose -f "${PHASTEST_DIR}/docker-compose.yml" down --remove-orphans >/dev/null 2>&1; then
+        warn "Phastest: could not tear down cluster. Continuing (jobs may stall)."
         return 1
     fi
-    # slurmd needs a moment to register with the controller before sbatch is usable.
-    sleep "${ALUMINION_PHASTEST_RESET_WAIT:-15}"
+    # `docker compose run` below brings its depends_on services (slurmdbd,
+    # c1..c8) back up automatically, but slurmd needs a moment after joining to
+    # register with the new controller before sbatch dispatch is reliable.
+    sleep "${ALUMINION_PHASTEST_RESET_WAIT:-20}"
     return 0
 }
 
 if [ -z "$SKIP_PHAGES" ]; then
     log "Running Phages module (Phastest)..."
     host_uid=$(id -u); host_gid=$(id -g)
-    # Reset the SLURM nodes ONCE here, not before every sample. The nodes may
-    # already be in the bad state when the run starts (a previous run killed
-    # mid-Phastest is how this was found), so the run does need one reset up front
-    # — but paying it per sample cost ~31 s each (16 s restart + 15 s settle) and,
-    # worse, measured BLAST parallelism on SCT-HURS-13 dropped to ~1.2x versus
-    # 6.8x on a sample that ran without a preceding restart: repeatedly bouncing
-    # slurmd against a live controller leaves the array under-dispatched. Per
-    # sample, the reset now happens only on the retry, where the sample has
-    # already failed and there is nothing left to lose.
-    phastest_reset_cluster || true
     for i in $(cat samples); do
         if phastest_done "$i"; then
             log "  [resume] Phastest: ${i} done, skipping."
@@ -1521,9 +1523,11 @@ if [ -z "$SKIP_PHAGES" ]; then
 
         # Phastest must run as root inside the container — its perl scripts live in
         # /root/phastest-app/scripts/ with 700 perms. Passing --user <host_uid:gid>
-        # makes them unreadable, which silently breaks prophage detection (the
-        # earlier `--phage-only` flag was a workaround that masked the failure by
-        # skipping every step that needed those scripts).
+        # makes them unreadable, which silently breaks prophage detection (fixed in
+        # b6d1260). `--phage-only` on its own (without --user) is safe — it limits
+        # Phastest to the phage-detection steps this pipeline actually consumes,
+        # trimming the per-sample SLURM array workload, and matches the manually-run
+        # method that worked reliably before this module existed.
         #
         # Side effect: Phastest creates JOBS/$i as root AND mutates the input file
         # under phastest_inputs/ to root ownership. Wrap the phastest call in `bash -c`
@@ -1532,12 +1536,10 @@ if [ -z "$SKIP_PHAGES" ]; then
         # The inputs bind-mount target inside the container is `/phastest-app/inputs`
         # (phastest-docker default; verify with `docker compose config`). Phastest's
         # exit code is preserved via $rc.
-        # One retry, because the stall is a scheduler-state problem and resetting the
-        # nodes is exactly what fixes it. A sample that dies at the 180 min tolerate
-        # time produced nothing, so retrying costs nothing but time; without the
-        # retry a single lost array piece discards the sample's prophage calls.
-        # The up-front reset happens once before this loop, not here: see the note
-        # at the top of the module for why per-sample resets hurt dispatch.
+        # Two attempts, each behind its own full cluster teardown (see
+        # phastest_reset_cluster above) — a sample that dies at the 180 min tolerate
+        # time produced nothing, so retrying costs time but not results; without the
+        # retry a single scheduler hiccup discards the sample's prophage calls outright.
         # Same residue hazard as the input FASTA above, and for the same reason: a
         # run killed between the container exiting and the `rm -rf` below leaves
         # JOBS/$i behind, root- or nobody-owned. Phastest would then start on top of
@@ -1550,15 +1552,11 @@ if [ -z "$SKIP_PHAGES" ]; then
 
         phastest_ok=""
         for attempt in 1 2; do
-            # Only on the retry: the module already reset the cluster once before the
-            # loop, and resetting before every attempt measurably degraded dispatch.
-            if [ "$attempt" -eq 2 ]; then
-                log "  Phastest: retrying ${i} (attempt 2/2) after cluster reset..."
-                phastest_reset_cluster || true
-            fi
+            log "  Phastest: ${i} attempt ${attempt}/2 (full cluster teardown first)..."
+            phastest_reset_cluster || true
             if docker compose -f "${PHASTEST_DIR}/docker-compose.yml" run --rm \
                     --entrypoint /bin/bash phastest \
-                    -c "phastest -i fasta -m deep -s '$i'.fasta --yes; rc=\$?; \
+                    -c "phastest -i fasta -m deep -s '$i'.fasta --phage-only --yes; rc=\$?; \
                         chown -R ${host_uid}:${host_gid} /phastest-app/JOBS/'$i' /phastest-app/inputs 2>/dev/null; \
                         exit \$rc"; then
                 # Exit 0 is not enough: phastest.pl returns 0 after phage_finder times
