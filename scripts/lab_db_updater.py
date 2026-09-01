@@ -387,6 +387,28 @@ def main():
         datos_seq["Barcode"]    = datos_seq["Barcode"].astype(str)
         datos_seq['Barcode'] = datos_seq['Barcode'].replace('nan', np.nan)
 
+    # 'ID' must be string on BOTH sides of every merge/isin comparison below.
+    # pd.read_csv infers per-column dtype from the whole column: a
+    # cumulative data_seq.tsv with only numeric IDs so far reads back 'ID' as
+    # int64, but the moment one alphanumeric ID (e.g. '5HV') is ever added,
+    # a later re-read infers 'ID' as object/str instead. A later run whose
+    # OWN list_seq.tsv happens to have only numeric IDs then reads its own
+    # 'ID' as int64 — comparing int64 143 against str '143' never matches,
+    # so `nuevas_filas = lista_cepas[~lista_cepas['ID'].isin(datos_seq['ID'])]`
+    # (below) silently treats a genuine repeat sample as brand-new and
+    # appends a duplicate row instead of recording it in Barcode_rep1/2, and
+    # the cumulative merge at `pd.merge(datos_seq, result3, on='ID', ...)`
+    # silently fails to match that sample's historical row at all. Reproduced
+    # against real data: Pantoea ID 143 appears in runs Ia, II and III;
+    # because Ia's run also added alphanumeric ID '5HV', the cumulative
+    # data_seq.tsv's 'ID' column flips to object after Ia, while II/III's own
+    # list_seq.tsv are pure-numeric (int64) — every one of 143/360/381/385/
+    # 387/388/391/393/396/398/401/404/414/416 got duplicated instead of
+    # tracked as a repeat when replayed without this cast. Forcing 'ID' to
+    # str at load time, before any comparison, makes the dtype an invariant
+    # instead of a function of which IDs happen to be alphanumeric so far.
+    datos_seq['ID'] = datos_seq['ID'].astype(str)
+
     # Table with current run sample information.
     # Defense-in-depth: normally aluminion.sh has already rewritten a legacy
     # Spanish header to the English schema before we get here, but this script
@@ -415,6 +437,10 @@ def main():
         )
     lista_cepas = lista_cepas[_needed]
     lista_cepas['Barcode'] = lista_cepas['Barcode'].str.replace(r'barcode', '', regex=True)
+    # See the 'ID' dtype comment on datos_seq above: force str here too so
+    # nuevas_filas/isin/merge comparisons never depend on whether this run's
+    # own IDs happen to all be numeric.
+    lista_cepas['ID'] = lista_cepas['ID'].astype(str)
 
     # A sample is a genuine REPEAT only if it already exists in the cumulative
     # database (i.e. it was sequenced in a prior run). Capture those IDs BEFORE
@@ -446,23 +472,40 @@ def main():
                 "Samples_to_repeat", "Yield_Mbp", "is_repeated", "Temp_C", "Voltage", "Reads_per_hour",
                 "Mbp_per_hour", "N50_kbp"]
 
-    # Create 'result' by copying 'lista_cepas' and adding missing columns as null
+    # Create 'result' by copying 'lista_cepas' and adding missing columns as null.
+    #
+    # Use np.nan here, NOT pd.NA. The historical cumulative table is read back
+    # from TSV via plain pd.read_csv (no dtype overrides for these columns), so
+    # an all-empty historical column always comes back as float64 np.nan. If a
+    # column here is missing/absent (common for runs without final_summary*.txt
+    # / report_*.json, e.g. pre-staged reads not produced by MinKNOW — see
+    # Pantoeas III/IV) and gets the pd.NA sentinel instead, the later cumulative
+    # merge's `combine_first()` (lab_db_updater main(), ~line 594 and the
+    # generic per-column loop after it) ends up assigning a mixed array of
+    # np.nan and pd.NA into that float64 historical column. pandas 2.x's
+    # np_can_hold_element refuses that cast — pd.NA is not float64-safe the way
+    # np.nan is — and raises LossySetitemError. Reproduced on Pantoeas/Ia-IV
+    # (2026-09-01): none of those runs have final_summary*.txt, so every column
+    # below defaulted to pd.NA and crashed data_seq.tsv on the very first one
+    # combine_first touches (Seq_date). np.nan keeps the same missing-value
+    # representation the historical table already uses, so the merge round-trips
+    # cleanly regardless of which columns a given run's metadata is missing.
     result = lista_cepas.copy()
     for col in columnas:
         if col not in result.columns:
-            result[col] = pd.NA
+            result[col] = np.nan
 
     # %%
     # Populate table with technical metadata (NaN when MinION files are absent)
-    result["Seq_date"]       = d_sum.get('fecha',          pd.NA)
-    result["Barcoding_kit"]  = d_sum.get('barcoding_kit',  pd.NA)
+    result["Seq_date"]       = d_sum.get('fecha',          np.nan)
+    result["Barcoding_kit"]  = d_sum.get('barcoding_kit',  np.nan)
     result["Extraction_kit"] = args.extraction_kit
-    result["Instrument"]     = d_sum.get('instrument',     pd.NA)
-    result["Flowcell_type"]  = d_sum.get('flow_cell_type', pd.NA)
-    result["Flowcell"]       = d_sum.get('flow_cell',      pd.NA)
-    result["Seq_hours"]      = d_sum.get('duracion',       pd.NA)
-    result["Pores_start"]    = d_report.get('poros_ini',   pd.NA)
-    result["Pores_end"]      = d_report.get('poros_fin',   pd.NA)
+    result["Instrument"]     = d_sum.get('instrument',     np.nan)
+    result["Flowcell_type"]  = d_sum.get('flow_cell_type', np.nan)
+    result["Flowcell"]       = d_sum.get('flow_cell',      np.nan)
+    result["Seq_hours"]      = d_sum.get('duracion',       np.nan)
+    result["Pores_start"]    = d_report.get('poros_ini',   np.nan)
+    result["Pores_end"]      = d_report.get('poros_fin',   np.nan)
 
     # %%
     # Populate with QC_reads.csv data
@@ -483,6 +526,11 @@ def main():
     # instead of crashing the cumulative DB build.
     if "N_bases_post" in QC_reads.columns:
         QC_reads["N_bases_post"] = pd.to_numeric(QC_reads["N_bases_post"], errors='coerce')
+    # Same 'ID' dtype invariant as datos_seq/lista_cepas above: NanoPlot's
+    # "Sample" column (renamed to "ID" just above) is whatever dtype pandas
+    # inferred from this run's own sample names, independently of the other
+    # tables' 'ID' dtype. Force str before merging on it.
+    QC_reads['ID'] = QC_reads['ID'].astype(str)
     result2 = pd.merge(result, QC_reads, on="ID", how='outer')
 
     # Populate with QC_assembly.csv data. aluminion.sh emits the column header
@@ -492,6 +540,8 @@ def main():
     QC_assembly = QC_assembly.rename(columns={"Samples": "ID", "Sample": "ID"})
     QC_assembly["ratio"] = QC_assembly["Largest contig"]/QC_assembly["Total length"]
     QC_assembly = QC_assembly.drop(columns=["GC (%)", "# predicted genes (>= 300 bp)"], errors='ignore')
+    # Same 'ID' dtype invariant as above (QUAST's "Samples"/"Sample" column).
+    QC_assembly['ID'] = QC_assembly['ID'].astype(str)
 
     result3 = pd.merge(result2, QC_assembly, on="ID", how='outer')
 
@@ -555,18 +605,28 @@ def main():
         # ------------------------------------------------------------------
         merged_df = pd.merge(datos_seq, result3, on='ID', how='left', suffixes=('', '_result3'))
 
-        # Force the repeat-tracking columns to object dtype so per-cell string
-        # assignments below don't raise pandas.errors.LossySetitemError. On a
-        # cumulative DB where no sample has been repeated yet, these columns
-        # are loaded 100% NaN — pandas infers float64 and pandas >= 2.x then
-        # refuses to silently upcast a string Barcode (e.g. '65') into a float
-        # column. The historical pandas 1.5.3 (dev myenv) did the upcast
-        # silently, which is why this regression only surfaced on the
-        # production server (Python 3.12 + pandas 2.x). 'Seq_date_*' is also
-        # forced object because the same column ends up as a string ('YYYY-MM-DD').
-        for _col in ('Barcode_rep1', 'Barcode_rep2',
-                     'Seq_date_rep1', 'Seq_date_rep2'):
-            if _col in merged_df.columns:
+        # Force every non-key column to object dtype so the per-cell string
+        # assignments and combine_first() calls below don't raise
+        # pandas.errors.LossySetitemError. On a cumulative DB where a column
+        # has been 100% empty so far (no sample repeated yet, or a run missing
+        # final_summary*.txt/report_*.json so its technical-metadata columns
+        # never got a value — see Pantoeas Ia-IV, 2026-09-01), pandas infers
+        # float64 for that historical column, and pandas >= 2.x then refuses
+        # to silently upcast a string ('65', 'YYYY-MM-DD') OR pd.NA into it —
+        # the historical pandas 1.5.3 (dev myenv) did that upcast silently,
+        # which is why this class of regression only surfaces on the
+        # production server (Python 3.12 + pandas 2.x). Casting broadly here
+        # (not just the two rep-tracking columns) is deliberate: any column
+        # can hit this once its historical values happen to be all-NaN, and
+        # np.nan/pd.NA can be mixed by the time they reach here even now that
+        # lab_db_updater's own defaults use np.nan consistently (see the
+        # result[...] block above) — a future upstream source of pd.NA
+        # (nullable-dtype CSV column, etc.) shouldn't be able to crash this
+        # merge again. _finalize_seq_ints() below re-coerces the numeric/int
+        # columns from string afterwards, so this is safe regardless of the
+        # dtype churn in between.
+        for _col in merged_df.columns:
+            if _col != 'ID':
                 merged_df[_col] = merged_df[_col].astype('object')
 
         # Repeat tracking: only samples already present in the prior cumulative
@@ -611,6 +671,14 @@ def main():
     # %%
     taxon2 = pd.read_csv(taxon, sep= ',')
     taxon2.rename(columns={"Sample":"ID"}, inplace=True)
+    # Same 'ID' dtype invariant as datos_seq/lista_cepas/QC_reads/QC_assembly
+    # above: GAMBIT's "Sample" column (renamed to "ID") is whatever dtype
+    # pandas inferred from this run's own sample names. lista_cepas['ID'] is
+    # now unconditionally str (see fix above), so without this cast pandas
+    # raises "You are trying to merge on int64 and str columns for key 'ID'"
+    # the moment a run's IDs are all-numeric — reproduced with real Pantoea
+    # runs II/III/IV once the datos_seq/lista_cepas fix was in place.
+    taxon2['ID'] = taxon2['ID'].astype(str)
     taxon2.drop_duplicates(subset=['ID'], keep='first', inplace=True)
 
     result4 = pd.merge(taxon2, lista_cepas, on="ID", how='outer')
@@ -623,6 +691,24 @@ def main():
 
     if df_fagos is not None:
         df_fagos.rename(columns={'sample': 'Sample'}, inplace=True)
+
+    # Same 'ID' dtype invariant as above, one level removed: these MGE
+    # tables' own "Sample" column dtype depends on whether THIS run's sample
+    # names happen to be all-numeric (e.g. MOB-suite/Phastest/IntegronFinder
+    # output). `.map(df['Sample'].value_counts())` below keys off exact dtype
+    # equality, not value equality — a str result4['ID'] silently matches
+    # nothing against an int64 df_fagos['Sample'], giving every sample a
+    # false Prophages/Plasmids/Integrons count of 0 with no error at all.
+    # Reproduced against real Pantoea data: phage_summary.csv's Sample column
+    # is int64 for runs II/III (all-numeric IDs) but str for run Ia (mixed
+    # with '5HV') — casting to str here removes the dependency on which run
+    # happens to contain an alphanumeric ID.
+    if df_pl is not None:
+        df_pl['Sample'] = df_pl['Sample'].astype(str)
+    if df_fagos is not None:
+        df_fagos['Sample'] = df_fagos['Sample'].astype(str)
+    if df_int is not None:
+        df_int['Sample'] = df_int['Sample'].astype(str)
 
     # Mobile Genetic Elements (MGEs) — count per sample for data_analysis
     result4[["Plasmids", "ICEs", "Prophages", "Integrons"]] = 0
@@ -678,6 +764,17 @@ def main():
             # left merge silently drops every brand-new sample of the current run
             # from the cumulative data_analysis.tsv.
             analisis_final = pd.merge(analisis, result4, on='ID', how='outer', suffixes=('', '_result4'))
+            # Same LossySetitemError risk as the data_seq path above (see the
+            # comment there, fixed 2026-09-01 against Pantoeas Ia-IV): an
+            # all-NaN historical column reads back as float64, and combine_first
+            # can hand it a pd.NA-flavored value from result4 (Kleborate/mlst
+            # columns readily produce nullable dtypes). Not yet observed to
+            # crash here in production only because no cumulative run has
+            # reached this block with the right column empty — cast broadly
+            # up front rather than wait for the matching failure.
+            for _col in analisis_final.columns:
+                if _col != 'ID':
+                    analisis_final[_col] = analisis_final[_col].astype('object')
             for column in analisis.columns:
                 if column != 'ID':
                     analisis_final[column] = analisis_final[column + '_result4'].combine_first(analisis_final[column])
