@@ -360,11 +360,66 @@ directly:
 conda activate aluminion_annot
 python3 scripts/parser.py -i /path/to/run/
 python3 scripts/aluminion_reporter.py /path/to/run/
-python3 scripts/lab_db_updater.py --input_path /path/to/run/
+python3 scripts/lab_db_updater.py --input_path /path/to/run/ --db-dir /path/to/parent/
+python3 scripts/mge_alerts.py --run-dir /path/to/run/ \
+        --repo /path/to/parent/repository --run-name RUN_NAME
 ```
 
 `parser.py` performs a preflight check at startup and lists any missing input
 files with the corresponding `--skip-*` flag to bypass them.
+
+> `integron_parser.py`, `phage_parser.py` and `copla_parser.py` are **imported**
+> by `parser.py`, not shelled out to. Do not invoke them standalone — the results
+> would be parsed twice.
+
+### Batch-level report — all runs in one view
+
+`aluminion.sh` produces one `Aluminion_Report.html` per run. For a project whose
+runs share a parent directory, `scripts/aluminion_aggregate.py` builds a single
+report and a single copy of every analysis table covering **all** runs:
+
+```bash
+conda activate aluminion_annot
+python3 scripts/aluminion_aggregate.py -d /seqs/KLEBIRE
+# → /seqs/KLEBIRE/ALL_RUNS/Aluminion_Report.html  + aggregated tables
+```
+
+Run it after the last run of a batch has finished (it only reads the per-run
+outputs; it never re-runs any analysis stage). The run list comes from
+`runs.tsv` — the same file `aluminion_batch` uses — so `repository/`, backup
+directories and other non-run folders in the parent are not picked up.
+
+**By default the aggregate shows one row per strain: its definitive result.**
+For a sample sequenced in several runs, only the last run's row is kept and the
+key is the bare sample ID. This mirrors what the pipeline actually does — see
+*Re-sequencing and the read accumulator* below: each successive run assembles
+the accumulated reads of every previous run, so the last appearance **is** the
+assembly of all reads collected for that strain, and the earlier ones are
+superseded intermediates. "Last" means the last occurrence in `runs.tsv` order,
+not the latest sequencing date: the accumulator is filled in batch *processing*
+order.
+
+`list_seq.tsv` in the aggregate gains `Run`, `N_runs` and `Runs_all` columns so
+the collapse is auditable without re-reading the per-run sheets. If a strain's
+definitive appearance is **not** flagged `is_repeated` while earlier appearances
+exist, its assembly is not cumulative and collapsing would hide real data — that
+case is reported as an explicit warning naming each strain.
+
+| Flag                 | Effect                                                                     |
+|----------------------|----------------------------------------------------------------------------|
+| `-d`, `--dir`        | Batch parent directory (contains the run folders and `runs.tsv`). Required. |
+| `-o`, `--out`        | Output directory (default `<parent>/ALL_RUNS`).                            |
+| `--runlist`          | Alternative run list (default `<parent>/runs.tsv`).                        |
+| `--keep-run-suffix`  | One row per **appearance** instead, keyed `<ID>_<run>`. Use this to compare how the same strain behaved in each run. |
+| `--no-report`        | Write the aggregated tables only, skip `aluminion_reporter.py`.            |
+
+Bandage assembly graphs are mirrored into `<out>/03_assemblies/` so the
+report's hover previews keep working even after the end-of-run cleanup has
+pruned the per-run folders.
+
+The cumulative `data_seq.tsv` / `data_analysis.tsv` in the parent directory are
+**not** aggregated here — they already span the whole batch by construction (see
+*Cumulative databases* above).
 
 ### Assembly failure handling
 
@@ -439,6 +494,40 @@ cumulative database entirely (only the per-run snapshot is written).
 assigned to the specific plasmid that carries them by intersecting the
 ABRicate-VFDB hits (per contig) with the MOB-suite `contig_report.txt`, so
 chromosomal virulence operons (fim, mrk, ent) are not smeared onto plasmids.
+
+---
+
+## Re-sequencing and the read accumulator
+
+A sample marked `is_repeated` in a run's `list_seq.tsv` is not re-analysed from
+scratch: Aluminion **concatenates its reads across runs**. The shared repository
+keeps a per-sample read accumulator at `<repo>/01_reads/<ID>.fastq.gz`; when a
+flagged sample is processed, the accumulated reads of all previous runs are
+prepended to the new run's barcode FASTQs, the merged set is what gets filtered
+and assembled, and the accumulator is refreshed with it.
+
+The practical consequences:
+
+- Each successive run of a re-sequenced strain assembles a **strictly larger**
+  read set. Its last appearance is the assembly of every read ever collected for
+  that strain; the earlier ones are superseded intermediates. This is why
+  `aluminion_aggregate.py` keeps only the last run by default.
+- **`<repo>/01_reads/` is load-bearing — do not delete it.** Removing it does not
+  break a run (the sample is processed as fresh, with a warning) but it silently
+  loses the read history, so the next re-sequencing assembles only its own reads.
+- If the accumulator has no entry for a flagged sample, the run logs
+  `Warning: no prior reads in repository for <ID>` and proceeds with the new
+  reads alone. On a sample's first pass this is expected, not an error.
+- `--unique-run` disables the whole mechanism: nothing is deposited in the
+  repository and `is_repeated` samples are processed as fresh runs.
+
+> Note the flag convention: in `list_seq.tsv`, `is_repeated = "x"` means
+> **repeated**. An empty cell means first pass.
+
+Besides `01_reads/`, the MGE repository holds only mobile-element data —
+`index_plasmids.tsv`, `index_integrons.tsv`, `hosts.tsv`, the per-element FASTAs
+and the `skani` sketches. Assemblies, annotations and reports stay in their run
+folders; the repository is not a mirror of them.
 
 ---
 

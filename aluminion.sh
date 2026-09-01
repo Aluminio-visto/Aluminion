@@ -737,6 +737,23 @@ if [ -z "$SKIP_PREPROCESSING" ]; then
     if [ -n "${dropped_ids// /}" ]; then
         log "Reads on disk not listed in list_seq.tsv — excluded from this run: ${dropped_ids}"
     fi
+    # The mirror case — and the one that actually cost a full investigation. IDs declared
+    # in the sheet whose reads exist but fall UNDER the size gate were dropped from
+    # `samples`, and therefore from read QC, taxonomy, Bakta annotation and AMR, with no
+    # log output whatsoever: four consecutive runs excluded 25 of 67 sample-appearances in
+    # complete silence. The state is doubly confusing because the gate is re-applied on
+    # every pass while assemblies persist on disk: a sample assembled by an earlier pass
+    # (when it passed the gate, or before the gate was intersected with the sheet) keeps
+    # appearing in the assembly-derived tables — QC_assembly, mlst, kleborate — while
+    # silently missing from every read- and annotation-derived one, so no single table
+    # looks wrong. A --resume can never fill that gap either: the sample is re-excluded
+    # before annotation is reached. Say it out loud, and name the flag that overrides it.
+    small_ids=$(comm -23 .listed_ids .reads_on_disk | tr '\n' ' ')
+    if [ -n "${small_ids// /}" ]; then
+        warn "Listed in list_seq.tsv but reads under the ${MIN_READ_MB}MB filter — excluded: ${small_ids}"
+        warn "These get no read QC, taxonomy, annotation or AMR, even if already assembled."
+        warn "Re-run with --min-read-mb <N> to let them through."
+    fi
     rm -f .listed_ids .reads_on_disk
 
     if [ ! -s .samples_new ]; then
